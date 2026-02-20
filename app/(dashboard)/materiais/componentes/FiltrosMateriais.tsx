@@ -22,11 +22,8 @@ export default function FiltrosMateriais({
 
   function atualizar(chave: string, valor: string) {
     const params = new URLSearchParams(searchParams.toString())
-    if (valor) {
-      params.set(chave, valor)
-    } else {
-      params.delete(chave)
-    }
+    if (valor) params.set(chave, valor)
+    else params.delete(chave)
     router.push(`${pathname}?${params.toString()}`)
   }
 
@@ -36,60 +33,75 @@ export default function FiltrosMateriais({
 
   const temFiltro = temaSelecionado || tipoSelecionado || formatoSelecionado
 
+  const selectStyle = {
+    background: '#fff',
+    border: '1px solid #e5e5e5',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    color: '#140033',
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '14px',
+    outline: 'none',
+    width: '100%',
+    cursor: 'pointer',
+  }
+
+  const labelStyle = {
+    display: 'block',
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: '#00000055',
+    marginBottom: '6px',
+    letterSpacing: '1px',
+    textTransform: 'uppercase' as const,
+  }
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <div className="flex flex-wrap gap-4 items-end">
-        {/* Tema */}
-        <div className="flex-1 min-w-[160px]">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Tema</label>
-          <select
-            value={temaSelecionado ?? ''}
-            onChange={e => atualizar('tema', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-          >
+    <div style={{
+      background: '#fff',
+      border: '1px solid #eeeeee',
+      borderRadius: '16px',
+      padding: '20px 24px',
+    }}>
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+
+        <div style={{ flex: 1, minWidth: '160px' }}>
+          <label style={labelStyle}>Tema</label>
+          <select value={temaSelecionado ?? ''} onChange={e => atualizar('tema', e.target.value)} style={selectStyle}>
             <option value="">Todos os temas</option>
-            {temas.map(t => (
-              <option key={t.id} value={t.id}>{t.nome}</option>
-            ))}
+            {temas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
           </select>
         </div>
 
-        {/* Tipo de peça */}
-        <div className="flex-1 min-w-[160px]">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Tipo de peça</label>
-          <select
-            value={tipoSelecionado ?? ''}
-            onChange={e => atualizar('tipo', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-          >
+        <div style={{ flex: 1, minWidth: '160px' }}>
+          <label style={labelStyle}>Tipo de peça</label>
+          <select value={tipoSelecionado ?? ''} onChange={e => atualizar('tipo', e.target.value)} style={selectStyle}>
             <option value="">Todos os tipos</option>
-            {tipos.map(t => (
-              <option key={t.id} value={t.id}>{t.nome}</option>
-            ))}
+            {tipos.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
           </select>
         </div>
 
-        {/* Formato */}
-        <div className="flex-1 min-w-[160px]">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Formato</label>
-          <select
-            value={formatoSelecionado ?? ''}
-            onChange={e => atualizar('formato', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-          >
+        <div style={{ flex: 1, minWidth: '160px' }}>
+          <label style={labelStyle}>Formato</label>
+          <select value={formatoSelecionado ?? ''} onChange={e => atualizar('formato', e.target.value)} style={selectStyle}>
             <option value="">Todos os formatos</option>
-            {formatos.map(f => (
-              <option key={f.id} value={f.id}>{f.nome}</option>
-            ))}
+            {formatos.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
           </select>
         </div>
 
-        {/* Limpar filtros */}
         {temFiltro && (
-          <button
-            onClick={limpar}
-            className="px-4 py-2 text-sm text-gray-500 hover:text-red-500 transition"
-          >
+          <button onClick={limpar} style={{
+            background: 'transparent',
+            border: '1px solid #ff33cc44',
+            borderRadius: '10px',
+            padding: '10px 16px',
+            color: '#ff33cc',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '13px',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}>
             Limpar filtros
           </button>
         )}

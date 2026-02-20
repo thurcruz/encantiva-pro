@@ -1,18 +1,27 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import FormularioMaterial from '../componentes/FormularioMaterial'
+import FormularioEditar from './FormularioEditar'
 
-export default async function PaginaNovoMaterial() {
+export default async function PaginaEditarMaterial({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (user?.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) redirect('/materiais')
 
-  const [{ data: temas }, { data: tipos }, { data: formatos }] = await Promise.all([
+  const [
+    { data: material },
+    { data: temas },
+    { data: tipos },
+    { data: formatos },
+  ] = await Promise.all([
+    supabase.from('materiais').select('*, temas(*), tipos_peca(*), formatos(*)').eq('id', id).single(),
     supabase.from('temas').select('*').eq('ativo', true).order('nome'),
     supabase.from('tipos_peca').select('*').order('nome'),
     supabase.from('formatos').select('*').order('nome'),
   ])
+
+  if (!material) redirect('/admin/materiais')
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#140033', padding: '40px' }}>
@@ -33,20 +42,16 @@ export default async function PaginaNovoMaterial() {
             letterSpacing: '-1px',
             margin: 0,
           }}>
-            Novo Material
+            Editar Material
           </h1>
-          <p style={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '14px',
-            color: '#ffffff55',
-            margin: 0,
-          }}>
-            Faça o upload de um novo material para download
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff55', margin: 0 }}>
+            {material.titulo}
           </p>
         </div>
       </div>
 
-      <FormularioMaterial
+      <FormularioEditar
+        material={material}
         temas={temas ?? []}
         tipos={tipos ?? []}
         formatos={formatos ?? []}

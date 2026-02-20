@@ -19,95 +19,169 @@ export default function CardMaterial({ material, podeDownload }: Props) {
     setBaixando(true)
 
     try {
-      // Gera URL assinada temporária (60 segundos)
       const { data, error } = await supabase.storage
         .from('materials')
         .createSignedUrl(material.url_arquivo, 60)
 
-      if (error || !data) throw error
+      if (error || !data) throw new Error('Erro ao gerar link.')
 
-      // Registra download
-      await supabase.from('historico_downloads').upsert({
-        material_id: material.id,
-      })
-
-      // Chama função para incrementar contador
+      await supabase.from('historico_downloads').upsert({ material_id: material.id })
       await supabase.rpc('incrementar_downloads', { material_id: material.id })
 
-      // Abre o download
-      window.open(data.signedUrl, '_blank')
-    } catch (err) {
-      alert('Erro ao baixar o arquivo. Tente novamente.')
+      const response = await fetch(data.signedUrl)
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = material.titulo
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(blobUrl)
+
+    } catch {
+      alert('Erro ao baixar o arquivo.')
     } finally {
       setBaixando(false)
     }
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition group">
+    <div style={{
+      background: '#fff',
+      border: '1px solid #eeeeee',
+      borderRadius: '16px',
+      overflow: 'hidden',
+      boxShadow: '0 2px 8px #00000008',
+      transition: 'transform 0.2s, box-shadow 0.2s',
+    }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'
+        ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px #9900ff18'
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'
+        ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px #00000008'
+      }}
+    >
       {/* Preview */}
-      <div className="aspect-square bg-gray-100 relative overflow-hidden">
+      <div style={{
+        aspectRatio: '1',
+        background: 'linear-gradient(135deg, #f5f0ff, #fff0fa)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
         {material.url_imagem_preview ? (
           <img
             src={material.url_imagem_preview}
             alt={material.titulo}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-300">
-            <span className="text-5xl">🎪</span>
+          <div style={{
+            width: '100%', height: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '48px',
+          }}>
+            🎪
           </div>
         )}
 
-        {/* Badge tema */}
         {material.temas && (
-          <span className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
-            {material.temas.nome}
+          <span style={{
+            position: 'absolute', top: '10px', left: '10px',
+            background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
+            color: '#fff',
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 700,
+            fontSize: '11px',
+            padding: '4px 10px',
+            borderRadius: '100px',
+          }}>
+            {(material.temas as { nome: string }).nome}
           </span>
         )}
       </div>
 
       {/* Info */}
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-800 text-sm leading-tight">{material.titulo}</h3>
+      <div style={{ padding: '16px' }}>
+        <h3 style={{
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 700,
+          fontSize: '14px',
+          color: '#140033',
+          marginBottom: '8px',
+          lineHeight: '1.3',
+        }}>
+          {material.titulo}
+        </h3>
 
-        <div className="flex gap-2 mt-2 flex-wrap">
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
           {material.tipos_peca && (
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-              {material.tipos_peca.nome}
+            <span style={{
+              background: '#f5f0ff',
+              color: '#9900ff',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '11px',
+              fontWeight: 600,
+              padding: '3px 8px',
+              borderRadius: '100px',
+            }}>
+              {(material.tipos_peca as { nome: string }).nome}
             </span>
           )}
           {material.formatos && (
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-              {material.formatos.nome}
+            <span style={{
+              background: '#f5f0ff',
+              color: '#9900ff',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '11px',
+              fontWeight: 600,
+              padding: '3px 8px',
+              borderRadius: '100px',
+            }}>
+              {(material.formatos as { nome: string }).nome}
             </span>
           )}
         </div>
 
-        <div className="flex items-center justify-between mt-3">
-          <span className="text-xs text-gray-400">{material.total_downloads} downloads</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '12px',
+            color: '#00000033',
+          }}>
+            {material.total_downloads} downloads
+          </span>
 
           <button
             onClick={handleDownload}
             disabled={!podeDownload || baixando}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition
-              ${podeDownload
-                ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: podeDownload
+                ? 'linear-gradient(135deg, #ff33cc, #9900ff)'
+                : '#f0f0f0',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 14px',
+              color: podeDownload ? '#fff' : '#00000044',
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: podeDownload ? 'pointer' : 'not-allowed',
+            }}
           >
             {podeDownload ? (
               <>
-                {baixando ? (
-                  <span className="animate-spin text-xs">⏳</span>
-                ) : (
-                  <Download size={14} />
-                )}
+                {baixando ? <span style={{ fontSize: '12px' }}>⏳</span> : <Download size={13} />}
                 {baixando ? 'Baixando...' : 'Baixar'}
               </>
             ) : (
               <>
-                <Lock size={14} />
+                <Lock size={13} />
                 Premium
               </>
             )}
