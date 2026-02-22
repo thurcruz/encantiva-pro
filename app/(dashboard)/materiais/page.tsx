@@ -7,8 +7,9 @@ import CardMaterial from './componentes/CardMaterial'
 export default async function PaginaMateriais({
   searchParams,
 }: {
-  searchParams: { tema?: string; tipo?: string; formato?: string }
+  searchParams: Promise<{ categoria?: string; tipo?: string; formato?: string; busca?: string }>
 }) {
+  const { categoria, tipo, formato, busca } = await searchParams
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -26,21 +27,22 @@ export default async function PaginaMateriais({
 
   const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
-  const [{ data: temas }, { data: tipos }, { data: formatos }] = await Promise.all([
-    supabase.from('temas').select('*').eq('ativo', true).order('nome'),
+  const [{ data: categorias }, { data: tipos }, { data: formatos }] = await Promise.all([
+    supabase.from('categorias').select('*').eq('ativo', true).order('nome'),
     supabase.from('tipos_peca').select('*').order('nome'),
     supabase.from('formatos').select('*').order('nome'),
   ])
 
   let query = supabase
     .from('materiais')
-    .select('*, temas(*), tipos_peca(*), formatos(*)')
+    .select('*, temas(*), categorias(*), tipos_peca(*), formatos(*)')
     .eq('ativo', true)
     .order('criado_em', { ascending: false })
 
-  if (searchParams.tema) query = query.eq('tema_id', searchParams.tema)
-  if (searchParams.tipo) query = query.eq('tipo_peca_id', searchParams.tipo)
-  if (searchParams.formato) query = query.eq('formato_id', searchParams.formato)
+  if (categoria) query = query.eq('categoria_id', categoria)
+  if (tipo) query = query.eq('tipo_peca_id', tipo)
+  if (formato) query = query.eq('formato_id', formato)
+  if (busca) query = query.ilike('titulo', `%${busca}%`)
 
   const { data: materiais } = await query
 
@@ -54,7 +56,7 @@ export default async function PaginaMateriais({
         backgroundColor: '#fff',
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
             <div style={{
               width: '4px', height: '32px', borderRadius: '4px',
               background: 'linear-gradient(180deg, #ff33cc, #9900ff)',
@@ -98,20 +100,10 @@ export default async function PaginaMateriais({
           }}>
             <span style={{ fontSize: '24px' }}>⚠️</span>
             <div>
-              <p style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 700,
-                color: '#ff33cc',
-                margin: '0 0 4px 0',
-              }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: '#ff33cc', margin: '0 0 4px 0' }}>
                 Assinatura necessária
               </p>
-              <p style={{
-                fontFamily: 'Inter, sans-serif',
-                color: '#00000066',
-                fontSize: '14px',
-                margin: 0,
-              }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', color: '#00000066', fontSize: '14px', margin: 0 }}>
                 Para baixar os materiais você precisa ter uma assinatura ativa.
               </p>
             </div>
@@ -120,13 +112,26 @@ export default async function PaginaMateriais({
 
         {/* Filtros */}
         <FiltrosMateriais
-          temas={temas ?? []}
+          categorias={categorias ?? []}
           tipos={tipos ?? []}
           formatos={formatos ?? []}
-          temaSelecionado={searchParams.tema}
-          tipoSelecionado={searchParams.tipo}
-          formatoSelecionado={searchParams.formato}
+          categoriaSelecionada={categoria}
+          tipoSelecionado={tipo}
+          formatoSelecionado={formato}
+          buscaInicial={busca ?? ''}
         />
+
+        {/* Contador */}
+        {materiais && (
+          <p style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '13px',
+            color: '#00000044',
+            margin: '20px 0 0 0',
+          }}>
+            {materiais.length} {materiais.length === 1 ? 'material encontrado' : 'materiais encontrados'}
+          </p>
+        )}
 
         {/* Grid de materiais */}
         {materiais && materiais.length > 0 ? (
@@ -134,7 +139,7 @@ export default async function PaginaMateriais({
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
             gap: '20px',
-            marginTop: '28px',
+            marginTop: '16px',
           }}>
             {materiais.map((material) => (
               <CardMaterial
@@ -147,17 +152,11 @@ export default async function PaginaMateriais({
         ) : (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <p style={{ fontSize: '48px', marginBottom: '16px' }}>🎪</p>
-            <p style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 700,
-              fontSize: '18px',
-              color: '#00000044',
-              marginBottom: '8px',
-            }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '18px', color: '#00000044', marginBottom: '8px' }}>
               Nenhum material encontrado
             </p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000033' }}>
-              Tente mudar os filtros
+              Tente mudar os filtros ou a busca
             </p>
           </div>
         )}

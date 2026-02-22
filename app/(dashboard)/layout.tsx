@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Package, LayoutDashboard, Upload } from 'lucide-react'
+import { Package, LayoutDashboard, Upload, Calculator } from 'lucide-react'
 import NavItem from './componentes/NavItem'
 import BotaoLogout from './componentes/BotaoLogout'
+
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -101,6 +102,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 icon={<Package size={16} style={{ color: '#9900ff' }} />}
                 label="Ver Materiais"
               />
+              <NavItem
+  href="/calculadora"
+  icon={<Calculator size={16} style={{ color: '#ff33cc' }} />}
+  label="Calculadora"
+/>
             </>
           )}
         </nav>

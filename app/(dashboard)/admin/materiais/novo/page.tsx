@@ -8,16 +8,20 @@ export default async function PaginaNovoMaterial() {
 
   if (user?.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) redirect('/materiais')
 
-  const [{ data: temas }, { data: tipos }, { data: formatos }] = await Promise.all([
+  const [
+    { data: temas },
+    { data: tipos },
+    { data: formatos },
+    { data: categorias },
+  ] = await Promise.all([
     supabase.from('temas').select('*').eq('ativo', true).order('nome'),
     supabase.from('tipos_peca').select('*').order('nome'),
     supabase.from('formatos').select('*').order('nome'),
+    supabase.from('categorias').select('*').eq('ativo', true).order('nome'),
   ])
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#140033', padding: '40px' }}>
-
-      {/* Cabeçalho */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
         <div style={{
           width: '4px', height: '32px', borderRadius: '4px',
@@ -35,12 +39,7 @@ export default async function PaginaNovoMaterial() {
           }}>
             Novo Material
           </h1>
-          <p style={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '14px',
-            color: '#ffffff55',
-            margin: 0,
-          }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff55', margin: 0 }}>
             Faça o upload de um novo material para download
           </p>
         </div>
@@ -50,6 +49,7 @@ export default async function PaginaNovoMaterial() {
         temas={temas ?? []}
         tipos={tipos ?? []}
         formatos={formatos ?? []}
+        categorias={categorias ?? []}
       />
     </div>
   )

@@ -7,6 +7,14 @@ export type Tema = {
   criado_em: string
 }
 
+export type Categoria = {
+  id: string
+  nome: string
+  slug: string
+  ativo: boolean
+  criado_em: string
+}
+
 export type TipoPeca = {
   id: string
   nome: string
@@ -25,18 +33,21 @@ export type Material = {
   titulo: string
   descricao: string | null
   tema_id: string | null
+  categoria_id: string | null
   tipo_peca_id: string | null
   formato_id: string | null
   url_arquivo: string
+  url_arquivo_cortado: string | null
   url_imagem_preview: string | null
   total_downloads: number
   premium: boolean
   ativo: boolean
   criado_em: string
   // joins
-  temas?: Tema
-  tipos_peca?: TipoPeca
-  formatos?: Formato
+  temas?: Tema | null
+  categorias?: Categoria | null
+  tipos_peca?: TipoPeca | null
+  formatos?: Formato | null
 }
 
 export type Assinatura = {
