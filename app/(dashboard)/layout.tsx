@@ -72,6 +72,12 @@ export default async function Layout({ children }: { children: React.ReactNode }
             label="Materiais"
           />
 
+          <NavItem
+            href="/calculadora"
+            icon={<Calculator size={16} style={{ color: '#ff33cc' }} />}
+            label="Calculadora"
+          />
+
           {isAdmin && (
             <>
               <p style={{
@@ -102,11 +108,6 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 icon={<Package size={16} style={{ color: '#9900ff' }} />}
                 label="Ver Materiais"
               />
-              <NavItem
-  href="/calculadora"
-  icon={<Calculator size={16} style={{ color: '#ff33cc' }} />}
-  label="Calculadora"
-/>
             </>
           )}
         </nav>

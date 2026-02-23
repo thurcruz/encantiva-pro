@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, Save, FolderOpen, X, Pencil } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface Item {
   id: number
@@ -11,6 +12,16 @@ interface Item {
   festasporMes: number
 }
 
+interface Kit {
+  id: string
+  nome: string
+  itens: Item[]
+  lucro: number
+  frete: number
+  custo_vida: number
+  criado_em: string
+}
+
 export default function Calculadora() {
   const [itens, setItens] = useState<Item[]>([
     { id: 1, nome: '', custo: 0, meses: 6, festasporMes: 4 },
@@ -18,6 +29,96 @@ export default function Calculadora() {
   const [lucro, setLucro] = useState(30)
   const [frete, setFrete] = useState(0)
   const [custoVida, setCustoVida] = useState(0)
+
+  const [kits, setKits] = useState<Kit[]>([])
+  const [modalSalvar, setModalSalvar] = useState(false)
+  const [modalKits, setModalKits] = useState(false)
+  const [nomeKit, setNomeKit] = useState('')
+  const [editandoId, setEditandoId] = useState<string | null>(null)
+  const [salvando, setSalvando] = useState(false)
+  const [carregandoKits, setCarregandoKits] = useState(false)
+
+  const supabase = createClient()
+
+  async function carregarKits() {
+    setCarregandoKits(true)
+    const { data } = await supabase
+      .from('kits')
+      .select('*')
+      .order('criado_em', { ascending: false })
+    if (data) setKits(data)
+    setCarregandoKits(false)
+  }
+
+ useEffect(() => {
+  carregarKits()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [])
+
+  async function salvarKit() {
+    if (!nomeKit.trim()) return
+    setSalvando(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    if (editandoId) {
+      await supabase
+        .from('kits')
+        .update({
+          nome: nomeKit,
+          itens,
+          lucro,
+          frete,
+          custo_vida: custoVida,
+          atualizado_em: new Date().toISOString(),
+        })
+        .eq('id', editandoId)
+    } else {
+      await supabase
+        .from('kits')
+        .insert({
+          usuario_id: user.id,
+          nome: nomeKit,
+          itens,
+          lucro,
+          frete,
+          custo_vida: custoVida,
+        })
+    }
+
+    await carregarKits()
+    setModalSalvar(false)
+    setSalvando(false)
+  }
+
+  function carregarKit(kit: Kit) {
+    setItens(kit.itens)
+    setLucro(kit.lucro)
+    setFrete(kit.frete)
+    setCustoVida(kit.custo_vida)
+    setEditandoId(kit.id)
+    setNomeKit(kit.nome)
+    setModalKits(false)
+  }
+
+  async function deletarKit(id: string) {
+    await supabase.from('kits').delete().eq('id', id)
+    await carregarKits()
+    if (editandoId === id) {
+      setEditandoId(null)
+      setNomeKit('')
+    }
+  }
+
+  function novaCalculadora() {
+    setItens([{ id: 1, nome: '', custo: 0, meses: 6, festasporMes: 4 }])
+    setLucro(30)
+    setFrete(0)
+    setCustoVida(0)
+    setEditandoId(null)
+    setNomeKit('')
+  }
 
   function adicionarItem() {
     setItens(prev => [...prev, { id: Date.now(), nome: '', custo: 0, meses: 6, festasporMes: 4 }])
@@ -36,7 +137,7 @@ export default function Calculadora() {
     ))
   }
 
-  // Cálculos por item
+  // Cálculos
   const itensCusto = itens.map(item => {
     const totalFestas = item.meses * item.festasporMes
     const custoPorFesta = totalFestas > 0 ? item.custo / totalFestas : 0
@@ -84,6 +185,69 @@ export default function Calculadora() {
 
   return (
     <div>
+
+      {/* Barra de ações */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: '24px', flexWrap: 'wrap', gap: '12px',
+      }}>
+        <div>
+          {editandoId && (
+            <span style={{
+              fontFamily: 'Inter, sans-serif', fontSize: '13px',
+              color: '#9900ff', fontWeight: 600,
+              background: '#f5f0ff', padding: '6px 12px', borderRadius: '100px',
+              border: '1px solid #9900ff22',
+            }}>
+              ✏️ Editando: {nomeKit}
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {editandoId && (
+            <button
+              onClick={novaCalculadora}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: '#fff', border: '1px solid #e5e5e5',
+                borderRadius: '10px', padding: '10px 16px',
+                color: '#00000066', fontFamily: 'Inter, sans-serif',
+                fontWeight: 600, fontSize: '13px', cursor: 'pointer',
+              }}
+            >
+              <X size={14} />
+              Novo
+            </button>
+          )}
+          <button
+            onClick={() => { setModalKits(true); carregarKits() }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: '#fff', border: '1px solid #e5e5e5',
+              borderRadius: '10px', padding: '10px 16px',
+              color: '#140033', fontFamily: 'Inter, sans-serif',
+              fontWeight: 600, fontSize: '13px', cursor: 'pointer',
+            }}
+          >
+            <FolderOpen size={14} />
+            Meus kits {kits.length > 0 && `(${kits.length})`}
+          </button>
+          <button
+            onClick={() => setModalSalvar(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
+              border: 'none', borderRadius: '10px', padding: '10px 16px',
+              color: '#fff', fontFamily: 'Inter, sans-serif',
+              fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+            }}
+          >
+            <Save size={14} />
+            {editandoId ? 'Salvar alterações' : 'Salvar kit'}
+          </button>
+        </div>
+      </div>
+
       {/* Itens do kit */}
       <div style={cardStyle}>
         <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 6px 0' }}>
@@ -94,8 +258,6 @@ export default function Calculadora() {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
-
-          {/* Header */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 36px', gap: '10px', alignItems: 'end' }}>
             <label style={labelStyle}>Item</label>
             <label style={labelStyle}>Custo (R$)</label>
@@ -157,12 +319,8 @@ export default function Calculadora() {
                 </button>
               </div>
 
-              {/* Mini resumo por item */}
               {item.custo > 0 && (
-                <div style={{
-                  display: 'flex', gap: '16px',
-                  paddingLeft: '4px',
-                }}>
+                <div style={{ display: 'flex', gap: '16px', paddingLeft: '4px' }}>
                   <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044' }}>
                     {item.meses * item.festasporMes} festas no período
                   </span>
@@ -179,28 +337,19 @@ export default function Calculadora() {
           onClick={adicionarItem}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            background: 'transparent',
-            border: '1px dashed #9900ff55',
-            borderRadius: '10px',
-            padding: '10px 16px',
-            color: '#9900ff',
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 600,
-            fontSize: '13px',
-            cursor: 'pointer',
-            width: '100%',
-            justifyContent: 'center',
+            background: 'transparent', border: '1px dashed #9900ff55',
+            borderRadius: '10px', padding: '10px 16px', color: '#9900ff',
+            fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px',
+            cursor: 'pointer', width: '100%', justifyContent: 'center',
           }}
         >
           <Plus size={14} />
           Adicionar item
         </button>
 
-        {/* Total itens */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          marginTop: '16px', paddingTop: '16px',
-          borderTop: '1px solid #f0f0f0',
+          marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f0f0f0',
         }}>
           <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000066' }}>
             Custo total dos itens por festa
@@ -312,6 +461,188 @@ export default function Calculadora() {
           </span>
         </div>
       </div>
+
+      {/* Modal — Salvar kit */}
+      {modalSalvar && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          background: '#00000055', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '24px',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '20px',
+            padding: '32px', width: '100%', maxWidth: '420px',
+            boxShadow: '0 24px 60px #00000033',
+          }}>
+            <h3 style={{
+              fontFamily: 'Inter, sans-serif', fontWeight: 900,
+              fontSize: '20px', color: '#140033', margin: '0 0 8px 0',
+            }}>
+              {editandoId ? '✏️ Salvar alterações' : '💾 Salvar kit'}
+            </h3>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 24px 0' }}>
+              {editandoId ? 'Atualize o nome do kit se quiser' : 'Dê um nome para identificar este kit'}
+            </p>
+
+            <input
+              type="text"
+              value={nomeKit}
+              onChange={e => setNomeKit(e.target.value)}
+              placeholder="Ex: Kit Dinossáuro, Kit Unicórnio..."
+              autoFocus
+              onKeyDown={e => e.key === 'Enter' && salvarKit()}
+              style={{
+                width: '100%',
+                background: '#f9f9f9',
+                border: '1px solid #e5e5e5',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                color: '#140033',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '15px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                marginBottom: '16px',
+              }}
+            />
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => setModalSalvar(false)}
+                style={{
+                  flex: 1, padding: '12px',
+                  background: '#f5f5f5', border: 'none',
+                  borderRadius: '10px', color: '#00000066',
+                  fontFamily: 'Inter, sans-serif', fontWeight: 600,
+                  fontSize: '14px', cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={salvarKit}
+                disabled={!nomeKit.trim() || salvando}
+                style={{
+                  flex: 2, padding: '12px',
+                  background: nomeKit.trim() ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#f0f0f0',
+                  border: 'none', borderRadius: '10px',
+                  color: nomeKit.trim() ? '#fff' : '#00000033',
+                  fontFamily: 'Inter, sans-serif', fontWeight: 700,
+                  fontSize: '14px', cursor: nomeKit.trim() ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal — Meus kits */}
+      {modalKits && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          background: '#00000055', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '24px',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '20px',
+            padding: '32px', width: '100%', maxWidth: '480px',
+            boxShadow: '0 24px 60px #00000033',
+            maxHeight: '80vh', overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <h3 style={{
+                fontFamily: 'Inter, sans-serif', fontWeight: 900,
+                fontSize: '20px', color: '#140033', margin: 0,
+              }}>
+                📁 Meus kits salvos
+              </h3>
+              <button
+                onClick={() => setModalKits(false)}
+                style={{
+                  background: '#f5f5f5', border: 'none',
+                  borderRadius: '8px', padding: '8px',
+                  cursor: 'pointer', color: '#00000066',
+                  display: 'flex', alignItems: 'center',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {carregandoKits ? (
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', color: '#00000044', fontSize: '14px' }}>
+                  Carregando...
+                </p>
+              </div>
+            ) : kits.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <p style={{ fontSize: '40px', marginBottom: '8px' }}>📭</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', color: '#00000044', fontSize: '14px' }}>
+                  Nenhum kit salvo ainda
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {kits.map(kit => (
+                  <div key={kit.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: editandoId === kit.id ? '#f5f0ff' : '#f9f9f9',
+                    border: `1px solid ${editandoId === kit.id ? '#9900ff33' : '#eeeeee'}`,
+                    borderRadius: '12px', padding: '14px 16px',
+                  }}>
+                    <div>
+                      <p style={{
+                        fontFamily: 'Inter, sans-serif', fontWeight: 700,
+                        fontSize: '14px', color: '#140033', margin: '0 0 2px 0',
+                      }}>
+                        {kit.nome}
+                        {editandoId === kit.id && (
+                          <span style={{ color: '#9900ff', fontSize: '11px', marginLeft: '8px' }}>● editando</span>
+                        )}
+                      </p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000044', margin: 0 }}>
+                        {kit.itens.length} {kit.itens.length === 1 ? 'item' : 'itens'} · {new Date(kit.criado_em).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        onClick={() => carregarKit(kit)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '4px',
+                          background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
+                          border: 'none', borderRadius: '8px',
+                          padding: '8px 12px', color: '#fff',
+                          fontFamily: 'Inter, sans-serif', fontWeight: 600,
+                          fontSize: '12px', cursor: 'pointer',
+                        }}
+                      >
+                        <Pencil size={12} />
+                        Carregar
+                      </button>
+                      <button
+                        onClick={() => deletarKit(kit.id)}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: '32px', height: '32px',
+                          background: '#fff5fd', border: '1px solid #ff33cc33',
+                          borderRadius: '8px', color: '#ff33cc', cursor: 'pointer',
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
