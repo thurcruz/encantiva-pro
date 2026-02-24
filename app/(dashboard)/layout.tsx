@@ -45,13 +45,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Logo */}
         <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid #ffffff08' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <svg viewBox="0 0 144 108" width="28" height="21">
-              <path fill="#ff33cc" d="M72,108H0V36C0,16.12,16.12,0,36,0h0c19.88,0,36,16.12,36,36v72Z"/>
-              <circle fill="#9900ff" cx="108" cy="36" r="36"/>
-            </svg>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '16px', color: '#fff', letterSpacing: '-0.5px' }}>
-              Encantiva
-            </span>
+           <img src="/enc_logotipo.svg" width="200" height="33" alt="Encantiva" />
           </div>
         </div>
 

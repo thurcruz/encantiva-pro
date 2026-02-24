@@ -133,20 +133,11 @@ export default function PaginaCadastro() {
 
       <div style={{ width: '100%', maxWidth: '440px', position: 'relative', zIndex: 1 }}>
 
-        {/* Logo */}
+      {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <svg viewBox="0 0 144 108" width="44" height="33">
-              <path fill="#ff33cc" d="M72,108H0V36C0,16.12,16.12,0,36,0h0c19.88,0,36,16.12,36,36v72Z"/>
-              <circle fill="#9900ff" cx="108" cy="36" r="36"/>
-            </svg>
-            <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '26px', color: '#fff', letterSpacing: '-0.5px' }}>
-              Encantiva
-            </span>
+           <img src="/enc_logotipo.svg" width="240" height="33" alt="Encantiva" />
           </div>
-          <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#ffffff44', letterSpacing: '2px', textTransform: 'uppercase', margin: 0 }}>
-            Área do Profissional
-          </p>
         </div>
 
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '40px', backdropFilter: 'blur(20px)' }}>

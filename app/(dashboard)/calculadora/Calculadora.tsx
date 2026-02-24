@@ -341,9 +341,27 @@ export default function Calculadora() {
             <input type="number" value={frete || ''} onChange={e => setFrete(parseFloat(e.target.value) || 0)} placeholder="Ex: 50,00" min="0" step="0.01" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Lucro desejado (%)</label>
-            <input type="number" value={lucro || ''} onChange={e => setLucro(parseFloat(e.target.value) || 0)} placeholder="Ex: 30" min="0" style={inputStyle} />
-          </div>
+  <label style={labelStyle}>Lucro desejado (%)</label>
+  <input
+    type="number"
+    value={lucro || ''}
+    onChange={e => setLucro(parseFloat(e.target.value) || 0)}
+    placeholder="Ex: 30"
+    min="0"
+    style={inputStyle}
+  />
+  <p style={{
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '11px',
+    color: lucro < 100 ? '#ff33cc' : '#00aa55',
+    margin: '4px 0 0 0',
+    fontWeight: 600,
+  }}>
+    {lucro < 100
+      ? `⚠️ Recomendado: 100% a 150%`
+      : `✅ Dentro do recomendado`}
+  </p>
+</div>
         </div>
       </div>
 
