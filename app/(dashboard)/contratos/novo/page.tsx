@@ -23,7 +23,7 @@ export default async function PaginaNovoContrato() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <div style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
+      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)', flexShrink: 0 }} />
           <div>
@@ -36,7 +36,7 @@ export default async function PaginaNovoContrato() {
           </div>
         </div>
       </div>
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 40px' }}>
+      <div className="page-content" style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 40px' }}>
         <FormularioContrato usuarioId={user.id} />
       </div>
     </div>
