@@ -34,15 +34,19 @@ export default function PaginaCadastro() {
     const trialExpira = new Date()
     trialExpira.setDate(trialExpira.getDate() + 7)
 
-    // Cria assinatura trial
-    await supabase.from('assinaturas').insert({
+    const { error: erroAssinatura } = await supabase.from('assinaturas').insert({
       usuario_id: data.user.id,
       status: 'ativo',
       trial_expira_em: trialExpira.toISOString(),
       expira_em: trialExpira.toISOString(),
     })
 
-    // Salva nome da loja
+    if (erroAssinatura) {
+      setErro(`Erro ao criar trial: ${erroAssinatura.message}`)
+      setCarregando(false)
+      return
+    }
+
     if (nomeLoja) {
       await supabase.from('perfis').upsert({
         id: data.user.id,
@@ -54,7 +58,6 @@ export default function PaginaCadastro() {
   setSucesso(true)
   setCarregando(false)
 }
-
   const inputStyle = {
     width: '100%',
     background: 'rgba(255,255,255,0.06)',
