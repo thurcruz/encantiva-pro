@@ -13,3 +13,51 @@ body {
   max-width: 100vw;
   overflow-x: hidden;
 }
+
+/* Mobile responsivo */
+@media (max-width: 768px) {
+
+  /* Materiais */
+  .grid-materiais {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+
+  /* Headers */
+  .page-header {
+    padding: 20px 16px !important;
+  }
+
+  .page-content {
+    padding: 16px !important;
+  }
+
+  /* Formulários em grid */
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tabelas admin */
+  .tabela-admin {
+    font-size: 12px !important;
+  }
+
+  /* Calculadora */
+  .calc-grid {
+    grid-template-columns: 1fr 80px 80px 36px !important;
+  }
+
+  /* Contrato form */
+  .contrato-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-materiais {
+    grid-template-columns: 1fr !important;
+  }
+}

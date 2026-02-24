@@ -50,7 +50,7 @@ export default async function PaginaMateriais({
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
 
       {/* Header */}
-      <div style={{
+      <div className="page-header" style={{
         borderBottom: '1px solid #eeeeee',
         padding: '32px 40px',
         backgroundColor: '#fff',
@@ -84,7 +84,7 @@ export default async function PaginaMateriais({
         </div>
       </div>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px' }}>
+      <div className="page-content" style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px' }}>
 
         {/* Aviso de assinatura */}
         {!assinaturaAtiva && !isAdmin && (
@@ -135,12 +135,15 @@ export default async function PaginaMateriais({
 
         {/* Grid de materiais */}
         {materiais && materiais.length > 0 ? (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: '20px',
-            marginTop: '16px',
-          }}>
+          <div
+            className="grid-materiais"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: '20px',
+              marginTop: '16px',
+            }}
+          >
             {materiais.map((material) => (
               <CardMaterial
                 key={material.id}
