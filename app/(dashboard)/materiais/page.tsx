@@ -17,15 +17,22 @@ export default async function PaginaMateriais({
 
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, expira_em')
+    .select('status, expira_em, trial_expira_em')
     .eq('usuario_id', user.id)
     .single()
 
-  const assinaturaAtiva =
-    assinatura?.status === 'ativo' &&
-    (!assinatura.expira_em || new Date(assinatura.expira_em) > new Date())
-
   const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
+  const agora = new Date()
+  const trialAtivo = assinatura?.trial_expira_em
+    ? new Date(assinatura.trial_expira_em) > agora
+    : false
+
+  const assinaturaAtiva =
+    isAdmin ||
+    trialAtivo ||
+    (assinatura?.status === 'ativo' &&
+    (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
 
   const [{ data: categorias }, { data: tipos }, { data: formatos }] = await Promise.all([
     supabase.from('categorias').select('*').eq('ativo', true).order('nome'),
@@ -87,7 +94,7 @@ export default async function PaginaMateriais({
       <div className="page-content" style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px' }}>
 
         {/* Aviso de assinatura */}
-        {!assinaturaAtiva && !isAdmin && (
+        {!assinaturaAtiva && (
           <div style={{
             background: '#fff5fd',
             border: '1px solid #ff33cc33',
@@ -148,7 +155,7 @@ export default async function PaginaMateriais({
               <CardMaterial
                 key={material.id}
                 material={material as Material}
-                podeDownload={assinaturaAtiva || isAdmin}
+                podeDownload={assinaturaAtiva}
               />
             ))}
           </div>

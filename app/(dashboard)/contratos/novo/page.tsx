@@ -9,15 +9,22 @@ export default async function PaginaNovoContrato() {
 
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, expira_em')
+    .select('status, expira_em, trial_expira_em')
     .eq('usuario_id', user.id)
     .single()
 
   const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
+  const agora = new Date()
+  const trialAtivo = assinatura?.trial_expira_em
+    ? new Date(assinatura.trial_expira_em) > agora
+    : false
+
   const assinaturaAtiva =
     isAdmin ||
+    trialAtivo ||
     (assinatura?.status === 'ativo' &&
-    (!assinatura.expira_em || new Date(assinatura.expira_em) > new Date()))
+    (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
 
   if (!assinaturaAtiva) redirect('/materiais')
 

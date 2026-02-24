@@ -10,15 +10,22 @@ export default async function PaginaContratos() {
 
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, expira_em')
+    .select('status, expira_em, trial_expira_em')
     .eq('usuario_id', user.id)
     .single()
 
   const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
+  const agora = new Date()
+  const trialAtivo = assinatura?.trial_expira_em
+    ? new Date(assinatura.trial_expira_em) > agora
+    : false
+
   const assinaturaAtiva =
     isAdmin ||
+    trialAtivo ||
     (assinatura?.status === 'ativo' &&
-    (!assinatura.expira_em || new Date(assinatura.expira_em) > new Date()))
+    (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
 
   if (!assinaturaAtiva) redirect('/materiais')
 
@@ -42,7 +49,7 @@ export default async function PaginaContratos() {
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
 
       {/* Header */}
-      <div style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
+      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
@@ -68,21 +75,15 @@ export default async function PaginaContratos() {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
+      <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
 
         {/* Aviso perfil incompleto */}
         {perfilIncompleto && (
           <div style={{
-            background: '#fff8f0',
-            border: '1px solid #ff33cc33',
-            borderRadius: '14px',
-            padding: '16px 20px',
-            marginBottom: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '16px',
-            flexWrap: 'wrap',
+            background: '#fff8f0', border: '1px solid #ff33cc33',
+            borderRadius: '14px', padding: '16px 20px', marginBottom: '24px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: '16px', flexWrap: 'wrap',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <AlertTriangle size={18} style={{ color: '#ff33cc', flexShrink: 0 }} />
@@ -108,14 +109,10 @@ export default async function PaginaContratos() {
               const badge = badgeStatus(contrato.status)
               return (
                 <div key={contrato.id} style={{
-                  background: '#fff',
-                  border: '1px solid #eeeeee',
-                  borderRadius: '16px',
-                  padding: '20px 24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '16px',
+                  background: '#fff', border: '1px solid #eeeeee',
+                  borderRadius: '16px', padding: '20px 24px',
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between', gap: '16px',
                 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
