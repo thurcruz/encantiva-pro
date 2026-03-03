@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Package, Calculator, FileText, Settings, LayoutDashboard, LogOut, Users } from 'lucide-react'
+import { Package, Calculator, FileText, Settings, LayoutDashboard, LogOut, Users, LayoutTemplate } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function BottomNav({ isAdmin }: { isAdmin: boolean }) {
@@ -16,14 +16,17 @@ export default function BottomNav({ isAdmin }: { isAdmin: boolean }) {
     router.refresh()
   }
 
-  const itens = [
-    { href: '/materiais', icon: Package, label: 'Materiais' },
-    { href: '/calculadora', icon: Calculator, label: 'Calculadora' },
-    { href: '/clientes', icon: Users, label: 'Clientes' },
-    { href: '/contratos', icon: FileText, label: 'Contratos' },
-    { href: '/configuracoes', icon: Settings, label: 'Config.' },
-    ...(isAdmin ? [{ href: '/admin', icon: LayoutDashboard, label: 'Admin' }] : []),
-  ]
+ 
+
+const itens = [
+  { href: '/materiais', icon: Package, label: 'Materiais' },
+  { href: '/calculadora', icon: Calculator, label: 'Calculadora' },
+  { href: '/clientes', icon: Users, label: 'Clientes' },
+  { href: '/contratos', icon: FileText, label: 'Contratos' },
+  { href: '/paineis', icon: LayoutTemplate, label: 'Painéis' },
+  { href: '/configuracoes', icon: Settings, label: 'Config.' },
+  ...(isAdmin ? [{ href: '/admin', icon: LayoutDashboard, label: 'Admin' }] : []),
+]
 
   return (
     <nav className="bottom-nav-mobile" style={{
