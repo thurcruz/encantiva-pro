@@ -6,10 +6,10 @@ export default async function AssinarContrato({ params }: { params: Promise<{ to
   const supabase = await createClient()
 
   const { data: contrato } = await supabase
-    .from('contratos')
-    .select('*')
-    .eq('token_assinatura', token)
-    .single()
+  .from('contratos')
+  .select('id, usuario_id, cliente_id, cliente_nome, evento_data, evento_local, evento_horario, itens, valor_total, forma_pagamento, valor_sinal, regras, status, assinatura_dados')
+  .eq('token_assinatura', token)
+  .single()
 
   if (!contrato) {
     return (

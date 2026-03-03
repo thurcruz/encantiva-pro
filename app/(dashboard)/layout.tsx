@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import NavItem from './componentes/NavItem'
 import BotaoLogout from './componentes/BotaoLogout'
 import BottomNav from './componentes/BottomNav'
-import { Package, LayoutDashboard, Upload, Calculator, FileText, Settings } from 'lucide-react'
+import { Package, LayoutDashboard, Upload, Calculator, FileText, Settings, Users } from 'lucide-react'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -75,7 +75,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <NavItem href="/calculadora" icon={<Calculator size={16} style={{ color: '#ff33cc' }} />} label="Calculadora" />
           <NavItem href="/contratos" icon={<FileText size={16} style={{ color: '#ff33cc' }} />} label="Contratos" />
           <NavItem href="/configuracoes" icon={<Settings size={16} style={{ color: '#ff33cc' }} />} label="Configurações" />
-
+          <NavItem href="/clientes" icon={<Users size={16} style={{ color: '#ff33cc' }} />} label="Clientes"/>
+          
           {isAdmin && (
             <>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>

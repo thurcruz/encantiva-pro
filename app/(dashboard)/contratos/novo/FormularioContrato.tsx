@@ -1,15 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Search, X } from 'lucide-react'
 
 interface ItemKit {
   id: number
   descricao: string
   quantidade: number
   valor: number
+}
+
+interface Cliente {
+  id: string
+  nome: string
+  telefone: string | null
+  email: string | null
+  endereco: string | null
 }
 
 interface Props {
@@ -36,7 +44,41 @@ export default function FormularioContrato({ usuarioId }: Props) {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
+  const [buscaCliente, setBuscaCliente] = useState('')
+  const [mostrarBusca, setMostrarBusca] = useState(false)
+
   const valorTotal = itens.reduce((acc, i) => acc + (i.quantidade * i.valor), 0)
+
+  const clientesFiltrados = useMemo(() => {
+    if (!buscaCliente.trim()) return clientes
+    return clientes.filter(c =>
+      c.nome.toLowerCase().includes(buscaCliente.toLowerCase())
+    )
+  }, [buscaCliente, clientes])
+
+  useEffect(() => {
+    async function carregarClientes() {
+      const { data } = await supabase
+        .from('clientes')
+        .select('id, nome, telefone, email, endereco')
+        .eq('usuario_id', usuarioId)
+        .order('nome')
+      if (data) setClientes(data)
+    }
+    carregarClientes()
+  }, [usuarioId])
+
+  function selecionarCliente(cliente: Cliente) {
+    setClienteSelecionado(cliente)
+    setMostrarBusca(false)
+    setBuscaCliente('')
+  }
+
+  function removerCliente() {
+    setClienteSelecionado(null)
+  }
 
   function adicionarItem() {
     setItens(prev => [...prev, { id: Date.now(), descricao: '', quantidade: 1, valor: 0 }])
@@ -61,7 +103,8 @@ export default function FormularioContrato({ usuarioId }: Props) {
 
     const { data, error } = await supabase.from('contratos').insert({
       usuario_id: usuarioId,
-      cliente_nome: '',
+      cliente_id: clienteSelecionado?.id ?? null,
+      cliente_nome: clienteSelecionado?.nome ?? '',
       evento_data: eventoData,
       evento_local: eventoLocal || null,
       evento_horario: eventoHorario || null,
@@ -78,42 +121,139 @@ export default function FormularioContrato({ usuarioId }: Props) {
   }
 
   const inputStyle = {
-    width: '100%',
-    background: '#fff',
-    border: '1px solid #e5e5e5',
-    borderRadius: '12px',
-    padding: '12px 16px',
-    color: '#140033',
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '14px',
-    outline: 'none',
+    width: '100%', background: '#fff', border: '1px solid #e5e5e5',
+    borderRadius: '12px', padding: '12px 16px', color: '#140033',
+    fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none',
     boxSizing: 'border-box' as const,
   }
 
   const labelStyle = {
-    display: 'block',
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: '#00000055',
-    marginBottom: '6px',
-    letterSpacing: '1px',
-    textTransform: 'uppercase' as const,
+    display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px',
+    fontWeight: 600, color: '#00000055', marginBottom: '6px',
+    letterSpacing: '1px', textTransform: 'uppercase' as const,
   }
 
   const cardStyle = {
-    background: '#fff',
-    border: '1px solid #eeeeee',
-    borderRadius: '16px',
-    padding: '24px',
-    marginBottom: '20px',
+    background: '#fff', border: '1px solid #eeeeee',
+    borderRadius: '16px', padding: '24px', marginBottom: '20px',
   }
 
   return (
     <form onSubmit={handleSubmit}>
 
       <div style={{ background: '#f5f0ff', border: '1px solid #9900ff22', borderRadius: '12px', padding: '14px 18px', marginBottom: '20px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9900ff' }}>
-        💡 Preencha os dados do kit e evento. O cliente irá preencher os próprios dados pessoais ao assinar.
+        💡 Vincule um cliente existente ou deixe em branco — o cliente preencherá os dados ao assinar.
+      </div>
+
+      {/* Vincular cliente */}
+      <div style={cardStyle}>
+        <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
+          👤 Cliente
+        </h2>
+
+        {clienteSelecionado ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: '#f5f0ff', border: '1px solid #9900ff22',
+            borderRadius: '12px', padding: '14px 16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#9900ff',
+              }}>
+                {clienteSelecionado.nome[0].toUpperCase()}
+              </div>
+              <div>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0' }}>
+                  {clienteSelecionado.nome}
+                </p>
+                {clienteSelecionado.telefone && (
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: 0 }}>
+                    {clienteSelecionado.telefone}
+                  </p>
+                )}
+              </div>
+            </div>
+            <button type="button" onClick={removerCliente} style={{
+              background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px',
+              padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+            }}>
+              <X size={14} style={{ color: '#ff33cc' }} />
+            </button>
+          </div>
+        ) : (
+          <div style={{ position: 'relative' }}>
+            <button type="button" onClick={() => setMostrarBusca(!mostrarBusca)} style={{
+              width: '100%', background: '#f9f9f9', border: '1px dashed #e5e5e5',
+              borderRadius: '12px', padding: '12px 16px',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              color: '#00000044', fontFamily: 'Inter, sans-serif',
+              fontSize: '14px', cursor: 'pointer',
+            }}>
+              <Search size={14} />
+              Buscar cliente cadastrado...
+            </button>
+
+            {mostrarBusca && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                background: '#fff', border: '1px solid #e5e5e5', borderRadius: '12px',
+                marginTop: '4px', boxShadow: '0 8px 24px #00000012', overflow: 'hidden',
+              }}>
+                <div style={{ padding: '10px', borderBottom: '1px solid #f0f0f0' }}>
+                  <input
+                    type="text" value={buscaCliente}
+                    onChange={e => setBuscaCliente(e.target.value)}
+                    placeholder="Buscar pelo nome..."
+                    autoFocus
+                    style={{ ...inputStyle, background: '#f9f9f9', padding: '8px 12px' }}
+                  />
+                </div>
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {clientesFiltrados.length === 0 ? (
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000044', padding: '16px', margin: 0, textAlign: 'center' }}>
+                      Nenhum cliente encontrado
+                    </p>
+                  ) : (
+                    clientesFiltrados.map(cliente => (
+                      <button key={cliente.id} type="button" onClick={() => selecionarCliente(cliente)} style={{
+                        width: '100%', background: 'none', border: 'none',
+                        padding: '12px 16px', cursor: 'pointer', textAlign: 'left',
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        borderBottom: '1px solid #f9f9f9',
+                      }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f9f9f9')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                      >
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+                          background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff',
+                        }}>
+                          {cliente.nome[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', color: '#140033', margin: 0 }}>
+                            {cliente.nome}
+                          </p>
+                          {cliente.telefone && (
+                            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000044', margin: 0 }}>
+                              {cliente.telefone}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Evento */}
