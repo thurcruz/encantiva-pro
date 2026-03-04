@@ -33,8 +33,6 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos }: Pro
   const [previewAtivo, setPreviewAtivo] = useState<number | null>(null)
   const [fatias, setFatias] = useState<string[]>([])
 
-  
-
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -48,30 +46,48 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos }: Pro
     img.src = URL.createObjectURL(file)
   }
 
- const cortarImagem = useCallback((img: HTMLImageElement) => {
-  const cols = tipo === '6' ? 3 : 3
-  const rows = tipo === '6' ? 2 : 3
-  const novasFatias: string[] = []
+  const cortarImagem = useCallback((img: HTMLImageElement) => {
+    const cols = 3
+    const rows = tipo === '6' ? 2 : 3
+    const novasFatias: string[] = []
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const canvas = document.createElement('canvas')
-      const larguraFatia = img.width / cols
-      const alturaFatia = img.height / rows
-      canvas.width = larguraFatia
-      canvas.height = alturaFatia
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, col * larguraFatia, row * alturaFatia, larguraFatia, alturaFatia, 0, 0, larguraFatia, alturaFatia)
-      novasFatias.push(canvas.toDataURL('image/jpeg', 0.95))
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const canvas = document.createElement('canvas')
+        const larguraFatia = img.width / cols
+        const alturaFatia = img.height / rows
+        canvas.width = larguraFatia
+        canvas.height = alturaFatia
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, col * larguraFatia, row * alturaFatia, larguraFatia, alturaFatia, 0, 0, larguraFatia, alturaFatia)
+        novasFatias.push(canvas.toDataURL('image/jpeg', 0.95))
+      }
     }
-  }
-  setFatias(novasFatias)
-}, [tipo])
+    setFatias(novasFatias)
+  }, [tipo])
 
-useEffect(() => {
-  if (!imagem) return
-  cortarImagem(imagem)
-}, [imagem, tipo, cortarImagem])
+  useEffect(() => {
+    if (!imagem) return
+    cortarImagem(imagem)
+  }, [imagem, tipo, cortarImagem])
+
+ async function comprimirFatia(fatia: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      // Reduzido para 100dpi para diminuir payload
+      const largura = tipo === '6' ? 827 : 583
+      const altura = tipo === '6' ? 583 : 827
+      canvas.width = largura
+      canvas.height = altura
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, largura, altura)
+      resolve(canvas.toDataURL('image/jpeg', 0.7))
+    }
+    img.src = fatia
+  })
+}
 
   async function gerarPDF() {
     if (!imagem || fatias.length === 0) return
@@ -79,25 +95,33 @@ useEffect(() => {
     setGerando(true)
 
     try {
-      // Chama Edge Function
-      const { data: { session } } = await supabase.auth.getSession()
+      // Comprime fatias antes de enviar
+      const fatiasPequenas = await Promise.all(fatias.map(comprimirFatia))
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/gerar-painel-pdf`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ fatias, tipo, nome }),
+          body: JSON.stringify({ fatias: fatiasPequenas, tipo, nome }),
         }
       )
+
+    if (!response.ok) {
+  const texto = await response.text()
+  console.log('Status:', response.status)
+  console.log('Resposta:', texto)
+  throw new Error(`Erro ${response.status}: ${texto}`)
+}
 
       const result = await response.json()
       if (result.error) throw new Error(result.error)
 
-      // Converte base64 para blob
-      const pdfBytes = Uint8Array.from(atob(result.pdf), c => c.charCodeAt(0))
+      const base64Limpo = result.pdf.replace(/[^A-Za-z0-9+/=]/g, '')
+      const pdfBytes = Uint8Array.from(atob(base64Limpo), c => c.charCodeAt(0))
       const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' })
 
       // Upload da imagem original
@@ -233,14 +257,14 @@ useEffect(() => {
             >
               {imagem ? (
                 <div>
-                 <NextImage
-  src={imagem.src}
-  width={200}
-  height={200}
-  style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '8px', marginBottom: '8px', objectFit: 'contain' }}
-  alt="Preview"
-  unoptimized
-/>
+                  <NextImage
+                    src={imagem.src}
+                    width={200}
+                    height={200}
+                    style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '8px', marginBottom: '8px', objectFit: 'contain' }}
+                    alt="Preview"
+                    unoptimized
+                  />
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ff33cc', fontWeight: 600, margin: 0 }}>
                     ✅ Imagem carregada — clique para trocar
                   </p>
@@ -285,13 +309,13 @@ useEffect(() => {
                 borderRadius: '8px', overflow: 'hidden',
               }}>
                 <NextImage
-  src={fatia}
-  width={300}
-  height={300}
-  style={{ width: '100%', height: 'auto', display: 'block' }}
-  alt={`Fatia ${idx + 1}`}
-  unoptimized
-/>
+                  src={fatia}
+                  width={300}
+                  height={300}
+                  style={{ width: '100%', height: 'auto', display: 'block' }}
+                  alt={`Fatia ${idx + 1}`}
+                  unoptimized
+                />
                 <div style={{
                   position: 'absolute', bottom: '4px', right: '4px',
                   background: 'rgba(0,0,0,0.6)', borderRadius: '4px',
@@ -308,13 +332,13 @@ useEffect(() => {
           {previewAtivo !== null && (
             <div style={{ marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ff33cc33' }}>
               <NextImage
-  src={fatias[previewAtivo]}
-  width={800}
-  height={600}
-  style={{ width: '100%', height: 'auto', display: 'block' }}
-  alt={`Fatia ${previewAtivo + 1} ampliada`}
-  unoptimized
-/>
+                src={fatias[previewAtivo]}
+                width={800}
+                height={600}
+                style={{ width: '100%', height: 'auto', display: 'block' }}
+                alt={`Fatia ${previewAtivo + 1} ampliada`}
+                unoptimized
+              />
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', textAlign: 'center', padding: '8px', margin: 0 }}>
                 Folha {previewAtivo + 1} de {fatias.length}
               </p>
@@ -351,14 +375,14 @@ useEffect(() => {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   {painel.imagem_url ? (
-                   <NextImage
-  src={painel.imagem_url}
-  width={40}
-  height={40}
-  style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }}
-  alt={painel.nome}
-  unoptimized
-/>
+                    <NextImage
+                      src={painel.imagem_url}
+                      width={40}
+                      height={40}
+                      style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }}
+                      alt={painel.nome}
+                      unoptimized
+                    />
                   ) : (
                     <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <ImageIcon size={16} style={{ color: '#9900ff' }} />
