@@ -47,24 +47,26 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos }: Pro
   }
 
   const cortarImagem = useCallback((img: HTMLImageElement) => {
-    const cols = 3
-    const rows = tipo === '6' ? 2 : 3
-    const novasFatias: string[] = []
+  const cols = tipo === '6' ? 2 : 3
+  const rows = 3
+  const novasFatias: string[] = []
 
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const canvas = document.createElement('canvas')
-        const larguraFatia = img.width / cols
-        const alturaFatia = img.height / rows
-        canvas.width = larguraFatia
-        canvas.height = alturaFatia
-        const ctx = canvas.getContext('2d')!
-        ctx.drawImage(img, col * larguraFatia, row * alturaFatia, larguraFatia, alturaFatia, 0, 0, larguraFatia, alturaFatia)
-        novasFatias.push(canvas.toDataURL('image/jpeg', 0.95))
-      }
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const canvas = document.createElement('canvas')
+      const larguraFatia = img.width / cols
+      const alturaFatia = img.height / rows
+      canvas.width = larguraFatia
+      canvas.height = alturaFatia
+      const ctx = canvas.getContext('2d')!
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(img, col * larguraFatia, row * alturaFatia, larguraFatia, alturaFatia, 0, 0, larguraFatia, alturaFatia)
+      novasFatias.push(canvas.toDataURL('image/jpeg', 0.95))
     }
-    setFatias(novasFatias)
-  }, [tipo])
+  }
+  setFatias(novasFatias)
+}, [tipo])
 
   useEffect(() => {
     if (!imagem) return
@@ -76,17 +78,22 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos }: Pro
     const img = new window.Image()
     img.onload = () => {
       const canvas = document.createElement('canvas')
-      // Reduzido para 100dpi para diminuir payload
-      const largura = tipo === '6' ? 827 : 583
-      const altura = tipo === '6' ? 583 : 827
+      // A4 a 300dpi = 2480 × 3508
+      // 6 folhas: 2 colunas × 3 linhas → cada fatia = 1240 × 1169
+      // 9 folhas: 3 colunas × 3 linhas → cada fatia = 827 × 1169
+      const largura = tipo === '6' ? 1240 : 827
+      const altura = 1169
       canvas.width = largura
       canvas.height = altura
       const ctx = canvas.getContext('2d')!
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
       ctx.drawImage(img, 0, 0, largura, altura)
-      resolve(canvas.toDataURL('image/jpeg', 0.7))
+      resolve(canvas.toDataURL('image/jpeg', 0.95))
     }
     img.src = fatia
   })
+
 }
 
   async function gerarPDF() {
@@ -298,7 +305,8 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos }: Pro
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            // Troque a linha do gridTemplateColumns no preview:
+            gridTemplateColumns: tipo === '6' ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
             gap: '4px',
             marginBottom: '16px',
           }}>
