@@ -13,9 +13,8 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { fatias, tipo, nome } = body as {
+    const { fatias, nome } = body as {
       fatias: string[]
-      tipo: '6' | '9'
       nome: string
     }
 
@@ -23,12 +22,9 @@ Deno.serve(async (req) => {
 
     const pdfDoc = await PDFDocument.create()
 
-    // 6 folhas = 2 colunas × 3 linhas (vertical A4)
-    // 9 folhas = 3 colunas × 3 linhas (vertical A4)
-    // Sempre vertical para melhor aproveitamento
-    const larguraPagina = 595  // A4 vertical
-    const alturaPagina = 842
-    const sangria = 14
+    const larguraPagina = 842  // A4 paisagem
+    const alturaPagina = 595
+    const sangria = 28  // 1cm
 
     for (let i = 0; i < fatias.length; i++) {
       const page = pdfDoc.addPage([larguraPagina, alturaPagina])
@@ -43,6 +39,7 @@ Deno.serve(async (req) => {
         image = await pdfDoc.embedJpg(imageBytes)
       }
 
+      // Imagem dentro das margens, sem ultrapassar bordas
       page.drawImage(image, {
         x: sangria,
         y: sangria,
@@ -55,16 +52,12 @@ Deno.serve(async (req) => {
       const cor = rgb(0.7, 0.7, 0.7)
       const t = 0.5
 
-      // Superior esquerdo
       page.drawLine({ start: { x: 0, y: alturaPagina - sangria }, end: { x: g, y: alturaPagina - sangria }, thickness: t, color: cor })
       page.drawLine({ start: { x: sangria, y: alturaPagina }, end: { x: sangria, y: alturaPagina - g }, thickness: t, color: cor })
-      // Superior direito
       page.drawLine({ start: { x: larguraPagina - g, y: alturaPagina - sangria }, end: { x: larguraPagina, y: alturaPagina - sangria }, thickness: t, color: cor })
       page.drawLine({ start: { x: larguraPagina - sangria, y: alturaPagina }, end: { x: larguraPagina - sangria, y: alturaPagina - g }, thickness: t, color: cor })
-      // Inferior esquerdo
       page.drawLine({ start: { x: 0, y: sangria }, end: { x: g, y: sangria }, thickness: t, color: cor })
       page.drawLine({ start: { x: sangria, y: 0 }, end: { x: sangria, y: g }, thickness: t, color: cor })
-      // Inferior direito
       page.drawLine({ start: { x: larguraPagina - g, y: sangria }, end: { x: larguraPagina, y: sangria }, thickness: t, color: cor })
       page.drawLine({ start: { x: larguraPagina - sangria, y: 0 }, end: { x: larguraPagina - sangria, y: g }, thickness: t, color: cor })
 
@@ -87,38 +80,27 @@ Deno.serve(async (req) => {
       color: rgb(0.08, 0, 0.2),
     })
 
-    const instrucoes = tipo === '6'
-      ? [
-          'Grade: 2 colunas x 3 linhas (vertical)',
-          '',
-          '[ 1 ] [ 2 ]',
-          '[ 3 ] [ 4 ]',
-          '[ 5 ] [ 6 ]',
-          '',
-          '1. Imprima todas as folhas em A4 vertical.',
-          '2. Recorte nas marcas de sangria cinzas.',
-          '3. Cole na ordem indicada acima.',
-          '4. O painel finalizado tera ~50x50cm.',
-        ]
-      : [
-          'Grade: 3 colunas x 3 linhas (vertical)',
-          '',
-          '[ 1 ] [ 2 ] [ 3 ]',
-          '[ 4 ] [ 5 ] [ 6 ]',
-          '[ 7 ] [ 8 ] [ 9 ]',
-          '',
-          '1. Imprima todas as folhas em A4 vertical.',
-          '2. Recorte nas marcas de sangria cinzas.',
-          '3. Cole na ordem indicada acima.',
-          '4. O painel finalizado tera ~50x50cm.',
-        ]
+    const instrucoes = [
+      'Grade: 2 colunas x 3 linhas (vertical)',
+      '',
+      '[ 1 ] [ 2 ]',
+      '[ 3 ] [ 4 ]',
+      '[ 5 ] [ 6 ]',
+      '',
+      '1. Imprima todas as 6 folhas em A4 vertical.',
+      '2. Recorte na linha de corte (marcas nos cantos).',
+      '3. Sobreponha 1cm nas bordas ao colar',
+      '   para esconder as emendas.',
+      '4. Cole na ordem indicada acima.',
+      '5. O painel finalizado tera ~50x50cm.',
+    ]
 
     instrucoes.forEach((linha, idx) => {
       if (!linha) return
       paginaMontagem.drawText(linha, {
-        x: larguraPagina / 2 - 120,
+        x: larguraPagina / 2 - 130,
         y: linhaY - 50 - idx * 26,
-        size: linha.startsWith('[') ? 14 : 12,
+        size: linha.startsWith('[') ? 14 : 11,
         color: linha.startsWith('[') ? rgb(0.6, 0, 0.8) : rgb(0.2, 0.2, 0.2),
       })
     })
