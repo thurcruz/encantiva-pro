@@ -87,8 +87,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <NavItem href="/admin" icon={<LayoutDashboard size={16} style={{ color: '#9900ff' }} />} label="Painel Admin" />
               <NavItem href="/admin/materiais/novo" icon={<Upload size={16} style={{ color: '#9900ff' }} />} label="Novo Material" />
               <NavItem href="/admin/materiais" icon={<Package size={16} style={{ color: '#9900ff' }} />} label="Ver Materiais" />
-              <NavItem href="/admin/usuarios" icon={<Users size={16} style={{ color: '#ff33cc' }} />}label="Usuários"
-/>
             </>
           )}
         </nav>
