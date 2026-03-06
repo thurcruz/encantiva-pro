@@ -4,7 +4,7 @@ import NavItem from './componentes/NavItem'
 import BotaoLogout from './componentes/BotaoLogout'
 import BottomNav from './componentes/BottomNav'
 import Image from 'next/image'
-import { Package, LayoutDashboard, Upload, Calculator,ShoppingBag, FileText, Settings, Users, LayoutTemplate } from 'lucide-react'
+import { Package, LayoutDashboard, Upload, Calculator, ShoppingBag, FileText, Settings, Users, LayoutTemplate, Home, TrendingUp, CalendarDays } from 'lucide-react'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -12,7 +12,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect('/login')
 
   const { data: assinatura } = await supabase
-    .from('assinaturas')
+    .from('assinaturas') // corrigido: era 'assinatauras'
     .select('status, expira_em, trial_expira_em')
     .eq('usuario_id', user.id)
     .single()
@@ -46,7 +46,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Logo */}
         <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid #ffffff08' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-           <Image src="/enc_logotipo.svg" width="200" height="33" alt="Encantiva" />
+            <Image src="/enc_logotipo.svg" width={200} height={33} alt="Encantiva" />
           </div>
         </div>
 
@@ -69,21 +69,27 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
+
+          {/* Visão geral */}
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '0 0 4px 0' }}>
+            Visão Geral
+          </p>
+          <NavItem href="/inicio" icon={<Home size={16} style={{ color: '#ff33cc' }} />} label="Início" />
+          <NavItem href="/financeiro" icon={<TrendingUp size={16} style={{ color: '#ff33cc' }} />} label="Financeiro" />
+          <NavItem href="/agenda" icon={<CalendarDays size={16} style={{ color: '#ff33cc' }} />} label="Agenda" />
+
+          {/* Menu principal */}
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>
             Menu
           </p>
           <NavItem href="/materiais" icon={<Package size={16} style={{ color: '#ff33cc' }} />} label="Materiais" />
           <NavItem href="/calculadora" icon={<Calculator size={16} style={{ color: '#ff33cc' }} />} label="Calculadora" />
           <NavItem href="/contratos" icon={<FileText size={16} style={{ color: '#ff33cc' }} />} label="Contratos" />
-          <NavItem
-  href="/catalogo"
-  icon={<ShoppingBag size={16} style={{ color: '#ff33cc' }} />}
-  label="Catálogo"
-/>
+          <NavItem href="/catalogo" icon={<ShoppingBag size={16} style={{ color: '#ff33cc' }} />} label="Catálogo" />
+          <NavItem href="/clientes" icon={<Users size={16} style={{ color: '#ff33cc' }} />} label="Clientes" />
+          <NavItem href="/paineis" icon={<LayoutTemplate size={16} style={{ color: '#ff33cc' }} />} label="Painéis" />
           <NavItem href="/configuracoes" icon={<Settings size={16} style={{ color: '#ff33cc' }} />} label="Configurações" />
-          <NavItem href="/clientes" icon={<Users size={16} style={{ color: '#ff33cc' }} />} label="Clientes"/>
-          <NavItem href="/paineis"icon={<LayoutTemplate size={16} style={{ color: '#ff33cc' }} />} label="Painéis"/>
-          
+
           {isAdmin && (
             <>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>
