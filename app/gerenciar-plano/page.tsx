@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import GerenciarPlanoClient from './GerenciarPlanoCliente'
+import GerenciarPlanoClient from './GerenciarPlanoClient'
 
 export default async function PaginaGerenciarPlano() {
   const supabase = await createClient()
