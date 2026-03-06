@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Package, Calculator, FileText, Settings, LayoutDashboard, LogOut, Users, LayoutTemplate } from 'lucide-react'
+import { Package, Calculator, FileText, Settings, LayoutDashboard, LogOut, Users, LayoutTemplate, ShoppingBag } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function BottomNav({ isAdmin }: { isAdmin: boolean }) {
@@ -25,6 +25,7 @@ const itens = [
   { href: '/contratos', icon: FileText, label: 'Contratos' },
   { href: '/paineis', icon: LayoutTemplate, label: 'Painéis' },
   { href: '/configuracoes', icon: Settings, label: 'Config.' },
+  { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
   ...(isAdmin ? [{ href: '/admin', icon: LayoutDashboard, label: 'Admin' }] : []),
 ]
 

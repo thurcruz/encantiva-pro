@@ -86,7 +86,7 @@ export default function PaginaLogin() {
           backdropFilter: 'blur(20px)',
         }}>
           <h1 style={{
-            fontFamily: 'Georgia, serif',
+            fontFamily: 'Inter, sans-serif',
             fontSize: '24px',
             fontWeight: 700,
             color: '#fff',
