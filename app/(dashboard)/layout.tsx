@@ -9,7 +9,7 @@ import { Package, LayoutDashboard, Upload, Calculator, ShoppingBag, FileText, Se
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { data: assinatura } = await supabase
     .from('assinaturas') // corrigido: era 'assinatauras'
