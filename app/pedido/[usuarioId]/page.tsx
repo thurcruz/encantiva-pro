@@ -1,9 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import FluxoPedido from './FluxoPedido'
 
 export default async function PaginaPedido({ params }: { params: { usuarioId: string } }) {
-  const supabase = await createClient()
+  // Cliente público sem sessão — necessário para página acessada sem login
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   const [{ data: temas }, { data: kits }, { data: adicionais }] = await Promise.all([
     supabase.from('catalogo_temas').select('*').eq('usuario_id', params.usuarioId).eq('ativo', true),

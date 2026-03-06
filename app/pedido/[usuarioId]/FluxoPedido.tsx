@@ -41,6 +41,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais }: Prop
   const [etapa, setEtapa] = useState(1)
   const [enviando, setEnviando] = useState(false)
   const [pedidoFeito, setPedidoFeito] = useState(false)
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null)
 
   const [categoriaSelecionada, setCategoriaSelecionada] = useState('')
   const [temaSelecionado, setTemaSelecionado] = useState<Tema | null>(null)
@@ -71,6 +72,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais }: Prop
   async function enviarPedido() {
     if (!temaSelecionado || !kitSelecionado || !form.nome_cliente || !form.data_evento) return
     setEnviando(true)
+    setErroEnvio(null)
 
     const { error } = await supabase.from('pedidos').insert({
       usuario_id: usuarioId,
@@ -86,7 +88,12 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais }: Prop
       status: 'pendente',
     })
 
-    if (!error) setPedidoFeito(true)
+    if (error) {
+      console.error('Erro ao criar pedido:', error)
+      setErroEnvio(`Erro: ${error.message}`)
+    } else {
+      setPedidoFeito(true)
+    }
     setEnviando(false)
   }
 
@@ -357,6 +364,16 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais }: Prop
                 </p>
               </div>
             </div>
+
+            {/* Mensagem de erro visível na tela */}
+            {erroEnvio && (
+              <div style={{ background: '#fff0f0', border: '1px solid #ffcccc', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px' }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#cc0000', margin: 0 }}>
+                  ⚠️ {erroEnvio}
+                </p>
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={() => setEtapa(3)} style={{ flex: 1, background: '#fff', border: '1px solid #e5e5e5', borderRadius: '14px', padding: '16px', color: '#140033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <ChevronLeft size={18} /> Voltar
