@@ -16,8 +16,9 @@ export default async function PaginaPedido({ params }: { params: Promise<{ usuar
     supabase.from('adicionais').select('*').eq('usuario_id', usuarioId),
   ])
 
-  if (!temas || temas.length === 0) return notFound()
-
+  // Só retorna 404 se não tiver nenhum tema
+if (!temas || temas.length === 0) return notFound()
+    
   return (
     <FluxoPedido
       usuarioId={usuarioId}
