@@ -57,7 +57,6 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais }: Prop
 
   const categoriasTemas = [...new Set(temas.map(t => t.categoria))].filter(Boolean)
   const temasFiltrados = temas.filter(t => t.categoria === categoriaSelecionada)
-
   const valorAdicionais = adicionaisSelecionados.reduce((acc, a) => acc + a.preco, 0)
   const valorTotal = (kitSelecionado?.preco ?? 0) + valorAdicionais
 
@@ -89,8 +88,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais }: Prop
     })
 
     if (error) {
-      console.error('Erro ao criar pedido:', error)
-      setErroEnvio(`Erro: ${error.message}`)
+      setErroEnvio(`Erro ao enviar pedido: ${error.message}`)
     } else {
       setPedidoFeito(true)
     }
@@ -321,7 +319,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais }: Prop
           </div>
         )}
 
-        {/* ETAPA 4 — Resumo */}
+        {/* ETAPA 4 — Resumo + Confirmar */}
         {etapa === 4 && (
           <div>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#140033', margin: '0 0 6px 0' }}>
@@ -365,7 +363,6 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais }: Prop
               </div>
             </div>
 
-            {/* Mensagem de erro visível na tela */}
             {erroEnvio && (
               <div style={{ background: '#fff0f0', border: '1px solid #ffcccc', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px' }}>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#cc0000', margin: 0 }}>
