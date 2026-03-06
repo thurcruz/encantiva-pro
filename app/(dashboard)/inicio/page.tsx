@@ -6,7 +6,7 @@ interface Pedido {
   nome_cliente: string
   valor_total: number
   status: string
-  criado_em: string
+  criado_em?: string
   data_evento: string
   tema_id: string | null
   catalogo_temas?: { nome: string } | null
@@ -33,15 +33,20 @@ export default async function PaginaInicio() {
     { data: proximosEventos },
     { data: temas },
   ] = await Promise.all([
-    supabase.from('pedidos').select('*').eq('usuario_id', user.id).gte('criado_em', inicioMes).lte('criado_em', fimMes),
+    supabase.from('pedidos')
+  .select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)')
+  .eq('usuario_id', user.id)
+  .gte('data_evento', hoje)
+  .order('data_evento', { ascending: true })
+  .limit(5),
     supabase.from('pedidos').select('*').eq('usuario_id', user.id),
-    supabase.from('pedidos').select('id, nome_cliente, valor_total, status, data_evento, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
+    supabase.from('pedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
     supabase.from('catalogo_temas').select('id, nome').eq('usuario_id', user.id),
   ])
 
-  const pedidosMesArr = (pedidosMes ?? []) as Pedido[]
-  const pedidosTodosArr = (pedidosTodos ?? []) as Pedido[]
-  const proximosArr = (proximosEventos ?? []) as Pedido[]
+  const pedidosMesArr = (pedidosMes ?? []) as unknown as Pedido[]
+  const pedidosTodosArr = (pedidosTodos ?? []) as unknown as Pedido[]
+  const proximosArr = (proximosEventos ?? []) as unknown as Pedido[]
   const temasArr = (temas ?? []) as Tema[]
 
   const receitaMes = pedidosMesArr.filter(p => p.status !== 'cancelado').reduce((s, p) => s + Number(p.valor_total), 0)
