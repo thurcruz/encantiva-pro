@@ -17,7 +17,6 @@ export async function POST(req: NextRequest) {
       .eq('id', userId)
       .single()
 
-    // Busca o preço do plano baseado no planId
     const precos: Record<string, number> = {
       [process.env.NEXT_PUBLIC_ABACATEPAY_PLAN_INICIANTE ?? '']: 2490,
       [process.env.NEXT_PUBLIC_ABACATEPAY_PLAN_AVANCADO ?? '']: 5490,
@@ -37,6 +36,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Plano inválido.' }, { status: 400 })
     }
 
+    // Garante que o taxId tem só números (sem pontos, traços, barras)
+    const taxIdLimpo = (taxId ?? perfil?.cpf_cnpj ?? '').replace(/\D/g, '')
+
+    console.log('[criar-assinatura] taxId recebido:', taxId)
+    console.log('[criar-assinatura] taxId do perfil:', perfil?.cpf_cnpj)
+    console.log('[criar-assinatura] taxId limpo enviado:', taxIdLimpo)
+
+    if (!taxIdLimpo || (taxIdLimpo.length !== 11 && taxIdLimpo.length !== 14)) {
+      return NextResponse.json({ error: 'CPF ou CNPJ inválido. Acesse seu perfil e atualize.' }, { status: 400 })
+    }
+
     const billingRes = await fetch('https://api.abacatepay.com/v1/billing/create', {
       method: 'POST',
       headers: {
@@ -44,7 +54,7 @@ export async function POST(req: NextRequest) {
         'Authorization': `Bearer ${process.env.ABACATEPAY_SECRET_KEY}`,
       },
       body: JSON.stringify({
-       frequency: 'MULTIPLE_PAYMENTS',
+        frequency: 'MULTIPLE_PAYMENTS',
         methods: ['PIX'],
         products: [
           {
@@ -60,8 +70,8 @@ export async function POST(req: NextRequest) {
         customer: {
           name: perfil?.nome_loja ?? nome,
           email,
-          cellphone: perfil?.telefone ?? '11999999999',
-          taxId: taxId ?? perfil?.cpf_cnpj ?? '',
+          cellphone: (perfil?.telefone ?? '11999999999').replace(/\D/g, ''),
+          taxId: taxIdLimpo,
         },
         metadata: { userId },
       }),
@@ -69,8 +79,10 @@ export async function POST(req: NextRequest) {
 
     const billingData = await billingRes.json()
 
+    console.log('[criar-assinatura] AbacatePay response:', JSON.stringify(billingData))
+
     if (!billingRes.ok) {
-      console.error('AbacatePay billing error:', JSON.stringify(billingData))
+      console.error('[criar-assinatura] AbacatePay error:', JSON.stringify(billingData))
       return NextResponse.json({ error: JSON.stringify(billingData) }, { status: 500 })
     }
 
@@ -79,11 +91,10 @@ export async function POST(req: NextRequest) {
       billingData.url
 
     if (!checkoutUrl) {
-      console.error('Sem checkoutUrl:', JSON.stringify(billingData))
+      console.error('[criar-assinatura] Sem checkoutUrl:', JSON.stringify(billingData))
       return NextResponse.json({ error: 'URL de checkout não retornada.' }, { status: 500 })
     }
 
-    // Salva o billing ID para rastrear no webhook
     await supabase.from('assinaturas').upsert(
       {
         usuario_id: userId,
@@ -95,7 +106,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ checkoutUrl })
   } catch (err) {
-    console.error('Erro interno criar-assinatura:', err)
+    console.error('[criar-assinatura] Erro interno:', err)
     return NextResponse.json({ error: 'Erro interno do servidor.' }, { status: 500 })
   }
 }
