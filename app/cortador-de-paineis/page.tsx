@@ -12,35 +12,35 @@ const MODULOS = [
     icon: Scissors,
     titulo: 'Cortador de Painéis',
     desc: 'Corte qualquer imagem em 6 folhas A4 para montar um painel 50×50cm.',
-    tag: 'Você está aqui ✨',
+    tag: 'Você está aqui',
     destaque: true,
   },
   {
     icon: BookOpen,
     titulo: 'Catálogo Digital',
     desc: 'Monte um catálogo bonito dos seus produtos e compartilhe com clientes.',
-    tag: 'Experimente grátis',
+    tag: 'Teste grátis',
     destaque: false,
   },
   {
     icon: Calendar,
     titulo: 'Agenda de Pedidos',
     desc: 'Organize encomendas, datas de entrega e status de cada pedido.',
-    tag: 'Experimente grátis',
+    tag: 'Teste grátis',
     destaque: false,
   },
   {
     icon: DollarSign,
     titulo: 'Controle Financeiro',
     desc: 'Acompanhe receitas, despesas e o lucro do seu negócio.',
-    tag: 'Experimente grátis',
+    tag: 'Teste grátis',
     destaque: false,
   },
   {
     icon: Users,
     titulo: 'Comunidade',
     desc: 'Baixe painéis prontos feitos por outras artesãs da Encantiva.',
-    tag: 'Planos acessíveis',
+    tag: 'Conheça',
     destaque: false,
   },
 ]
@@ -124,17 +124,16 @@ export default async function PaginaCortadorPublico() {
                   <m.icon size={20} style={{ color: m.destaque ? '#fff' : '#9900ff' }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: 0 }}>{m.titulo}</p>
-                    <span style={{
-                      background: m.destaque ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : m.tag === 'Premium' ? '#f5f0ff' : '#e8f5e9',
-                      color: m.destaque ? '#fff' : m.tag === 'Premium' ? '#9900ff' : '#2e7d32',
-                      fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700,
-                      padding: '2px 8px', borderRadius: '20px',
-                    }}>
-                      {m.tag}
-                    </span>
-                  </div>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 4px 0' }}>{m.titulo}</p>
+                  <span style={{
+                    display: 'inline-block',
+                    background: m.destaque ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : m.tag === 'Premium' ? '#f5f0ff' : '#e8f5e9',
+                    color: m.destaque ? '#fff' : m.tag === 'Premium' ? '#9900ff' : '#2e7d32',
+                    fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700,
+                    padding: '2px 8px', borderRadius: '20px', marginBottom: '4px',
+                  }}>
+                    {m.tag}
+                  </span>
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: 0 }}>{m.desc}</p>
                 </div>
               </div>

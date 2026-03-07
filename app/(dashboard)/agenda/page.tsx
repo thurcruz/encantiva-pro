@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getPlanoId, getLimites } from '@/lib/planos'
 import AgendaCliente from './AgendaCliente'
 import ModuloBloqueado from '../../components/ModuloBloqueado'
+import PageHeader from '../componentes/PageHeader'
 
 export default async function PaginaAgenda() {
   const supabase = await createClient()
@@ -17,23 +18,11 @@ export default async function PaginaAgenda() {
     .eq('usuario_id', user.id)
     .single()
 
-  const planoId = getPlanoId(
-    assinatura?.status ?? null,
-    assinatura?.plano ?? null,
-    assinatura?.trial_expira_em ?? null,
-    isAdmin,
-  )
+  const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
   if (!limites.agendaFestas) {
-    return (
-      <ModuloBloqueado
-        titulo="Agenda de Festas"
-        descricao="Visualize todos os seus eventos em um calendário organizado. Nunca mais perca um prazo."
-        planoMinimo="avancado"
-        icone="📅"
-      />
-    )
+    return <ModuloBloqueado titulo="Agenda de Festas" descricao="Visualize todos os seus eventos em um calendário organizado. Nunca mais perca um prazo." planoMinimo="avancado" icone="📅" />
   }
 
   const { data: pedidos } = await supabase
@@ -44,19 +33,7 @@ export default async function PaginaAgenda() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
-          <div>
-            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
-              Agenda
-            </h1>
-            <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '14px', margin: 0 }}>
-              Seus eventos e pedidos organizados por data
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader titulo="Agenda" subtitulo="Seus eventos e pedidos organizados por data" />
       <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
         <AgendaCliente pedidos={pedidos ?? []} />
       </div>

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getPlanoId, getLimites } from '@/lib/planos'
 import CatalogoManager from './CatalogoManager'
 import ModuloBloqueado from '../../components/ModuloBloqueado'
+import PageHeader from '../componentes/PageHeader'
 
 export default async function PaginaCatalogo() {
   const supabase = await createClient()
@@ -17,23 +18,11 @@ export default async function PaginaCatalogo() {
     .eq('usuario_id', user.id)
     .single()
 
-  const planoId = getPlanoId(
-    assinatura?.status ?? null,
-    assinatura?.plano ?? null,
-    assinatura?.trial_expira_em ?? null,
-    isAdmin,
-  )
+  const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
   if (!limites.gestorPedidos) {
-    return (
-      <ModuloBloqueado
-        titulo="Catálogo & Pedidos"
-        descricao="Monte seu catálogo de temas e kits e receba pedidos pelo WhatsApp."
-        planoMinimo="avancado"
-        icone="🛍️"
-      />
-    )
+    return <ModuloBloqueado titulo="Catálogo & Pedidos" descricao="Monte seu catálogo de temas e kits e receba pedidos pelo WhatsApp." planoMinimo="avancado" icone="🛍️" />
   }
 
   const [{ data: temas }, { data: kits }, { data: adicionais }, { data: pedidos }] = await Promise.all([
@@ -45,19 +34,7 @@ export default async function PaginaCatalogo() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
-          <div>
-            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
-              Catálogo & Pedidos
-            </h1>
-            <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '14px', margin: 0 }}>
-              Monte seu catálogo e receba pedidos pelo WhatsApp
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader titulo="Catálogo & Pedidos" subtitulo="Monte seu catálogo e receba pedidos pelo WhatsApp" />
       <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
         <CatalogoManager
           usuarioId={user.id}

@@ -4,6 +4,8 @@ import { getPlanoId, getLimites } from '@/lib/planos'
 import Link from 'next/link'
 import { Plus, AlertTriangle } from 'lucide-react'
 import ModuloBloqueado from '../../components/ModuloBloqueado'
+import PageHeader from '../componentes/PageHeader'
+
 export default async function PaginaContratos() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -17,23 +19,11 @@ export default async function PaginaContratos() {
     .eq('usuario_id', user.id)
     .single()
 
-  const planoId = getPlanoId(
-    assinatura?.status ?? null,
-    assinatura?.plano ?? null,
-    assinatura?.trial_expira_em ?? null,
-    isAdmin,
-  )
+  const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
   if (!limites.contratosDigitais) {
-    return (
-      <ModuloBloqueado
-        titulo="Contratos Digitais"
-        descricao="Gere contratos profissionais e envie para seus clientes assinarem."
-        planoMinimo="avancado"
-        icone="📋"
-      />
-    )
+    return <ModuloBloqueado titulo="Contratos Digitais" descricao="Gere contratos profissionais e envie para seus clientes assinarem." planoMinimo="avancado" icone="📋" />
   }
 
   const [{ data: contratos }, { data: perfil }] = await Promise.all([
@@ -54,25 +44,16 @@ export default async function PaginaContratos() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
-            <div>
-              <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
-                Contratos
-              </h1>
-              <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '14px', margin: 0 }}>
-                {contratos?.length ?? 0} contratos gerados
-              </p>
-            </div>
-          </div>
-          <Link href="/contratos/novo" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '12px', padding: '12px 20px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+      <PageHeader
+        titulo="Contratos"
+        subtitulo={`${contratos?.length ?? 0} contratos gerados`}
+        action={
+          <Link href="/contratos/novo" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '12px', padding: '10px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
             <Plus size={16} />
             Novo Contrato
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
         {perfilIncompleto && (
@@ -120,9 +101,7 @@ export default async function PaginaContratos() {
         ) : (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <p style={{ fontSize: '48px', marginBottom: '16px' }}>📋</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '18px', color: '#00000044', marginBottom: '8px' }}>
-              Nenhum contrato ainda
-            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '18px', color: '#00000044', marginBottom: '8px' }}>Nenhum contrato ainda</p>
             <Link href="/contratos/novo" style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ff33cc', textDecoration: 'none' }}>
               Criar o primeiro contrato
             </Link>

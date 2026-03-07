@@ -5,7 +5,11 @@ import BotaoLogout from './componentes/BotaoLogout'
 import BottomNav from './componentes/BottomNav'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Package, LayoutDashboard, Upload, Calculator, ShoppingBag, FileText, Settings, Users, LayoutTemplate, Home, TrendingUp, CalendarDays, Crown } from 'lucide-react'
+import {
+  Package, LayoutDashboard, Upload, Calculator, ShoppingBag,
+  FileText, Settings, Users, LayoutTemplate, Home, TrendingUp,
+  CalendarDays, Crown,
+} from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -27,41 +31,30 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .single()
 
   const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
-
   const agora = new Date()
-  const isTrial = assinatura?.trial_expira_em && new Date(assinatura.trial_expira_em) > agora
+  const isTrial = !!(assinatura?.trial_expira_em && new Date(assinatura.trial_expira_em) > agora)
   const diasRestantes = isTrial
-    ? Math.ceil((new Date(assinatura.trial_expira_em!).getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(assinatura!.trial_expira_em!).getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
     : 0
 
-  const assinaturaAtiva =
-    isAdmin ||
-    isTrial ||
-    (assinatura?.status === 'ativo' && (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
-
-  const { data: perfil } = await supabase
-    .from('perfis')
-    .select('nome_loja')
-    .eq('id', user.id)
-    .single()
-
-  const inicial = (perfil?.nome_loja ?? user.email ?? 'U')[0].toUpperCase()
-
-  const nomePlano = isAdmin ? 'Admin' : isTrial ? `Teste · ${diasRestantes}d` : assinatura?.status === 'ativo' ? 'Assinante' : 'Inativo'
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#140033' }}>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
 
       {/* Sidebar — apenas desktop */}
       <aside style={{
         width: '240px', flexShrink: 0, background: '#0d0022',
         display: 'flex', flexDirection: 'column',
         position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 40,
+        borderTopRightRadius: '24px',
+        borderBottomRightRadius: '24px',
       }} className="sidebar-desktop">
 
         {/* Logo */}
-        <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid #ffffff08' }}>
-          <Image src="/enc_logotipo.svg" width={200} height={33} alt="Encantiva" />
+        <div style={{
+          padding: '20px 20px 16px', borderBottom: '1px solid #ffffff08',
+          display: 'flex', alignItems: 'center',
+        }}>
+          <Image src="/enc_logotipo.svg" width={160} height={27} alt="Encantiva" />
         </div>
 
         {/* Badge trial */}
@@ -84,34 +77,32 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Nav */}
         <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '0 0 4px 0' }}>
-            Visão Geral
-          </p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '0 0 4px 0' }}>Geral</p>
           <NavItem href="/inicio" icon={<Home size={16} />} label="Início" />
-          <NavItem href="/financeiro" icon={<TrendingUp size={16} />} label="Financeiro" />
-          <NavItem href="/agenda" icon={<CalendarDays size={16} />} label="Agenda" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>
-            Menu
-          </p>
-          <NavItem href="/paineis" icon={<LayoutTemplate size={16} />} label="Painéis" />
-          <NavItem href="/materiais" icon={<Package size={16} />} label="Materiais" />
-          <NavItem href="/calculadora" icon={<Calculator size={16} />} label="Calculadora" />
-          <NavItem href="/contratos" icon={<FileText size={16} />} label="Contratos" />
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Pedidos</p>
+          <NavItem href="/agenda" icon={<CalendarDays size={16} />} label="Agenda" />
           <NavItem href="/catalogo" icon={<ShoppingBag size={16} />} label="Catálogo" />
+
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Financeiro</p>
+          <NavItem href="/financeiro" icon={<TrendingUp size={16} />} label="Financeiro" />
+          <NavItem href="/calculadora" icon={<Calculator size={16} />} label="Calculadora" />
+
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Clientes</p>
           <NavItem href="/clientes" icon={<Users size={16} />} label="Clientes" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>
-            Conta
-          </p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Biblioteca</p>
+          <NavItem href="/paineis" icon={<LayoutTemplate size={16} />} label="Painéis" />
+          <NavItem href="/materiais" icon={<Package size={16} />} label="Materiais" />
+          <NavItem href="/contratos" icon={<FileText size={16} />} label="Contratos" />
+
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Conta</p>
           <NavItem href="/configuracoes" icon={<Settings size={16} />} label="Configurações" />
           <NavItem href="/gerenciar-plano" icon={<Crown size={16} />} label="Meu Plano" />
 
           {isAdmin && (
             <>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>
-                Admin
-              </p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Admin</p>
               <NavItem href="/admin" icon={<LayoutDashboard size={16} />} label="Painel Admin" />
               <NavItem href="/admin/materiais/novo" icon={<Upload size={16} />} label="Novo Material" />
               <NavItem href="/admin/materiais" icon={<Package size={16} />} label="Ver Materiais" />
@@ -119,32 +110,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           )}
         </nav>
 
-        {/* Perfil */}
+        {/* Logout */}
         <div style={{ padding: '16px', borderTop: '1px solid #ffffff08' }}>
-          <Link href="/gerenciar-plano" style={{ textDecoration: 'none' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px',
-              padding: '8px', borderRadius: '10px', cursor: 'pointer',
-              transition: 'background 0.15s',
-            }}>
-              <div style={{
-                width: '36px', height: '36px', borderRadius: '50%',
-                background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', flexShrink: 0,
-              }}>
-                {inicial}
-              </div>
-              <div style={{ overflow: 'hidden' }}>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {perfil?.nome_loja ?? user.email}
-                </p>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: isTrial ? '#ff33cc' : isAdmin ? '#9900ff' : '#ffffff44', margin: 0 }}>
-                  {nomePlano}
-                </p>
-              </div>
-            </div>
-          </Link>
           <BotaoLogout />
         </div>
       </aside>
@@ -162,7 +129,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           }}>
             <span style={{ fontSize: '14px' }}>🧪</span>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff99', margin: 0 }}>
-              Você está no <strong style={{ color: '#ff33cc' }}>modo de teste</strong> — {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'} de acesso gratuito.{' '}
+              Você está no <strong style={{ color: '#ff33cc' }}>modo de teste</strong> — {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'}.{' '}
               <Link href="/planos" style={{ color: '#ff33cc', fontWeight: 700 }}>Assinar agora →</Link>
             </p>
           </div>
@@ -171,24 +138,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {children}
       </main>
 
-      {/* Bottom Nav — apenas mobile */}
       <BottomNav isAdmin={isAdmin} />
 
       <style>{`
-  @media (max-width: 768px) {
-    .sidebar-desktop { display: none !important; }
-    .main-desktop { margin-left: 0 !important; padding-bottom: 72px !important; }
-  }
-  @media (min-width: 769px) {
-    .bottom-nav-mobile { display: none !important; }
-  }
-
-  aside::-webkit-scrollbar { width: 3px; }
-  aside::-webkit-scrollbar-track { background: transparent; }
-  aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
-  aside::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-  aside { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
-`}</style>
+        @media (max-width: 768px) {
+          .sidebar-desktop { display: none !important; }
+          .main-desktop { margin-left: 0 !important; padding-bottom: 72px !important; }
+        }
+        @media (min-width: 769px) {
+          .bottom-nav-mobile { display: none !important; }
+        }
+        aside::-webkit-scrollbar { width: 3px; }
+        aside::-webkit-scrollbar-track { background: transparent; }
+        aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+        aside::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        aside { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+      `}</style>
     </div>
   )
 }

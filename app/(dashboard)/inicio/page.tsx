@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import PageHeader from '../componentes/PageHeader'
 
 interface Pedido {
   id: string
@@ -23,8 +24,6 @@ export default async function PaginaInicio() {
   if (!user) redirect('/login')
 
   const agora = new Date()
-  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString()
-  const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).toISOString()
   const hoje = agora.toISOString().split('T')[0]
 
   const [
@@ -33,12 +32,7 @@ export default async function PaginaInicio() {
     { data: proximosEventos },
     { data: temas },
   ] = await Promise.all([
-    supabase.from('pedidos')
-  .select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)')
-  .eq('usuario_id', user.id)
-  .gte('data_evento', hoje)
-  .order('data_evento', { ascending: true })
-  .limit(5),
+    supabase.from('pedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
     supabase.from('pedidos').select('*').eq('usuario_id', user.id),
     supabase.from('pedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
     supabase.from('catalogo_temas').select('id, nome').eq('usuario_id', user.id),
@@ -66,10 +60,7 @@ export default async function PaginaInicio() {
   const temasMaisPedidos = Object.entries(temaCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([id, count]) => ({
-      nome: temasArr.find(t => t.id === id)?.nome ?? 'Desconhecido',
-      count,
-    }))
+    .map(([id, count]) => ({ nome: temasArr.find(t => t.id === id)?.nome ?? 'Desconhecido', count }))
 
   const statusCor: Record<string, { bg: string; color: string; label: string; emoji: string }> = {
     pendente:   { bg: '#fff8ec', color: '#cc7700', label: 'Pendente',   emoji: '⏳' },
@@ -80,21 +71,7 @@ export default async function PaginaInicio() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-
-      {/* Header */}
-      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
-          <div>
-            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
-              Início
-            </h1>
-            <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '14px', margin: 0 }}>
-              Visão geral do seu negócio
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader titulo="Início" subtitulo="Visão geral do seu negócio" />
 
       <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
 
@@ -120,12 +97,9 @@ export default async function PaginaInicio() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }}>
-
           {/* Pedidos por status */}
           <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px' }}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
-              📊 Pedidos por status
-            </h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>📊 Pedidos por status</h2>
             {Object.keys(statusCor).map(status => {
               const s = statusCor[status]
               const count = statusCount[status] ?? 0
@@ -134,52 +108,36 @@ export default async function PaginaInicio() {
               return (
                 <div key={status} style={{ marginBottom: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: s.color }}>
-                      {s.emoji} {s.label}
-                    </span>
-                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#140033' }}>
-                      {count}
-                    </span>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: s.color }}>{s.emoji} {s.label}</span>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#140033' }}>{count}</span>
                   </div>
                   <div style={{ height: '6px', background: '#f0f0f0', borderRadius: '99px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: s.color, borderRadius: '99px', transition: 'width 0.5s ease' }} />
+                    <div style={{ height: '100%', width: `${pct}%`, background: s.color, borderRadius: '99px' }} />
                   </div>
                 </div>
               )
             })}
-            {pedidosTodosArr.length === 0 && (
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000044', textAlign: 'center', margin: '24px 0' }}>Nenhum pedido ainda</p>
-            )}
+            {pedidosTodosArr.length === 0 && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000044', textAlign: 'center', margin: '24px 0' }}>Nenhum pedido ainda</p>}
           </div>
 
           {/* Temas mais pedidos */}
           <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px' }}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
-              🎨 Temas mais pedidos
-            </h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>🎨 Temas mais pedidos</h2>
             {temasMaisPedidos.length > 0 ? temasMaisPedidos.map((tema, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < temasMaisPedidos.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#9900ff' }}>
-                    {i + 1}
-                  </div>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#9900ff' }}>{i + 1}</div>
                   <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', color: '#140033', margin: 0 }}>{tema.nome}</p>
                 </div>
-                <span style={{ background: '#f5f0ff', borderRadius: '20px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#9900ff' }}>
-                  {tema.count}x
-                </span>
+                <span style={{ background: '#f5f0ff', borderRadius: '20px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#9900ff' }}>{tema.count}x</span>
               </div>
-            )) : (
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000044', textAlign: 'center', margin: '24px 0' }}>Nenhum pedido ainda</p>
-            )}
+            )) : <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000044', textAlign: 'center', margin: '24px 0' }}>Nenhum pedido ainda</p>}
           </div>
         </div>
 
         {/* Próximos eventos */}
         <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px' }}>
-          <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
-            📅 Próximos eventos
-          </h2>
+          <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>📅 Próximos eventos</h2>
           {proximosArr.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {proximosArr.map(pedido => {
@@ -191,12 +149,8 @@ export default async function PaginaInicio() {
                   <div key={pedido.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: urgente ? '#fff8ec' : '#f9f9f9', borderRadius: '12px', border: `1px solid ${urgente ? '#ffcc0033' : '#eeeeee'}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: urgente ? 'linear-gradient(135deg, #ff990022, #ff33cc22)' : 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 900, color: urgente ? '#cc7700' : '#9900ff', margin: 0, lineHeight: 1 }}>
-                          {dataEvento.getDate()}
-                        </p>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 600, color: urgente ? '#cc7700' : '#9900ff', margin: 0, textTransform: 'uppercase' }}>
-                          {dataEvento.toLocaleString('pt-BR', { month: 'short' })}
-                        </p>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 900, color: urgente ? '#cc7700' : '#9900ff', margin: 0, lineHeight: 1 }}>{dataEvento.getDate()}</p>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 600, color: urgente ? '#cc7700' : '#9900ff', margin: 0, textTransform: 'uppercase' }}>{dataEvento.toLocaleString('pt-BR', { month: 'short' })}</p>
                       </div>
                       <div>
                         <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0' }}>{pedido.nome_cliente}</p>
@@ -207,9 +161,7 @@ export default async function PaginaInicio() {
                       <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: urgente ? '#cc7700' : '#00000055', margin: '0 0 2px 0' }}>
                         {diasRestantes === 0 ? '🔴 Hoje!' : diasRestantes === 1 ? '🟡 Amanhã' : `${diasRestantes} dias`}
                       </p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0 }}>
-                        R$ {Number(pedido.valor_total).toFixed(2)}
-                      </p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0 }}>R$ {Number(pedido.valor_total).toFixed(2)}</p>
                     </div>
                   </div>
                 )
@@ -222,7 +174,6 @@ export default async function PaginaInicio() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   )

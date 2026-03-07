@@ -5,6 +5,7 @@ import type { Material } from '@/types/database'
 import FiltrosMateriais from './componentes/FiltrosMateriais'
 import CardMaterial from './componentes/CardMaterial'
 import ModuloBloqueado from '../../components/ModuloBloqueado'
+import PageHeader from '../componentes/PageHeader'
 
 export default async function PaginaMateriais({
   searchParams,
@@ -25,23 +26,11 @@ export default async function PaginaMateriais({
     .eq('usuario_id', user.id)
     .single()
 
-  const planoId = getPlanoId(
-    assinatura?.status ?? null,
-    assinatura?.plano ?? null,
-    assinatura?.trial_expira_em ?? null,
-    isAdmin,
-  )
+  const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
   if (!limites.bibliotecaMateriais) {
-    return (
-      <ModuloBloqueado
-        titulo="Materiais para Download"
-        descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas."
-        planoMinimo="iniciante"
-        icone="🎨"
-      />
-    )
+    return <ModuloBloqueado titulo="Materiais para Download" descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas." planoMinimo="iniciante" icone="🎨" />
   }
 
   const [{ data: categorias }, { data: tipos }, { data: formatos }] = await Promise.all([
@@ -65,20 +54,11 @@ export default async function PaginaMateriais({
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-            <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
-            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
-              Materiais para Download
-            </h1>
-          </div>
-          <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '15px', marginLeft: '16px', marginTop: '4px' }}>
-            Painéis, totens e muito mais prontos para imprimir
-          </p>
-        </div>
-      </div>
-
+      <PageHeader
+        titulo="Materiais para Download"
+        subtitulo="Painéis, totens e muito mais prontos para imprimir"
+        maxWidth="1200px"
+      />
       <div className="page-content" style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px' }}>
         <FiltrosMateriais
           categorias={categorias ?? []}
@@ -99,22 +79,14 @@ export default async function PaginaMateriais({
         {materiais && materiais.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', marginTop: '16px' }}>
             {materiais.map((material) => (
-              <CardMaterial
-                key={material.id}
-                material={material as Material}
-                podeDownload={true}
-              />
+              <CardMaterial key={material.id} material={material as Material} podeDownload={true} />
             ))}
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <p style={{ fontSize: '48px', marginBottom: '16px' }}>🎪</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '18px', color: '#00000044', marginBottom: '8px' }}>
-              Nenhum material encontrado
-            </p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000033' }}>
-              Tente mudar os filtros ou a busca
-            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '18px', color: '#00000044', marginBottom: '8px' }}>Nenhum material encontrado</p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000033' }}>Tente mudar os filtros ou a busca</p>
           </div>
         )}
       </div>
