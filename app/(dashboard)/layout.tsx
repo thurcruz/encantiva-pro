@@ -4,7 +4,8 @@ import NavItem from './componentes/NavItem'
 import BotaoLogout from './componentes/BotaoLogout'
 import BottomNav from './componentes/BottomNav'
 import Image from 'next/image'
-import { Package, LayoutDashboard, Upload, Calculator, ShoppingBag, FileText, Settings, Users, LayoutTemplate, Home, TrendingUp, CalendarDays } from 'lucide-react'
+import Link from 'next/link'
+import { Package, LayoutDashboard, Upload, Calculator, ShoppingBag, FileText, Settings, Users, LayoutTemplate, Home, TrendingUp, CalendarDays, Crown } from 'lucide-react'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -12,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect('/')
 
   const { data: assinatura } = await supabase
-    .from('assinaturas') // corrigido: era 'assinatauras'
+    .from('assinaturas')
     .select('status, expira_em, trial_expira_em')
     .eq('usuario_id', user.id)
     .single()
@@ -25,6 +26,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ? Math.ceil((new Date(assinatura.trial_expira_em!).getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
     : 0
 
+  const assinaturaAtiva =
+    isAdmin ||
+    isTrial ||
+    (assinatura?.status === 'ativo' && (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
+
   const { data: perfil } = await supabase
     .from('perfis')
     .select('nome_loja')
@@ -32,6 +38,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .single()
 
   const inicial = (perfil?.nome_loja ?? user.email ?? 'U')[0].toUpperCase()
+
+  const nomePlano = isAdmin ? 'Admin' : isTrial ? `Teste · ${diasRestantes}d` : assinatura?.status === 'ativo' ? 'Assinante' : 'Inativo'
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#140033' }}>
@@ -45,12 +53,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         {/* Logo */}
         <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid #ffffff08' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Image src="/enc_logotipo.svg" width={200} height={33} alt="Encantiva" />
-          </div>
+          <Image src="/enc_logotipo.svg" width={200} height={33} alt="Encantiva" />
         </div>
 
-        {/* Badge trial na sidebar */}
+        {/* Badge trial */}
         {isTrial && !isAdmin && (
           <div style={{
             margin: '12px', padding: '10px 14px',
@@ -58,7 +64,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             border: '1px solid rgba(255,51,204,0.25)',
             borderRadius: '10px',
           }}>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff33cc', margin: '0 0 2px 0', letterSpacing: '0.5px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff33cc', margin: '0 0 2px 0' }}>
               🧪 MODO TESTE
             </p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff55', margin: 0 }}>
@@ -70,58 +76,66 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Nav */}
         <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
 
-          {/* Visão geral */}
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '0 0 4px 0' }}>
             Visão Geral
           </p>
-          <NavItem href="/inicio" icon={<Home size={16} style={{ color: '#ff33cc' }} />} label="Início" />
-          <NavItem href="/financeiro" icon={<TrendingUp size={16} style={{ color: '#ff33cc' }} />} label="Financeiro" />
-          <NavItem href="/agenda" icon={<CalendarDays size={16} style={{ color: '#ff33cc' }} />} label="Agenda" />
+          <NavItem href="/inicio" icon={<Home size={16} />} label="Início" />
+          <NavItem href="/financeiro" icon={<TrendingUp size={16} />} label="Financeiro" />
+          <NavItem href="/agenda" icon={<CalendarDays size={16} />} label="Agenda" />
 
-          {/* Menu principal */}
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>
             Menu
           </p>
-          <NavItem href="/materiais" icon={<Package size={16} style={{ color: '#ff33cc' }} />} label="Materiais" />
-          <NavItem href="/calculadora" icon={<Calculator size={16} style={{ color: '#ff33cc' }} />} label="Calculadora" />
-          <NavItem href="/contratos" icon={<FileText size={16} style={{ color: '#ff33cc' }} />} label="Contratos" />
-          <NavItem href="/catalogo" icon={<ShoppingBag size={16} style={{ color: '#ff33cc' }} />} label="Catálogo" />
-          <NavItem href="/clientes" icon={<Users size={16} style={{ color: '#ff33cc' }} />} label="Clientes" />
-          <NavItem href="/paineis" icon={<LayoutTemplate size={16} style={{ color: '#ff33cc' }} />} label="Painéis" />
-          <NavItem href="/configuracoes" icon={<Settings size={16} style={{ color: '#ff33cc' }} />} label="Configurações" />
+          <NavItem href="/paineis" icon={<LayoutTemplate size={16} />} label="Painéis" />
+          <NavItem href="/materiais" icon={<Package size={16} />} label="Materiais" />
+          <NavItem href="/calculadora" icon={<Calculator size={16} />} label="Calculadora" />
+          <NavItem href="/contratos" icon={<FileText size={16} />} label="Contratos" />
+          <NavItem href="/catalogo" icon={<ShoppingBag size={16} />} label="Catálogo" />
+          <NavItem href="/clientes" icon={<Users size={16} />} label="Clientes" />
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>
+            Conta
+          </p>
+          <NavItem href="/configuracoes" icon={<Settings size={16} />} label="Configurações" />
+          <NavItem href="/gerenciar-plano" icon={<Crown size={16} />} label="Meu Plano" />
 
           {isAdmin && (
             <>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>
                 Admin
               </p>
-              <NavItem href="/admin" icon={<LayoutDashboard size={16} style={{ color: '#9900ff' }} />} label="Painel Admin" />
-              <NavItem href="/admin/materiais/novo" icon={<Upload size={16} style={{ color: '#9900ff' }} />} label="Novo Material" />
-              <NavItem href="/admin/materiais" icon={<Package size={16} style={{ color: '#9900ff' }} />} label="Ver Materiais" />
+              <NavItem href="/admin" icon={<LayoutDashboard size={16} />} label="Painel Admin" />
+              <NavItem href="/admin/materiais/novo" icon={<Upload size={16} />} label="Novo Material" />
+              <NavItem href="/admin/materiais" icon={<Package size={16} />} label="Ver Materiais" />
             </>
           )}
         </nav>
 
         {/* Perfil */}
         <div style={{ padding: '16px', borderTop: '1px solid #ffffff08' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <Link href="/gerenciar-plano" style={{ textDecoration: 'none' }}>
             <div style={{
-              width: '36px', height: '36px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px',
+              padding: '8px', borderRadius: '10px', cursor: 'pointer',
+              transition: 'background 0.15s',
             }}>
-              {inicial}
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', flexShrink: 0,
+              }}>
+                {inicial}
+              </div>
+              <div style={{ overflow: 'hidden' }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {perfil?.nome_loja ?? user.email}
+                </p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: isTrial ? '#ff33cc' : isAdmin ? '#9900ff' : '#ffffff44', margin: 0 }}>
+                  {nomePlano}
+                </p>
+              </div>
             </div>
-            <div style={{ overflow: 'hidden' }}>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {perfil?.nome_loja ?? user.email}
-              </p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: isTrial ? '#ff33cc' : isAdmin ? '#ff33cc' : '#ffffff44', margin: 0 }}>
-                {isAdmin ? 'Admin' : isTrial ? `Teste · ${diasRestantes}d` : 'Assinante'}
-              </p>
-            </div>
-          </div>
+          </Link>
           <BotaoLogout />
         </div>
       </aside>
@@ -129,20 +143,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* Conteúdo principal */}
       <main style={{ marginLeft: '240px', flex: 1 }} className="main-desktop">
 
-        {/* Banner trial — topo */}
+        {/* Banner trial */}
         {isTrial && !isAdmin && (
           <div style={{
             background: 'linear-gradient(135deg, rgba(255,51,204,0.15), rgba(153,0,255,0.15))',
             borderBottom: '1px solid rgba(255,51,204,0.2)',
             padding: '10px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           }}>
             <span style={{ fontSize: '14px' }}>🧪</span>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff99', margin: 0 }}>
-              Você está no <strong style={{ color: '#ff33cc' }}>modo de teste</strong> — {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'} de acesso gratuito.
+              Você está no <strong style={{ color: '#ff33cc' }}>modo de teste</strong> — {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'} de acesso gratuito.{' '}
+              <Link href="/planos" style={{ color: '#ff33cc', fontWeight: 700 }}>Assinar agora →</Link>
             </p>
           </div>
         )}
@@ -154,14 +166,33 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <BottomNav isAdmin={isAdmin} />
 
       <style>{`
-        @media (max-width: 768px) {
-          .sidebar-desktop { display: none !important; }
-          .main-desktop { margin-left: 0 !important; padding-bottom: 72px !important; }
-        }
-        @media (min-width: 769px) {
-          .bottom-nav-mobile { display: none !important; }
-        }
-      `}</style>
+  @media (max-width: 768px) {
+    .sidebar-desktop { display: none !important; }
+    .main-desktop { margin-left: 0 !important; padding-bottom: 72px !important; }
+  }
+  @media (min-width: 769px) {
+    .bottom-nav-mobile { display: none !important; }
+  }
+
+  /* Scrollbar sidebar */
+  aside::-webkit-scrollbar {
+    width: 3px;
+  }
+  aside::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  aside::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 99px;
+  }
+  aside::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  aside {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+`}</style>
     </div>
   )
 }
