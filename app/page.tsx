@@ -98,7 +98,7 @@ export default function LandingPage() {
             <Link href="/cadastro" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '14px', padding: '18px 36px', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '16px', textDecoration: 'none', boxShadow: '0 16px 48px rgba(255,51,204,0.35)' }}>
               Teste grátis por 7 dias <ArrowRight size={18} />
             </Link>
-            <Link href="/cortador" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', padding: '18px 36px', color: '#ffffffcc', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '16px', textDecoration: 'none' }}>
+            <Link href="/cortador-de-paineis" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', padding: '18px 36px', color: '#ffffffcc', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '16px', textDecoration: 'none' }}>
               <Scissors size={18} /> Cortador grátis
             </Link>
           </div>
@@ -122,7 +122,7 @@ export default function LandingPage() {
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '16px', color: '#ffffff66', lineHeight: 1.7, margin: '0 0 28px 0' }}>
               Use o cortador profissional de painéis decorativos sem precisar pagar nada. Crie sua conta e comece agora.
             </p>
-            <Link href="/cortador" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #00cc88, #0066ff)', borderRadius: '12px', padding: '14px 28px', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '15px', textDecoration: 'none' }}>
+            <Link href="/cortador-de-paineis" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #00cc88, #0066ff)', borderRadius: '12px', padding: '14px 28px', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '15px', textDecoration: 'none' }}>
               <Scissors size={16} /> Usar cortador grátis
             </Link>
           </div>

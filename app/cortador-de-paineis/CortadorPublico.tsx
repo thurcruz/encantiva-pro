@@ -48,6 +48,9 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
         const ctx = canvas.getContext('2d')!
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
+        // Safari fix: fundo branco antes de desenhar
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, larguraFatia, alturaFatia)
         ctx.drawImage(img, col * larguraFatia, row * alturaFatia, larguraFatia, alturaFatia, 0, 0, larguraFatia, alturaFatia)
         novasFatias.push(canvas.toDataURL('image/jpeg', 0.95))
       }
@@ -64,29 +67,41 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
     const file = e.target.files?.[0]
     if (!file) return
     setImagemFile(file)
-    const img = new window.Image()
-    img.onload = () => {
-      setImagem(img)
-      setFatias([])
-      setPreviewAtivo(null)
-      setPdfBaixado(false)
+    // Safari/iOS fix: FileReader com base64 em vez de createObjectURL
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const src = ev.target?.result as string
+      const img = new window.Image()
+      img.onload = () => {
+        setImagem(img)
+        setFatias([])
+        setPreviewAtivo(null)
+        setPdfBaixado(false)
+      }
+      img.onerror = () => alert('Erro ao carregar imagem. Tente outro arquivo.')
+      img.src = src
     }
-    img.src = URL.createObjectURL(file)
+    reader.readAsDataURL(file)
   }
 
   async function comprimirFatia(fatia: string): Promise<string> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new window.Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
         canvas.width = 1240
         canvas.height = 1169
-        const ctx = canvas.getContext('2d')!
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { reject(new Error('Canvas não suportado')); return }
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
+        // Safari fix: fundo branco
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
       }
+      img.onerror = () => reject(new Error('Erro ao processar fatia'))
       img.src = fatia
     })
   }
