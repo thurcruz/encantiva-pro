@@ -205,7 +205,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
     <div>
 
       {/* Banner Comunidade — painéis prontos */}
-      <div style={{
+      <div className="banner-comunidade" style={{
         background: 'linear-gradient(135deg, #140033, #2d0066)',
         borderRadius: '20px', padding: '20px 24px', marginBottom: '24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
@@ -222,7 +222,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
             </p>
           </div>
         </div>
-        <a href="/login" style={{
+        <a href="/login" className="banner-comunidade-btn" style={{
           background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
           border: 'none', borderRadius: '10px', padding: '10px 16px',
           color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700,
@@ -257,7 +257,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+          <div className="pos-download-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
             {FUNCIONALIDADES.map((f, i) => (
               <div key={i} style={{
                 background: '#fff', borderRadius: '12px', padding: '12px 14px',
@@ -308,7 +308,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
       </div>
 
       {/* Upload */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+      <div className="upload-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
         <div style={{ ...cardStyle, marginBottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', background: 'linear-gradient(135deg, #fff5fd, #f5f0ff)', border: '1px solid #ff33cc22' }}>
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', letterSpacing: '1px', textTransform: 'uppercase', margin: 0 }}>Exemplo de painel</p>
           <div style={{ position: 'relative', width: '120px', height: '120px' }}>
@@ -424,7 +424,17 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
 
       {modalLogin && <ModalLogin onFechar={() => setModalLogin(false)} onSucesso={aoFazerLogin} />}
 
-      <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Mobile: banner comunidade em coluna */
+        @media (max-width: 480px) {
+          .banner-comunidade { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+          .banner-comunidade-btn { width: 100% !important; justify-content: center !important; }
+          .pos-download-grid { grid-template-columns: 1fr !important; }
+          .upload-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   )
 }

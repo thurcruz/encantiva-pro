@@ -19,28 +19,28 @@ const MODULOS = [
     icon: BookOpen,
     titulo: 'Catálogo Digital',
     desc: 'Monte um catálogo bonito dos seus produtos e compartilhe com clientes.',
-    tag: 'Gratuito',
+    tag: 'Experimente grátis',
     destaque: false,
   },
   {
     icon: Calendar,
     titulo: 'Agenda de Pedidos',
     desc: 'Organize encomendas, datas de entrega e status de cada pedido.',
-    tag: 'Gratuito',
+    tag: 'Experimente grátis',
     destaque: false,
   },
   {
     icon: DollarSign,
     titulo: 'Controle Financeiro',
     desc: 'Acompanhe receitas, despesas e o lucro do seu negócio.',
-    tag: 'Gratuito',
+    tag: 'Experimente grátis',
     destaque: false,
   },
   {
     icon: Users,
     titulo: 'Comunidade',
     desc: 'Baixe painéis prontos feitos por outras artesãs da Encantiva.',
-    tag: 'Premium',
+    tag: 'Planos acessíveis',
     destaque: false,
   },
 ]
@@ -54,7 +54,7 @@ export default async function PaginaCortadorPublico() {
 
       {/* Header */}
       <div style={{
-        borderBottom: '1px solid #eeeeee', padding: '20px 40px',
+        borderBottom: '1px solid #eeeeee', padding: '16px 20px',
         backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -76,6 +76,7 @@ export default async function PaginaCortadorPublico() {
             color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700,
             fontSize: '13px', textDecoration: 'none',
             boxShadow: '0 4px 16px rgba(255,51,204,0.25)',
+            whiteSpace: 'nowrap',
           }}>
             Entrar na Encantiva
           </a>
@@ -83,15 +84,12 @@ export default async function PaginaCortadorPublico() {
       </div>
 
       {/* Cortador */}
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 40px 0' }}>
+      <div className="cortador-content" style={{ maxWidth: '900px', margin: '0 auto' }}>
         <CortadorPublico usuarioLogado={!!user} usuarioId={user?.id ?? null} />
       </div>
 
       {/* Seção de funcionalidades — rodapé */}
-      <div style={{
-        maxWidth: '900px', margin: '0 auto',
-        padding: '8px 40px 60px',
-      }}>
+      <div className="cortador-footer" style={{ maxWidth: '900px', margin: '0 auto' }}>
         <div style={{
           background: '#fff', border: '1px solid #eeeeee',
           borderRadius: '24px', padding: '32px',
@@ -159,6 +157,14 @@ export default async function PaginaCortadorPublico() {
         </div>
       </div>
 
+      <style>{`
+        .cortador-content { padding: 24px 16px 0; }
+        .cortador-footer { padding: 8px 16px 40px; }
+        @media (min-width: 640px) {
+          .cortador-content { padding: 32px 40px 0; }
+          .cortador-footer { padding: 8px 40px 60px; }
+        }
+      `}</style>
     </div>
   )
 }
