@@ -36,21 +36,22 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
   const COLS = 2
   const ROWS = 3
 
-  const cortarImagem = useCallback((img: HTMLImageElement) => {
+  const cortarImagem = useCallback(async (img: HTMLImageElement) => {
+    // Safari fix: garantir que a imagem está totalmente decodificada antes de desenhar
+    if (img.decode) {
+      try { await img.decode() } catch (_) {}
+    }
     const novasFatias: string[] = []
     for (let row = 0; row < ROWS; row++) {
       for (let col = 0; col < COLS; col++) {
         const canvas = document.createElement('canvas')
-        const larguraFatia = img.width / COLS
-        const alturaFatia = img.height / ROWS
+        const larguraFatia = img.naturalWidth / COLS
+        const alturaFatia = img.naturalHeight / ROWS
         canvas.width = larguraFatia
         canvas.height = alturaFatia
         const ctx = canvas.getContext('2d')!
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
-        // Safari fix: fundo branco antes de desenhar
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, larguraFatia, alturaFatia)
         ctx.drawImage(img, col * larguraFatia, row * alturaFatia, larguraFatia, alturaFatia, 0, 0, larguraFatia, alturaFatia)
         novasFatias.push(canvas.toDataURL('image/jpeg', 0.95))
       }
@@ -95,9 +96,6 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
         if (!ctx) { reject(new Error('Canvas não suportado')); return }
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
-        // Safari fix: fundo branco
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
       }
