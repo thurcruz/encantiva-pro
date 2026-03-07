@@ -3,149 +3,275 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Home, TrendingUp, CalendarDays, Users, LayoutTemplate, Package, FileText, Calculator, ShoppingBag, LayoutDashboard, Grid2X2, X, Settings } from 'lucide-react'
+import {
+  Home, Package, CalendarDays, Users, TrendingUp,
+  LayoutTemplate, ShoppingBag, FileText, Calculator, Clock,
+  BarChart2, Scissors,
+  type LucideIcon,
+} from 'lucide-react'
 
-const FIXOS = [
-  { href: '/inicio', icon: Home, label: 'Início', grupo: ['/inicio'] },
-  { href: '/agenda', icon: CalendarDays, label: 'Pedidos', grupo: ['/agenda', '/catalogo'] },
-  { href: '/financeiro', icon: TrendingUp, label: 'Financeiro', grupo: ['/financeiro', '/calculadora'] },
-  { href: '/clientes', icon: Users, label: 'Clientes', grupo: ['/clientes'] },
-]
+interface Item {
+  href: string
+  icon: LucideIcon
+  label: string
+  atalho?: boolean
+  emBreve?: boolean
+}
 
-const MAIS = [
-  { href: '/paineis', icon: LayoutTemplate, label: 'Painéis' },
-  { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
-  { href: '/materiais', icon: Package, label: 'Materiais' },
-  { href: '/contratos', icon: FileText, label: 'Contratos' },
-  { href: '/calculadora', icon: Calculator, label: 'Calculadora' },
-  { href: '/configuracoes', icon: Settings, label: 'Configurações' },
+interface Grupo {
+  id: string
+  label: string
+  icon: LucideIcon
+  rotas: string[]
+  itens: Item[]
+}
+
+const GRUPOS: Grupo[] = [
+  {
+    id: 'inicio',
+    label: 'Início',
+    icon: Home,
+    rotas: ['/inicio'],
+    itens: [
+      { href: '/inicio', icon: BarChart2, label: 'Dashboard' },
+      { href: '/agenda', icon: CalendarDays, label: 'Próximos eventos', atalho: true },
+      { href: '/financeiro', icon: TrendingUp, label: 'Financeiro', atalho: true },
+    ],
+  },
+  {
+    id: 'pedidos',
+    label: 'Pedidos',
+    icon: CalendarDays,
+    rotas: ['/agenda', '/catalogo'],
+    itens: [
+      { href: '/agenda', icon: CalendarDays, label: 'Agenda' },
+      { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
+    ],
+  },
+  {
+    id: 'materiais',
+    label: 'Materiais',
+    icon: Package,
+    rotas: ['/materiais', '/paineis'],
+    itens: [
+      { href: '/materiais', icon: Package, label: 'Biblioteca' },
+      { href: '/paineis', icon: Scissors, label: 'Criador de Painéis' },
+    ],
+  },
+  {
+    id: 'clientes',
+    label: 'Clientes',
+    icon: Users,
+    rotas: ['/clientes', '/contratos'],
+    itens: [
+      { href: '/clientes', icon: Users, label: 'Lista de Clientes' },
+      { href: '/contratos', icon: FileText, label: 'Contratos' },
+      { href: '#', icon: Clock, label: 'Fidelidade', emBreve: true },
+    ],
+  },
+  {
+    id: 'financeiro',
+    label: 'Financeiro',
+    icon: TrendingUp,
+    rotas: ['/financeiro', '/calculadora'],
+    itens: [
+      { href: '/financeiro', icon: TrendingUp, label: 'Dashboard' },
+      { href: '/calculadora', icon: Calculator, label: 'Calculadora' },
+    ],
+  },
 ]
 
 export default function BottomNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname()
-  const [menuAberto, setMenuAberto] = useState(false)
+  const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
 
-  const maisItens = [
-    ...MAIS,
-    ...(isAdmin ? [{ href: '/admin', icon: LayoutDashboard, label: 'Admin' }] : []),
-  ]
+  function toggleGrupo(id: string) {
+    setGrupoAberto(prev => prev === id ? null : id)
+  }
 
-  const maisAtivo = maisItens.some(i => pathname === i.href || pathname.startsWith(i.href + '/'))
+  function fechar() {
+    setGrupoAberto(null)
+  }
 
   return (
     <>
-      {menuAberto && (
-        <div onClick={() => setMenuAberto(false)} style={{
-          position: 'fixed', inset: 0, zIndex: 48,
-          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-        }} />
+      {/* Overlay para fechar */}
+      {grupoAberto && (
+        <div
+          onClick={fechar}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 48,
+            background: 'rgba(20,0,51,0.5)',
+            backdropFilter: 'blur(3px)',
+          }}
+        />
       )}
 
-      {menuAberto && (
-        <div style={{
-          position: 'fixed', bottom: '72px', right: '12px', zIndex: 49,
-          background: '#0d0022', border: '1px solid #ffffff14',
-          borderRadius: '20px', padding: '8px',
-          display: 'flex', flexDirection: 'column', gap: '2px',
-          boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
-          minWidth: '190px', animation: 'slideUp 0.2s ease',
-        }}>
-          {maisItens.map(({ href, icon: Icon, label }) => {
-            const ativo = pathname === href || pathname.startsWith(href + '/')
-            return (
-              <Link key={href} href={href} onClick={() => setMenuAberto(false)} style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '11px 14px', borderRadius: '12px', textDecoration: 'none',
-                background: ativo ? 'linear-gradient(135deg, rgba(255,51,204,0.15), rgba(153,0,255,0.15))' : 'transparent',
-              }}>
-                <div style={{
-                  width: '30px', height: '30px', borderRadius: '9px', flexShrink: 0,
-                  background: ativo ? 'linear-gradient(135deg, rgba(255,51,204,0.25), rgba(153,0,255,0.25))' : '#ffffff0a',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Icon size={15} style={{ color: ativo ? '#ff33cc' : '#ffffff77' }} />
-                </div>
-                <span style={{
-                  fontFamily: 'Inter, sans-serif', fontSize: '14px',
-                  fontWeight: ativo ? 700 : 500,
-                  color: ativo ? '#ff33cc' : '#ffffffcc',
-                }}>
-                  {label}
-                </span>
-              </Link>
-            )
-          })}
-        </div>
-      )}
+      {/* Submenus */}
+      {GRUPOS.map(grupo => {
+        if (grupoAberto !== grupo.id) return null
+        const larguraItem = `${100 / GRUPOS.length}%`
+        const indice = GRUPOS.findIndex(g => g.id === grupo.id)
+        // Posição horizontal centrada no botão
+        const left = `calc(${indice} * ${larguraItem} + ${larguraItem} / 2)`
 
-      <nav className="bottom-nav-mobile" style={{
+        return (
+          <div
+            key={grupo.id}
+            style={{
+              position: 'fixed',
+              bottom: '76px',
+              left,
+              transform: 'translateX(-50%)',
+              zIndex: 49,
+              background: '#0d0022',
+              border: '1px solid #ffffff14',
+              borderRadius: '18px',
+              padding: '6px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              boxShadow: '0 -8px 32px rgba(0,0,0,0.5)',
+              minWidth: '200px',
+              animation: 'slideUp 0.2s ease',
+            }}
+          >
+            {/* Label do grupo */}
+            <p style={{
+              fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600,
+              color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase',
+              padding: '6px 12px 4px', margin: 0,
+            }}>
+              {grupo.label}
+            </p>
+
+            {grupo.itens.map(({ href, icon: Icon, label, emBreve }) => {
+              const ativo = pathname === href || pathname.startsWith(href + '/')
+              if (emBreve) {
+                return (
+                  <div key={label} style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '10px 14px', borderRadius: '12px',
+                    opacity: 0.4, cursor: 'not-allowed',
+                  }}>
+                    <div style={{
+                      width: '30px', height: '30px', borderRadius: '9px',
+                      background: '#ffffff0a',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Icon size={14} style={{ color: '#ffffff55' }} />
+                    </div>
+                    <div>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 500, color: '#ffffff77' }}>
+                        {label}
+                      </span>
+                      <span style={{
+                        marginLeft: '6px', fontFamily: 'Inter, sans-serif', fontSize: '9px',
+                        fontWeight: 700, color: '#ff33cc', background: 'rgba(255,51,204,0.15)',
+                        padding: '2px 6px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px',
+                      }}>
+                        Em breve
+                      </span>
+                    </div>
+                  </div>
+                )
+              }
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={fechar}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '10px 14px', borderRadius: '12px', textDecoration: 'none',
+                    background: ativo
+                      ? 'linear-gradient(135deg, rgba(255,51,204,0.15), rgba(153,0,255,0.15))'
+                      : 'transparent',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  <div style={{
+                    width: '30px', height: '30px', borderRadius: '9px', flexShrink: 0,
+                    background: ativo
+                      ? 'linear-gradient(135deg, rgba(255,51,204,0.25), rgba(153,0,255,0.25))'
+                      : '#ffffff0a',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Icon size={14} style={{ color: ativo ? '#ff33cc' : '#ffffff77' }} />
+                  </div>
+                  <span style={{
+                    fontFamily: 'Inter, sans-serif', fontSize: '14px',
+                    fontWeight: ativo ? 700 : 500,
+                    color: ativo ? '#ff33cc' : '#ffffffcc',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {label}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        )
+      })}
+
+      {/* Barra inferior */}
+      <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         height: '64px', background: '#0d0022',
         borderTop: '1px solid #ffffff12',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-around',
-        zIndex: 50, paddingBottom: 'env(safe-area-inset-bottom)',
-      }}>
-        {FIXOS.map(({ href, icon: Icon, label, grupo }) => {
-          const ativo = grupo.some(g => pathname === g || pathname.startsWith(g + '/'))
+        display: 'flex', alignItems: 'center',
+        zIndex: 50,
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }} className="bottom-nav-mobile">
+        {GRUPOS.map(({ id, label, icon: Icon, rotas }) => {
+          const ativo = rotas.some(r => pathname === r || pathname.startsWith(r + '/'))
+          const aberto = grupoAberto === id
+
           return (
-            <Link key={href} href={href} style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              gap: '3px', padding: '8px 12px', textDecoration: 'none', flex: 1,
-            }}>
+            <button
+              key={id}
+              onClick={() => toggleGrupo(id)}
+              style={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: '3px', padding: '8px 4px',
+                background: 'none', border: 'none', cursor: 'pointer',
+              }}
+            >
               <div style={{
-                width: '32px', height: '32px', borderRadius: '10px',
-                background: ativo ? 'linear-gradient(135deg, rgba(255,51,204,0.2), rgba(153,0,255,0.2))' : 'transparent',
-                border: ativo ? '1px solid rgba(255,51,204,0.3)' : '1px solid transparent',
+                width: '36px', height: '36px', borderRadius: '11px',
+                background: aberto
+                  ? 'linear-gradient(135deg, #ff33cc, #9900ff)'
+                  : ativo
+                  ? 'linear-gradient(135deg, rgba(255,51,204,0.2), rgba(153,0,255,0.2))'
+                  : 'transparent',
+                border: !aberto && ativo ? '1px solid rgba(255,51,204,0.3)' : '1px solid transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.2s',
+                boxShadow: aberto ? '0 4px 14px rgba(255,51,204,0.4)' : 'none',
               }}>
-                <Icon size={18} style={{ color: ativo ? '#ff33cc' : '#ffffff44' }} />
+                <Icon size={18} style={{
+                  color: aberto ? '#fff' : ativo ? '#ff33cc' : '#ffffff44',
+                }} />
               </div>
               <span style={{
                 fontFamily: 'Inter, sans-serif', fontSize: '10px',
-                fontWeight: ativo ? 700 : 400,
-                color: ativo ? '#ff33cc' : '#ffffff44',
+                fontWeight: aberto || ativo ? 700 : 400,
+                color: aberto ? '#ff33cc' : ativo ? '#ff33cc' : '#ffffff44',
                 whiteSpace: 'nowrap',
               }}>
                 {label}
               </span>
-            </Link>
+            </button>
           )
         })}
-
-        <button onClick={() => setMenuAberto(v => !v)} style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          gap: '3px', padding: '8px 12px', flex: 1,
-          background: 'none', border: 'none', cursor: 'pointer',
-        }}>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '10px',
-            background: menuAberto || maisAtivo ? 'linear-gradient(135deg, rgba(255,51,204,0.2), rgba(153,0,255,0.2))' : 'transparent',
-            border: menuAberto || maisAtivo ? '1px solid rgba(255,51,204,0.3)' : '1px solid transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.2s',
-          }}>
-            {menuAberto
-              ? <X size={18} style={{ color: '#ff33cc' }} />
-              : <Grid2X2 size={18} style={{ color: maisAtivo ? '#ff33cc' : '#ffffff44' }} />
-            }
-          </div>
-          <span style={{
-            fontFamily: 'Inter, sans-serif', fontSize: '10px',
-            fontWeight: menuAberto || maisAtivo ? 700 : 400,
-            color: menuAberto || maisAtivo ? '#ff33cc' : '#ffffff44',
-          }}>
-            Mais
-          </span>
-        </button>
-
-        <style>{`
-          @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
       </nav>
+
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
     </>
   )
 }
