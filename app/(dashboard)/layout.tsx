@@ -6,6 +6,14 @@ import BottomNav from './componentes/BottomNav'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Package, LayoutDashboard, Upload, Calculator, ShoppingBag, FileText, Settings, Users, LayoutTemplate, Home, TrendingUp, CalendarDays, Crown } from 'lucide-react'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  icons: {
+    icon: '/enc_favicon.png',
+    apple: '/enc_favicon.png',
+  },
+}
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -92,6 +100,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <NavItem href="/contratos" icon={<FileText size={16} />} label="Contratos" />
           <NavItem href="/catalogo" icon={<ShoppingBag size={16} />} label="Catálogo" />
           <NavItem href="/clientes" icon={<Users size={16} />} label="Clientes" />
+
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>
             Conta
           </p>
@@ -174,24 +183,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .bottom-nav-mobile { display: none !important; }
   }
 
-  /* Scrollbar sidebar */
-  aside::-webkit-scrollbar {
-    width: 3px;
-  }
-  aside::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  aside::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 99px;
-  }
-  aside::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-  aside {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.1) transparent;
-  }
+  aside::-webkit-scrollbar { width: 3px; }
+  aside::-webkit-scrollbar-track { background: transparent; }
+  aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+  aside::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+  aside { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
 `}</style>
     </div>
   )

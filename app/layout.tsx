@@ -17,6 +17,10 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Encantiva Pro — Plataforma para Decoradoras e Buffeteiras",
   description: "Organize sua empresa de festas com catálogo, contratos, financeiro e muito mais. Teste grátis por 7 dias.",
+  icons: {
+    icon: "/enc_favicon.png",
+    apple: "/enc_favicon.png",
+  },
 };
 
 export default function RootLayout({
