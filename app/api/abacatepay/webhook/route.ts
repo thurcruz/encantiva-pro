@@ -3,6 +3,21 @@ import { createClient } from '@/lib/supabase/server'
 
 const WEBHOOK_SECRET = process.env.ABACATEPAY_WEBHOOK_SECRET ?? ''
 
+// Mapeia o planId do AbacatePay para o nome do plano interno
+function resolverPlano(data: Record<string, unknown>): string | null {
+  const subscription = data?.subscription as Record<string, unknown> | undefined
+  const products = (subscription?.products ?? data?.products) as Array<Record<string, unknown>> | undefined
+  const planId = products?.[0]?.externalId as string | undefined
+
+  if (!planId) return null
+
+  if (planId === process.env.NEXT_PUBLIC_ABACATEPAY_PLAN_INICIANTE) return 'iniciante'
+  if (planId === process.env.NEXT_PUBLIC_ABACATEPAY_PLAN_AVANCADO) return 'avancado'
+  if (planId === process.env.NEXT_PUBLIC_ABACATEPAY_PLAN_ELITE) return 'elite'
+
+  return null
+}
+
 export async function POST(req: NextRequest) {
   try {
     const headerSecret = req.headers.get('x-abacatepay-secret') ?? ''
@@ -37,6 +52,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true })
     }
 
+    const plano = resolverPlano(data)
+
     switch (event) {
       case 'subscription.activated':
       case 'subscription.renewed':
@@ -49,12 +66,15 @@ export async function POST(req: NextRequest) {
           {
             usuario_id: userId,
             status: 'ativo',
+            plano: plano ?? undefined,
             expira_em,
             abacatepay_subscription_id: subscriptionId ?? null,
             atualizado_em: new Date().toISOString(),
           },
           { onConflict: 'usuario_id' }
         )
+
+        console.log(`[AbacatePay Webhook] Plano ${plano} ativado para userId ${userId}`)
         break
       }
 
