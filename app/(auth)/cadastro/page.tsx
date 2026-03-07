@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export default function PaginaCadastro() {
@@ -25,10 +26,10 @@ export default function PaginaCadastro() {
   const { data, error } = await supabase.auth.signUp({ email, password: senha })
 
   if (error) {
-    setErro('Erro ao criar conta. Tente novamente.')
-    setCarregando(false)
-    return
-  }
+  setErro(error.message) // ← mostra o erro real
+  setCarregando(false)
+  return
+}
 
   if (data.user) {
     const trialExpira = new Date()
@@ -136,7 +137,7 @@ export default function PaginaCadastro() {
       {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-           <img src="/enc_logotipo.svg" width="240" height="33" alt="Encantiva" />
+           <Image src="/enc_logotipo.svg" width="240" height="33" alt="Encantiva" />
           </div>
         </div>
 

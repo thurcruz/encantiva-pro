@@ -1,33 +1,40 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getPlanoId, getLimites } from '@/lib/planos'
 import Link from 'next/link'
 import { Plus, AlertTriangle } from 'lucide-react'
-
+import ModuloBloqueado from '../../components/ModuloBloqueado'
 export default async function PaginaContratos() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, expira_em, trial_expira_em')
+    .select('status, plano, trial_expira_em')
     .eq('usuario_id', user.id)
     .single()
 
-  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+  const planoId = getPlanoId(
+    assinatura?.status ?? null,
+    assinatura?.plano ?? null,
+    assinatura?.trial_expira_em ?? null,
+    isAdmin,
+  )
+  const limites = getLimites(planoId)
 
-  const agora = new Date()
-  const trialAtivo = assinatura?.trial_expira_em
-    ? new Date(assinatura.trial_expira_em) > agora
-    : false
-
-  const assinaturaAtiva =
-    isAdmin ||
-    trialAtivo ||
-    (assinatura?.status === 'ativo' &&
-    (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
-
-  if (!assinaturaAtiva) redirect('/materiais')
+  if (!limites.contratosDigitais) {
+    return (
+      <ModuloBloqueado
+        titulo="Contratos Digitais"
+        descricao="Gere contratos profissionais e envie para seus clientes assinarem."
+        planoMinimo="avancado"
+        icone="📋"
+      />
+    )
+  }
 
   const [{ data: contratos }, { data: perfil }] = await Promise.all([
     supabase.from('contratos').select('*').order('criado_em', { ascending: false }),
@@ -38,8 +45,8 @@ export default async function PaginaContratos() {
 
   const badgeStatus = (status: string) => {
     const map: Record<string, { label: string; cor: string; bg: string }> = {
-      pendente: { label: 'Pendente', cor: '#cc8800', bg: '#fff8e6' },
-      assinado: { label: 'Assinado', cor: '#00aa55', bg: '#e6fff2' },
+      pendente:  { label: 'Pendente',  cor: '#cc8800', bg: '#fff8e6' },
+      assinado:  { label: 'Assinado',  cor: '#00aa55', bg: '#e6fff2' },
       cancelado: { label: 'Cancelado', cor: '#cc0000', bg: '#fff0f0' },
     }
     return map[status] ?? map.pendente
@@ -47,8 +54,6 @@ export default async function PaginaContratos() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-
-      {/* Header */}
       <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -62,13 +67,7 @@ export default async function PaginaContratos() {
               </p>
             </div>
           </div>
-          <Link href="/contratos/novo" style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-            borderRadius: '12px', padding: '12px 20px',
-            color: '#fff', fontFamily: 'Inter, sans-serif',
-            fontWeight: 700, fontSize: '14px', textDecoration: 'none',
-          }}>
+          <Link href="/contratos/novo" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '12px', padding: '12px 20px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
             <Plus size={16} />
             Novo Contrato
           </Link>
@@ -76,54 +75,32 @@ export default async function PaginaContratos() {
       </div>
 
       <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
-
-        {/* Aviso perfil incompleto */}
         {perfilIncompleto && (
-          <div style={{
-            background: '#fff8f0', border: '1px solid #ff33cc33',
-            borderRadius: '14px', padding: '16px 20px', marginBottom: '24px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: '16px', flexWrap: 'wrap',
-          }}>
+          <div style={{ background: '#fff8f0', border: '1px solid #ff33cc33', borderRadius: '14px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <AlertTriangle size={18} style={{ color: '#ff33cc', flexShrink: 0 }} />
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#140033', margin: 0 }}>
                 <strong>Dados da loja incompletos.</strong> Preencha para que apareçam nos contratos.
               </p>
             </div>
-            <Link href="/configuracoes" style={{
-              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
-              color: '#ff33cc', border: '1px solid #ff33cc55',
-              borderRadius: '8px', padding: '8px 16px',
-              textDecoration: 'none', whiteSpace: 'nowrap',
-            }}>
+            <Link href="/configuracoes" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#ff33cc', border: '1px solid #ff33cc55', borderRadius: '8px', padding: '8px 16px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
               Ir para configurações
             </Link>
           </div>
         )}
 
-        {/* Lista de contratos */}
         {contratos && contratos.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {contratos.map(contrato => {
               const badge = badgeStatus(contrato.status)
               return (
-                <div key={contrato.id} style={{
-                  background: '#fff', border: '1px solid #eeeeee',
-                  borderRadius: '16px', padding: '20px 24px',
-                  display: 'flex', alignItems: 'center',
-                  justifyContent: 'space-between', gap: '16px',
-                }}>
+                <div key={contrato.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                       <h3 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: 0 }}>
                         {contrato.cliente_nome || 'Cliente não preenchido'}
                       </h3>
-                      <span style={{
-                        background: badge.bg, color: badge.cor,
-                        fontFamily: 'Inter, sans-serif', fontWeight: 700,
-                        fontSize: '11px', padding: '3px 10px', borderRadius: '100px',
-                      }}>
+                      <span style={{ background: badge.bg, color: badge.cor, fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', padding: '3px 10px', borderRadius: '100px' }}>
                         {badge.label}
                       </span>
                     </div>
@@ -133,13 +110,7 @@ export default async function PaginaContratos() {
                       {` · 💰 R$ ${Number(contrato.valor_total).toFixed(2).replace('.', ',')}`}
                     </p>
                   </div>
-                  <Link href={`/contratos/${contrato.id}`} style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-                    borderRadius: '10px', padding: '10px 16px',
-                    color: '#fff', fontFamily: 'Inter, sans-serif',
-                    fontWeight: 600, fontSize: '13px', textDecoration: 'none',
-                  }}>
+                  <Link href={`/contratos/${contrato.id}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '10px', padding: '10px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', textDecoration: 'none' }}>
                     Ver contrato
                   </Link>
                 </div>
@@ -152,10 +123,7 @@ export default async function PaginaContratos() {
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '18px', color: '#00000044', marginBottom: '8px' }}>
               Nenhum contrato ainda
             </p>
-            <Link href="/contratos/novo" style={{
-              fontFamily: 'Inter, sans-serif', fontSize: '14px',
-              color: '#ff33cc', textDecoration: 'none',
-            }}>
+            <Link href="/contratos/novo" style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ff33cc', textDecoration: 'none' }}>
               Criar o primeiro contrato
             </Link>
           </div>

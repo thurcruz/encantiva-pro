@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   try {
-    const { planId, userId, email, nome } = await req.json()
+    const { planId, userId, email, nome, taxId } = await req.json()
 
     if (!planId || !userId || !email) {
       return NextResponse.json({ error: 'Dados incompletos.' }, { status: 400 })
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
           name: perfil?.nome_loja ?? nome,
           email,
           cellphone: perfil?.telefone ?? '11999999999',
-          taxId: perfil?.cpf_cnpj ?? '00000000000',
+          taxId: taxId ?? perfil?.cpf_cnpj ?? '',
         },
         metadata: { userId },
       }),

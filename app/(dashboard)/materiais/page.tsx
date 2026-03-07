@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getPlanoId, getLimites } from '@/lib/planos'
 import type { Material } from '@/types/database'
 import FiltrosMateriais from './componentes/FiltrosMateriais'
 import CardMaterial from './componentes/CardMaterial'
+import ModuloBloqueado from '../../components/ModuloBloqueado'
 
 export default async function PaginaMateriais({
   searchParams,
@@ -15,24 +17,32 @@ export default async function PaginaMateriais({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, expira_em, trial_expira_em')
+    .select('status, plano, trial_expira_em')
     .eq('usuario_id', user.id)
     .single()
 
-  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+  const planoId = getPlanoId(
+    assinatura?.status ?? null,
+    assinatura?.plano ?? null,
+    assinatura?.trial_expira_em ?? null,
+    isAdmin,
+  )
+  const limites = getLimites(planoId)
 
-  const agora = new Date()
-  const trialAtivo = assinatura?.trial_expira_em
-    ? new Date(assinatura.trial_expira_em) > agora
-    : false
-
-  const assinaturaAtiva =
-    isAdmin ||
-    trialAtivo ||
-    (assinatura?.status === 'ativo' &&
-    (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
+  if (!limites.bibliotecaMateriais) {
+    return (
+      <ModuloBloqueado
+        titulo="Materiais para Download"
+        descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas."
+        planoMinimo="iniciante"
+        icone="🎨"
+      />
+    )
+  }
 
   const [{ data: categorias }, { data: tipos }, { data: formatos }] = await Promise.all([
     supabase.from('categorias').select('*').eq('ativo', true).order('nome'),
@@ -55,69 +65,21 @@ export default async function PaginaMateriais({
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-
-      {/* Header */}
-      <div className="page-header" style={{
-        borderBottom: '1px solid #eeeeee',
-        padding: '32px 40px',
-        backgroundColor: '#fff',
-      }}>
+      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-            <div style={{
-              width: '4px', height: '32px', borderRadius: '4px',
-              background: 'linear-gradient(180deg, #ff33cc, #9900ff)',
-            }} />
-            <h1 style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 900,
-              fontSize: '28px',
-              color: '#140033',
-              letterSpacing: '-1px',
-              margin: 0,
-            }}>
+            <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
+            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
               Materiais para Download
             </h1>
           </div>
-          <p style={{
-            color: '#00000055',
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '15px',
-            marginLeft: '16px',
-            marginTop: '4px',
-          }}>
+          <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '15px', marginLeft: '16px', marginTop: '4px' }}>
             Painéis, totens e muito mais prontos para imprimir
           </p>
         </div>
       </div>
 
       <div className="page-content" style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px' }}>
-
-        {/* Aviso de assinatura */}
-        {!assinaturaAtiva && (
-          <div style={{
-            background: '#fff5fd',
-            border: '1px solid #ff33cc33',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            marginBottom: '28px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-          }}>
-            <span style={{ fontSize: '24px' }}>⚠️</span>
-            <div>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: '#ff33cc', margin: '0 0 4px 0' }}>
-                Assinatura necessária
-              </p>
-              <p style={{ fontFamily: 'Inter, sans-serif', color: '#00000066', fontSize: '14px', margin: 0 }}>
-                Para baixar os materiais você precisa ter uma assinatura ativa.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Filtros */}
         <FiltrosMateriais
           categorias={categorias ?? []}
           tipos={tipos ?? []}
@@ -128,34 +90,19 @@ export default async function PaginaMateriais({
           buscaInicial={busca ?? ''}
         />
 
-        {/* Contador */}
         {materiais && (
-          <p style={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '13px',
-            color: '#00000044',
-            margin: '20px 0 0 0',
-          }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000044', margin: '20px 0 0 0' }}>
             {materiais.length} {materiais.length === 1 ? 'material encontrado' : 'materiais encontrados'}
           </p>
         )}
 
-        {/* Grid de materiais */}
         {materiais && materiais.length > 0 ? (
-          <div
-            className="grid-materiais"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-              gap: '20px',
-              marginTop: '16px',
-            }}
-          >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', marginTop: '16px' }}>
             {materiais.map((material) => (
               <CardMaterial
                 key={material.id}
                 material={material as Material}
-                podeDownload={assinaturaAtiva}
+                podeDownload={true}
               />
             ))}
           </div>

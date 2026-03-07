@@ -1,11 +1,40 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getPlanoId, getLimites } from '@/lib/planos'
 import GraficosFinanceiro from './GraficosFinanceiro'
+import ModuloBloqueado from '../../components/ModuloBloqueado'
 
 export default async function PaginaFinanceiro() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
+  const { data: assinatura } = await supabase
+    .from('assinaturas')
+    .select('status, plano, trial_expira_em')
+    .eq('usuario_id', user.id)
+    .single()
+
+  const planoId = getPlanoId(
+    assinatura?.status ?? null,
+    assinatura?.plano ?? null,
+    assinatura?.trial_expira_em ?? null,
+    isAdmin,
+  )
+  const limites = getLimites(planoId)
+
+  if (!limites.financeiro) {
+    return (
+      <ModuloBloqueado
+        titulo="Financeiro"
+        descricao="Acompanhe suas entradas, metas e lucros com gráficos detalhados."
+        planoMinimo="elite"
+        icone="💰"
+      />
+    )
+  }
 
   const { data: pedidos } = await supabase
     .from('pedidos')
