@@ -41,14 +41,17 @@ export default function Calculadora() {
   const supabase = createClient()
 
   async function carregarKits() {
-    setCarregandoKits(true)
-    const { data } = await supabase
-      .from('kits')
-      .select('*')
-      .order('criado_em', { ascending: false })
-    if (data) setKits(data)
-    setCarregandoKits(false)
-  }
+  setCarregandoKits(true)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data } = await supabase
+    .from('kits')
+    .select('*')
+    .eq('usuario_id', user.id)
+    .order('criado_em', { ascending: false })
+  if (data) setKits(data)
+  setCarregandoKits(false)
+}
 
   useEffect(() => {
     carregarKits()
@@ -89,11 +92,15 @@ export default function Calculadora() {
     setModalKits(false)
   }
 
-  async function deletarKit(id: string) {
-    await supabase.from('kits').delete().eq('id', id)
-    await carregarKits()
-    if (editandoId === id) { setEditandoId(null); setNomeKit('') }
+ async function deletarKit(id: string) {
+  const { error } = await supabase.from('kits').delete().eq('id', id)
+  if (error) {
+    alert('Erro: ' + error.message)
+    return
   }
+  setKits(prev => prev.filter(k => k.id !== id))
+  if (editandoId === id) { setEditandoId(null); setNomeKit('') }
+}
 
   function novaCalculadora() {
     setItens([{ id: 1, nome: '', custo: 0, meses: 6, festasporMes: 4 }])
