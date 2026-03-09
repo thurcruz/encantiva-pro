@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getPlanoId, getLimites } from '@/lib/planos'
+import { getPlanoId, getLimites, temAcesso } from '@/lib/planos'
 import AgendaCliente from './AgendaCliente'
 import ModuloBloqueado from '../../components/ModuloBloqueado'
 import PageHeader from '../componentes/PageHeader'
@@ -14,14 +14,15 @@ export default async function PaginaAgenda() {
 
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, plano, trial_expira_em')
+    .select('status, plano, trial_expira_em, is_beta')
     .eq('usuario_id', user.id)
     .single()
 
+  const isBeta = assinatura?.is_beta === true
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!limites.agendaFestas) {
+  if (!temAcesso('agendaFestas', limites, isBeta, isAdmin)) {
     return <ModuloBloqueado titulo="Agenda de Festas" descricao="Visualize todos os seus eventos em um calendário organizado. Nunca mais perca um prazo." planoMinimo="avancado" icone="📅" />
   }
 

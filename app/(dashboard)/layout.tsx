@@ -26,11 +26,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, expira_em, trial_expira_em')
+    .select('status, expira_em, trial_expira_em, is_beta')
     .eq('usuario_id', user.id)
     .single()
 
   const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+  const isBeta = assinatura?.is_beta === true
   const agora = new Date()
   const isTrial = !!(assinatura?.trial_expira_em && new Date(assinatura.trial_expira_em) > agora)
   const diasRestantes = isTrial
@@ -38,15 +39,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : 0
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#140033' }}>
 
       {/* Sidebar — apenas desktop */}
       <aside style={{
         width: '240px', flexShrink: 0, background: '#0d0022',
         display: 'flex', flexDirection: 'column',
         position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 40,
-        borderTopRightRadius: '16px',
-        borderBottomRightRadius: '16px',
+        borderTopRightRadius: '24px',
+        borderBottomRightRadius: '24px',
       }} className="sidebar-desktop">
 
         {/* Logo */}
@@ -57,8 +58,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Image src="/enc_logotipo.svg" width={160} height={27} alt="Encantiva" />
         </div>
 
+        {/* Badge beta */}
+        {isBeta && !isAdmin && (
+          <div style={{
+            margin: '12px', padding: '10px 14px',
+            background: 'rgba(0,204,136,0.1)',
+            border: '1px solid rgba(0,204,136,0.25)',
+            borderRadius: '10px',
+          }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00cc88', margin: '0 0 2px 0' }}>
+              🧪 ACESSO BETA
+            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff55', margin: 0 }}>
+              Você testa tudo em primeira mão
+            </p>
+          </div>
+        )}
+
         {/* Badge trial */}
-        {isTrial && !isAdmin && (
+        {isTrial && !isAdmin && !isBeta && (
           <div style={{
             margin: '12px', padding: '10px 14px',
             background: 'rgba(255,51,204,0.1)',
@@ -120,7 +138,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <main style={{ marginLeft: '240px', flex: 1 }} className="main-desktop">
 
         {/* Banner trial */}
-        {isTrial && !isAdmin && (
+        {isTrial && !isAdmin && !isBeta && (
           <div style={{
             background: 'linear-gradient(135deg, rgba(255,51,204,0.15), rgba(153,0,255,0.15))',
             borderBottom: '1px solid rgba(255,51,204,0.2)',
@@ -138,7 +156,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {children}
       </main>
 
-      <BottomNav isAdmin={isAdmin} />
+      <BottomNav isAdmin={isAdmin} isBeta={isBeta} />
 
       <style>{`
         @media (max-width: 768px) {

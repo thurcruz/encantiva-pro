@@ -140,14 +140,30 @@ export function getPlanoId(
     if (planoNorm === 'avancado') return 'avancado'
     if (planoNorm === 'elite') return 'elite'
   }
-  // Trial expirado ou sem plano = free
   const trialAtivo = trialExpiraEm ? new Date(trialExpiraEm) > new Date() : false
-  if (trialAtivo) return 'free' // trial tem os mesmos limites do free
+  if (trialAtivo) return 'free'
   return 'free'
 }
 
 export function getLimites(planoId: PlanoId): LimitesPlano {
   return LIMITES[planoId] ?? LIMITES.free
+}
+
+/**
+ * Verifica se uma feature está liberada, levando em conta beta e admin.
+ * Beta tem acesso a tudo — igual ao admin mas identificado como usuária comum.
+ * Uso: temAcesso('financeiro', limites, isBeta, isAdmin)
+ */
+export function temAcesso(
+  feature: keyof LimitesPlano,
+  limites: LimitesPlano,
+  isBeta: boolean,
+  isAdmin: boolean,
+): boolean {
+  if (isAdmin || isBeta) return true
+  const valor = limites[feature]
+  if (typeof valor === 'boolean') return valor
+  return true // cortesPoMes é number | 'ilimitado', não é boolean — sempre passa
 }
 
 export const NOMES_PLANO: Record<PlanoId, string> = {
@@ -158,9 +174,8 @@ export const NOMES_PLANO: Record<PlanoId, string> = {
   admin: 'Admin',
 }
 
-// Qual plano mínimo libera cada feature (para o popup de upgrade)
 export const PLANO_MINIMO: Record<keyof LimitesPlano, PlanoId | null> = {
-  cortesPoMes: null, // sempre disponível
+  cortesPoMes: null,
   bibliotecaMateriais: 'iniciante',
   calculadoraPrecificacao: 'iniciante',
   criarSalvarKits: 'iniciante',

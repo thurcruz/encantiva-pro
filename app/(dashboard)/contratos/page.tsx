@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getPlanoId, getLimites } from '@/lib/planos'
+import { getPlanoId, getLimites, temAcesso } from '@/lib/planos'
 import Link from 'next/link'
 import { Plus, AlertTriangle } from 'lucide-react'
 import ModuloBloqueado from '../../components/ModuloBloqueado'
@@ -15,14 +15,15 @@ export default async function PaginaContratos() {
 
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, plano, trial_expira_em')
+    .select('status, plano, trial_expira_em, is_beta')
     .eq('usuario_id', user.id)
     .single()
 
+  const isBeta = assinatura?.is_beta === true
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!limites.contratosDigitais) {
+  if (!temAcesso('contratosDigitais', limites, isBeta, isAdmin)) {
     return <ModuloBloqueado titulo="Contratos Digitais" descricao="Gere contratos profissionais e envie para seus clientes assinarem." planoMinimo="avancado" icone="📋" />
   }
 
@@ -54,7 +55,6 @@ export default async function PaginaContratos() {
           </Link>
         }
       />
-
       <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
         {perfilIncompleto && (
           <div style={{ background: '#fff8f0', border: '1px solid #ff33cc33', borderRadius: '14px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
@@ -69,7 +69,6 @@ export default async function PaginaContratos() {
             </Link>
           </div>
         )}
-
         {contratos && contratos.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {contratos.map(contrato => {

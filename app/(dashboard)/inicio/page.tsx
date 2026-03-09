@@ -74,8 +74,6 @@ export default async function PaginaInicio() {
       <PageHeader titulo="Início" subtitulo="Visão geral do seu negócio" />
 
       <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
-
-        {/* Cards de métricas */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '28px' }}>
           {[
             { label: 'Pedidos este mês', value: pedidosMesArr.length, sub: `${pedidosTodosArr.length} no total`, emoji: '🛍️', grad: 'linear-gradient(135deg, #ff33cc, #9900ff)' },
@@ -97,7 +95,6 @@ export default async function PaginaInicio() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }}>
-          {/* Pedidos por status */}
           <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px' }}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>📊 Pedidos por status</h2>
             {Object.keys(statusCor).map(status => {
@@ -120,7 +117,6 @@ export default async function PaginaInicio() {
             {pedidosTodosArr.length === 0 && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000044', textAlign: 'center', margin: '24px 0' }}>Nenhum pedido ainda</p>}
           </div>
 
-          {/* Temas mais pedidos */}
           <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px' }}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>🎨 Temas mais pedidos</h2>
             {temasMaisPedidos.length > 0 ? temasMaisPedidos.map((tema, i) => (
@@ -135,7 +131,6 @@ export default async function PaginaInicio() {
           </div>
         </div>
 
-        {/* Próximos eventos */}
         <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px' }}>
           <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>📅 Próximos eventos</h2>
           {proximosArr.length > 0 ? (

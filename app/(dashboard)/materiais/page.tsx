@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getPlanoId, getLimites } from '@/lib/planos'
+import { getPlanoId, getLimites, temAcesso } from '@/lib/planos'
 import type { Material } from '@/types/database'
 import FiltrosMateriais from './componentes/FiltrosMateriais'
 import CardMaterial from './componentes/CardMaterial'
@@ -22,14 +22,15 @@ export default async function PaginaMateriais({
 
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, plano, trial_expira_em')
+    .select('status, plano, trial_expira_em, is_beta')
     .eq('usuario_id', user.id)
     .single()
 
+  const isBeta = assinatura?.is_beta === true
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!limites.bibliotecaMateriais) {
+  if (!temAcesso('bibliotecaMateriais', limites, isBeta, isAdmin)) {
     return <ModuloBloqueado titulo="Materiais para Download" descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas." planoMinimo="iniciante" icone="🎨" />
   }
 
@@ -54,11 +55,7 @@ export default async function PaginaMateriais({
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <PageHeader
-        titulo="Materiais para Download"
-        subtitulo="Painéis, totens e muito mais prontos para imprimir"
-        maxWidth="1200px"
-      />
+      <PageHeader titulo="Materiais para Download" subtitulo="Painéis, totens e muito mais prontos para imprimir" maxWidth="1200px" />
       <div className="page-content" style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px' }}>
         <FiltrosMateriais
           categorias={categorias ?? []}
@@ -69,13 +66,11 @@ export default async function PaginaMateriais({
           formatoSelecionado={formato}
           buscaInicial={busca ?? ''}
         />
-
         {materiais && (
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000044', margin: '20px 0 0 0' }}>
             {materiais.length} {materiais.length === 1 ? 'material encontrado' : 'materiais encontrados'}
           </p>
         )}
-
         {materiais && materiais.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', marginTop: '16px' }}>
             {materiais.map((material) => (

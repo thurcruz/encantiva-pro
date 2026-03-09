@@ -81,7 +81,7 @@ const GRUPOS: Grupo[] = [
   },
 ]
 
-export default function BottomNav({ isAdmin }: { isAdmin: boolean }) {
+export default function BottomNav({ isAdmin, isBeta }: { isAdmin: boolean; isBeta: boolean }) {
   const pathname = usePathname()
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
 
