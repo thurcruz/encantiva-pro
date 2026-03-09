@@ -49,7 +49,6 @@ export default function AgendaCliente({ pedidos }: Props) {
 
   const pedidosFiltrados = pedidos.filter(p => filtroStatus === 'todos' || p.status === filtroStatus)
 
-  // Alertas: eventos nos próximos 7 dias
   const alertas = pedidos.filter(p => {
     if (p.status === 'cancelado' || p.status === 'concluido') return false
     const d = new Date(p.data_evento + 'T00:00:00')
@@ -57,7 +56,6 @@ export default function AgendaCliente({ pedidos }: Props) {
     return dias >= 0 && dias <= 7
   })
 
-  // Calendário
   const primeiroDia = new Date(anoAtual, mesAtual, 1).getDay()
   const diasNoMes = new Date(anoAtual, mesAtual + 1, 0).getDate()
 
@@ -86,12 +84,12 @@ export default function AgendaCliente({ pedidos }: Props) {
               const d = new Date(p.data_evento + 'T00:00:00')
               const dias = Math.ceil((d.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
               return (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderRadius: '10px', padding: '10px 14px' }}>
-                  <div>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#140033', margin: '0 0 1px 0' }}>{p.nome_cliente}</p>
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderRadius: '10px', padding: '10px 14px', gap: '8px' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#140033', margin: '0 0 1px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nome_cliente}</p>
                     <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: 0 }}>{p.catalogo_temas?.nome ?? '—'}</p>
                   </div>
-                  <span style={{ background: dias === 0 ? '#ff333315' : '#ff990015', color: dias === 0 ? '#cc0000' : '#cc7700', borderRadius: '8px', padding: '4px 10px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700 }}>
+                  <span style={{ background: dias === 0 ? '#ff333315' : '#ff990015', color: dias === 0 ? '#cc0000' : '#cc7700', borderRadius: '8px', padding: '4px 10px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
                     {dias === 0 ? 'Hoje!' : dias === 1 ? 'Amanhã' : `em ${dias} dias`}
                   </span>
                 </div>
@@ -102,8 +100,9 @@ export default function AgendaCliente({ pedidos }: Props) {
       )}
 
       {/* Controles */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+        {/* Filtros de status */}
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
           {[
             { key: 'todos', label: 'Todos' },
             { key: 'pendente', label: '⏳ Pendente' },
@@ -111,11 +110,12 @@ export default function AgendaCliente({ pedidos }: Props) {
             { key: 'concluido', label: '🎉 Concluído' },
             { key: 'cancelado', label: '❌ Cancelado' },
           ].map(f => (
-            <button key={f.key} onClick={() => setFiltroStatus(f.key)} style={{ padding: '8px 14px', borderRadius: '10px', border: `1px solid ${filtroStatus === f.key ? 'transparent' : '#e5e5e5'}`, background: filtroStatus === f.key ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#fff', color: filtroStatus === f.key ? '#fff' : '#140033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <button key={f.key} onClick={() => setFiltroStatus(f.key)} style={{ padding: '8px 12px', borderRadius: '10px', border: `1px solid ${filtroStatus === f.key ? 'transparent' : '#e5e5e5'}`, background: filtroStatus === f.key ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#fff', color: filtroStatus === f.key ? '#fff' : '#140033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {f.label}
             </button>
           ))}
         </div>
+        {/* Visualização */}
         <div style={{ display: 'flex', gap: '6px' }}>
           {(['calendario', 'lista'] as const).map(v => (
             <button key={v} onClick={() => setVisualizacao(v)} style={{ padding: '8px 14px', borderRadius: '10px', border: `1px solid ${visualizacao === v ? 'transparent' : '#e5e5e5'}`, background: visualizacao === v ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#fff', color: visualizacao === v ? '#fff' : '#140033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
@@ -128,7 +128,6 @@ export default function AgendaCliente({ pedidos }: Props) {
       {/* CALENDÁRIO */}
       {visualizacao === 'calendario' && (
         <div style={cardStyle}>
-          {/* Navegação mês */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
             <button onClick={mesAnterior} style={{ width: '36px', height: '36px', borderRadius: '10px', border: '1px solid #e5e5e5', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <ChevronLeft size={16} style={{ color: '#140033' }} />
@@ -141,15 +140,13 @@ export default function AgendaCliente({ pedidos }: Props) {
             </button>
           </div>
 
-          {/* Dias da semana */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '4px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px', marginBottom: '3px' }}>
             {DIAS_SEMANA.map(d => (
-              <p key={d} style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00000044', textAlign: 'center', margin: 0, padding: '4px 0', textTransform: 'uppercase' }}>{d}</p>
+              <p key={d} style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#00000044', textAlign: 'center', margin: 0, padding: '4px 0', textTransform: 'uppercase' }}>{d}</p>
             ))}
           </div>
 
-          {/* Grid de dias */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
             {Array.from({ length: primeiroDia }).map((_, i) => <div key={`empty-${i}`} />)}
             {Array.from({ length: diasNoMes }, (_, i) => i + 1).map(dia => {
               const dataStr = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
@@ -157,12 +154,12 @@ export default function AgendaCliente({ pedidos }: Props) {
               const isHoje = dataStr === agora.toISOString().split('T')[0]
               const isSelecionado = diaSelecionado === dataStr
               return (
-                <button key={dia} onClick={() => setDiaSelecionado(isSelecionado ? null : dataStr)} style={{ aspectRatio: '1', borderRadius: '10px', border: `2px solid ${isSelecionado ? '#ff33cc' : isHoje ? '#9900ff33' : 'transparent'}`, background: isSelecionado ? '#fff5fd' : isHoje ? '#f5f0ff' : pedidosDia.length > 0 ? '#fff' : 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', padding: '4px', position: 'relative' }}>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: isHoje ? 900 : 600, color: isHoje ? '#9900ff' : '#140033', margin: 0 }}>{dia}</p>
+                <button key={dia} onClick={() => setDiaSelecionado(isSelecionado ? null : dataStr)} style={{ aspectRatio: '1', borderRadius: '8px', border: `2px solid ${isSelecionado ? '#ff33cc' : isHoje ? '#9900ff33' : 'transparent'}`, background: isSelecionado ? '#fff5fd' : isHoje ? '#f5f0ff' : pedidosDia.length > 0 ? '#fff' : 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', padding: '2px' }}>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: isHoje ? 900 : 600, color: isHoje ? '#9900ff' : '#140033', margin: 0 }}>{dia}</p>
                   {pedidosDia.length > 0 && (
                     <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap', justifyContent: 'center' }}>
                       {pedidosDia.slice(0, 3).map((p, i) => (
-                        <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusCor[p.status]?.color ?? '#9900ff' }} />
+                        <div key={i} style={{ width: '5px', height: '5px', borderRadius: '50%', background: statusCor[p.status]?.color ?? '#9900ff' }} />
                       ))}
                     </div>
                   )}
@@ -171,7 +168,6 @@ export default function AgendaCliente({ pedidos }: Props) {
             })}
           </div>
 
-          {/* Pedidos do dia selecionado */}
           {diaSelecionado && (
             <div style={{ marginTop: '20px', borderTop: '1px solid #eeeeee', paddingTop: '20px' }}>
               <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 12px 0' }}>
@@ -214,8 +210,8 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
   const diasRestantes = Math.ceil((dataEvento.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
 
   return (
-    <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '16px 20px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+    <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1, minWidth: 0 }}>
         <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 900, color: '#9900ff', margin: 0, lineHeight: 1 }}>
             {dataEvento.getDate()}
@@ -224,9 +220,9 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
             {dataEvento.toLocaleString('pt-BR', { month: 'short' })}
           </p>
         </div>
-        <div>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 2px 0' }}>{pedido.nome_cliente}</p>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 6px 0' }}>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pedido.nome_cliente}</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 6px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {pedido.catalogo_temas?.nome ?? '—'} • {pedido.catalogo_kits?.nome ?? '—'}
           </p>
           <span style={{ background: s.bg, color: s.color, borderRadius: '8px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700 }}>
@@ -235,8 +231,8 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
         </div>
       </div>
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '16px', color: '#9900ff', margin: '0 0 4px 0' }}>
-          R$ {Number(pedido.valor_total).toFixed(2)}
+        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '15px', color: '#9900ff', margin: '0 0 4px 0' }}>
+          R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}
         </p>
         {pedido.status !== 'cancelado' && pedido.status !== 'concluido' && (
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: diasRestantes < 0 ? '#cc0000' : diasRestantes <= 7 ? '#cc7700' : '#00000044', margin: 0, fontWeight: 600 }}>

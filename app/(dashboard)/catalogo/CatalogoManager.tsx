@@ -87,16 +87,10 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
     if (!novoTema.nome.trim()) return
     setSalvando(true)
     const { data, error } = await supabase.from('catalogo_temas').insert({
-      usuario_id: usuarioId,
-      nome: novoTema.nome,
-      categoria: novoTema.categoria,
-      foto_url: novoTema.foto_url || null,
-      ativo: true,
+      usuario_id: usuarioId, nome: novoTema.nome, categoria: novoTema.categoria,
+      foto_url: novoTema.foto_url || null, ativo: true,
     }).select().single()
-    if (!error && data) {
-      setTemas(prev => [data, ...prev])
-      setNovoTema({ nome: '', categoria: CATEGORIAS[0], foto_url: '' })
-    }
+    if (!error && data) { setTemas(prev => [data, ...prev]); setNovoTema({ nome: '', categoria: CATEGORIAS[0], foto_url: '' }) }
     setSalvando(false)
   }
 
@@ -109,16 +103,10 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
     if (!novoKit.nome.trim() || !novoKit.preco) return
     setSalvando(true)
     const { data, error } = await supabase.from('catalogo_kits').insert({
-      usuario_id: usuarioId,
-      nome: novoKit.nome,
-      descricao: novoKit.descricao || null,
-      preco: parseFloat(novoKit.preco),
-      itens: novoKit.itens,
+      usuario_id: usuarioId, nome: novoKit.nome, descricao: novoKit.descricao || null,
+      preco: parseFloat(novoKit.preco), itens: novoKit.itens,
     }).select().single()
-    if (!error && data) {
-      setKits(prev => [data, ...prev])
-      setNovoKit({ nome: '', descricao: '', preco: '', itens: [] })
-    }
+    if (!error && data) { setKits(prev => [data, ...prev]); setNovoKit({ nome: '', descricao: '', preco: '', itens: [] }) }
     setSalvando(false)
   }
 
@@ -131,14 +119,9 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
     if (!novoAdicional.nome.trim() || !novoAdicional.preco) return
     setSalvando(true)
     const { data, error } = await supabase.from('adicionais').insert({
-      usuario_id: usuarioId,
-      nome: novoAdicional.nome,
-      preco: parseFloat(novoAdicional.preco),
+      usuario_id: usuarioId, nome: novoAdicional.nome, preco: parseFloat(novoAdicional.preco),
     }).select().single()
-    if (!error && data) {
-      setAdicionais(prev => [data, ...prev])
-      setNovoAdicional({ nome: '', preco: '' })
-    }
+    if (!error && data) { setAdicionais(prev => [data, ...prev]); setNovoAdicional({ nome: '', preco: '' }) }
     setSalvando(false)
   }
 
@@ -152,70 +135,45 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
     setPedidos(prev => prev.map(p => p.id === id ? { ...p, status } : p))
   }
 
-  const cardStyle = {
-    background: '#fff', border: '1px solid #eeeeee',
-    borderRadius: '16px', padding: '24px', marginBottom: '20px',
-  }
-
-  const inputStyle = {
-    width: '100%', background: '#fff', border: '1px solid #e5e5e5',
-    borderRadius: '12px', padding: '12px 16px', color: '#140033',
-    fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none',
-    boxSizing: 'border-box' as const,
-  }
-
-  const labelStyle = {
-    display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px',
-    fontWeight: 600, color: '#00000055', marginBottom: '6px',
-    letterSpacing: '1px', textTransform: 'uppercase' as const,
-  }
+  const cardStyle = { background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px', marginBottom: '20px' }
+  const inputStyle = { width: '100%', background: '#fff', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '12px 16px', color: '#140033', fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }
+  const labelStyle = { display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', marginBottom: '6px', letterSpacing: '1px', textTransform: 'uppercase' as const }
 
   const statusCor: Record<string, string> = {
-    pendente: '#ff9900',
-    confirmado: '#00aa55',
-    cancelado: '#ff3333',
-    concluido: '#9900ff',
+    pendente: '#ff9900', confirmado: '#00aa55', cancelado: '#ff3333', concluido: '#9900ff',
   }
 
   return (
     <div>
 
       {/* Link público */}
-      <div style={{ background: 'linear-gradient(135deg, #fff5fd, #f5f0ff)', border: '1px solid #ff33cc22', borderRadius: '16px', padding: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 4px 0' }}>
-            🔗 Seu link de pedidos
-          </p>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9900ff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {linkPublico}
-          </p>
+      <div style={{ background: 'linear-gradient(135deg, #fff5fd, #f5f0ff)', border: '1px solid #ff33cc22', borderRadius: '16px', padding: '16px', marginBottom: '24px' }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 8px 0' }}>
+          🔗 Seu link de pedidos
+        </p>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9900ff', margin: '0 0 12px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {linkPublico}
+        </p>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={copiarLink} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: linkCopiado ? '#00aa55' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '10px', padding: '10px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+            {linkCopiado ? <Check size={14} /> : <Copy size={14} />}
+            {linkCopiado ? 'Copiado!' : 'Copiar link'}
+          </button>
+          <a href={linkPublico} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px', background: '#fff', border: '1px solid #e5e5e5', borderRadius: '10px', flexShrink: 0 }}>
+            <ExternalLink size={16} style={{ color: '#9900ff' }} />
+          </a>
         </div>
-        <button onClick={copiarLink} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: linkCopiado ? '#00aa55' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '10px', padding: '10px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-          {linkCopiado ? <Check size={14} /> : <Copy size={14} />}
-          {linkCopiado ? 'Copiado!' : 'Copiar link'}
-        </button>
-        <a href={linkPublico} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', background: '#fff', border: '1px solid #e5e5e5', borderRadius: '10px', flexShrink: 0 }}>
-          <ExternalLink size={16} style={{ color: '#9900ff' }} />
-        </a>
       </div>
 
       {/* Abas */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '2px' }}>
         {[
           { key: 'temas', label: '🎨 Temas', count: temas.length },
           { key: 'kits', label: '📦 Kits', count: kits.length },
           { key: 'adicionais', label: '✨ Adicionais', count: adicionais.length },
           { key: 'pedidos', label: '🛍️ Pedidos', count: pedidos.length },
         ].map(aba => (
-          <button key={aba.key} onClick={() => setAbaAtiva(aba.key as typeof abaAtiva)} style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '10px 16px', whiteSpace: 'nowrap',
-            background: abaAtiva === aba.key ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#fff',
-            border: `1px solid ${abaAtiva === aba.key ? 'transparent' : '#e5e5e5'}`,
-            borderRadius: '12px', cursor: 'pointer',
-            fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px',
-            color: abaAtiva === aba.key ? '#fff' : '#140033',
-          }}>
+          <button key={aba.key} onClick={() => setAbaAtiva(aba.key as typeof abaAtiva)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', whiteSpace: 'nowrap', background: abaAtiva === aba.key ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#fff', border: `1px solid ${abaAtiva === aba.key ? 'transparent' : '#e5e5e5'}`, borderRadius: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: abaAtiva === aba.key ? '#fff' : '#140033' }}>
             {aba.label}
             <span style={{ background: abaAtiva === aba.key ? 'rgba(255,255,255,0.25)' : '#f0f0f0', borderRadius: '20px', padding: '1px 7px', fontSize: '12px' }}>
               {aba.count}
@@ -228,11 +186,9 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
       {abaAtiva === 'temas' && (
         <>
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
-              ➕ Novo tema
-            </h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>➕ Novo tema</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="cat-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={labelStyle}>Nome do tema</label>
                   <input value={novoTema.nome} onChange={e => setNovoTema(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Urso Marinheiro" style={inputStyle} />
@@ -259,10 +215,9 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
             <div style={{ ...cardStyle, textAlign: 'center', padding: '48px' }}>
               <p style={{ fontSize: '32px', margin: '0 0 12px 0' }}>🎨</p>
               <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>Nenhum tema cadastrado</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000055', margin: 0 }}>Crie seu primeiro tema acima</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+            <div className="cat-temas-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
               {temas.map(tema => (
                 <div key={tema.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', overflow: 'hidden' }}>
                   <div style={{ height: '120px', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -275,10 +230,10 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                       {tema.categoria}
                     </div>
                   </div>
-                  <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: 0 }}>{tema.nome}</p>
-                    <button onClick={() => deletarTema(tema.id)} style={{ width: '32px', height: '32px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Trash2 size={13} />
+                  <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#140033', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tema.nome}</p>
+                    <button onClick={() => deletarTema(tema.id)} style={{ width: '30px', height: '30px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
@@ -292,11 +247,9 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
       {abaAtiva === 'kits' && (
         <>
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
-              ➕ Novo kit
-            </h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>➕ Novo kit</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="cat-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={labelStyle}>Nome do kit</label>
                   <input value={novoKit.nome} onChange={e => setNovoKit(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Kit Básico" style={inputStyle} />
@@ -335,24 +288,24 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {kits.map(kit => (
-                <div key={kit.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Package size={18} style={{ color: '#9900ff' }} />
+                <div key={kit.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Package size={16} style={{ color: '#9900ff' }} />
                     </div>
-                    <div>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0' }}>{kit.nome}</p>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kit.nome}</p>
                       <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000044', margin: 0 }}>
                         {Array.isArray(kit.itens) ? kit.itens.join(', ') : 'Sem itens'}
                       </p>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#9900ff', margin: 0 }}>
-                      R$ {Number(kit.preco).toFixed(2)}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0 }}>
+                      R$ {Number(kit.preco).toFixed(2).replace('.', ',')}
                     </p>
-                    <button onClick={() => deletarKit(kit.id)} style={{ width: '32px', height: '32px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Trash2 size={13} />
+                    <button onClick={() => deletarKit(kit.id)} style={{ width: '30px', height: '30px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
@@ -366,24 +319,22 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
       {abaAtiva === 'adicionais' && (
         <>
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
-              ➕ Novo adicional
-            </h2>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '150px' }}>
-                <label style={labelStyle}>Nome</label>
-                <input value={novoAdicional.nome} onChange={e => setNovoAdicional(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Fotografia" style={inputStyle} />
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>➕ Novo adicional</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="cat-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={labelStyle}>Nome</label>
+                  <input value={novoAdicional.nome} onChange={e => setNovoAdicional(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Fotografia" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Preço (R$)</label>
+                  <input type="number" value={novoAdicional.preco} onChange={e => setNovoAdicional(p => ({ ...p, preco: e.target.value }))} placeholder="0,00" style={inputStyle} />
+                </div>
               </div>
-              <div style={{ width: '140px' }}>
-                <label style={labelStyle}>Preço (R$)</label>
-                <input type="number" value={novoAdicional.preco} onChange={e => setNovoAdicional(p => ({ ...p, preco: e.target.value }))} placeholder="0,00" style={inputStyle} />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <button onClick={criarAdicional} disabled={salvando || !novoAdicional.nome.trim() || !novoAdicional.preco} style={{ background: 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '12px 20px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                  <Plus size={16} />
-                  Adicionar
-                </button>
-              </div>
+              <button onClick={criarAdicional} disabled={salvando || !novoAdicional.nome.trim() || !novoAdicional.preco} style={{ background: 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <Plus size={16} />
+                Adicionar
+              </button>
             </div>
           </div>
 
@@ -395,17 +346,17 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {adicionais.map(adicional => (
-                <div key={adicional.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Tag size={16} style={{ color: '#9900ff' }} />
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: 0 }}>{adicional.nome}</p>
+                <div key={adicional.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <Tag size={15} style={{ color: '#9900ff', flexShrink: 0 }} />
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{adicional.nome}</p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#9900ff', margin: 0 }}>
-                      R$ {Number(adicional.preco).toFixed(2)}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0 }}>
+                      R$ {Number(adicional.preco).toFixed(2).replace('.', ',')}
                     </p>
-                    <button onClick={() => deletarAdicional(adicional.id)} style={{ width: '32px', height: '32px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Trash2 size={13} />
+                    <button onClick={() => deletarAdicional(adicional.id)} style={{ width: '30px', height: '30px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
@@ -430,30 +381,28 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                 const tema = temas.find(t => t.id === pedido.tema_id)
                 const kit = kits.find(k => k.id === pedido.catalogo_kit_id)
                 return (
-                  <div key={pedido.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '18px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 2px 0' }}>
+                  <div key={pedido.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px', gap: '10px' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {pedido.nome_cliente}
                         </p>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: 0 }}>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: 0 }}>
                           {tema?.nome ?? '—'} • {kit?.nome ?? '—'} • {new Date(pedido.data_evento + 'T00:00:00').toLocaleDateString('pt-BR')}
                         </p>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#9900ff', margin: 0 }}>
-                          R$ {Number(pedido.valor_total).toFixed(2)}
-                        </p>
-                        <select value={pedido.status} onChange={e => atualizarStatusPedido(pedido.id, e.target.value)} style={{ background: `${statusCor[pedido.status]}15`, border: `1px solid ${statusCor[pedido.status]}33`, borderRadius: '8px', padding: '6px 10px', color: statusCor[pedido.status], fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
-                          <option value="pendente">⏳ Pendente</option>
-                          <option value="confirmado">✅ Confirmado</option>
-                          <option value="concluido">🎉 Concluído</option>
-                          <option value="cancelado">❌ Cancelado</option>
-                        </select>
-                      </div>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0, flexShrink: 0 }}>
+                        R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}
+                      </p>
                     </div>
+                    <select value={pedido.status} onChange={e => atualizarStatusPedido(pedido.id, e.target.value)} style={{ background: `${statusCor[pedido.status]}15`, border: `1px solid ${statusCor[pedido.status]}33`, borderRadius: '8px', padding: '7px 10px', color: statusCor[pedido.status], fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', outline: 'none', width: '100%' }}>
+                      <option value="pendente">⏳ Pendente</option>
+                      <option value="confirmado">✅ Confirmado</option>
+                      <option value="concluido">🎉 Concluído</option>
+                      <option value="cancelado">❌ Cancelado</option>
+                    </select>
                     {pedido.observacoes && (
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: 0, background: '#f9f9f9', borderRadius: '8px', padding: '8px 12px' }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '10px 0 0 0', background: '#f9f9f9', borderRadius: '8px', padding: '8px 12px' }}>
                         💬 {pedido.observacoes}
                       </p>
                     )}
@@ -464,6 +413,13 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
           )}
         </>
       )}
+
+      <style>{`
+        @media (max-width: 640px) {
+          .cat-grid-2 { grid-template-columns: 1fr !important; }
+          .cat-temas-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   )
 }

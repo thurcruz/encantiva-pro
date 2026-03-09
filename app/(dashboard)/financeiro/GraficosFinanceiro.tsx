@@ -24,13 +24,11 @@ export default function GraficosFinanceiro({ pedidos }: Props) {
   const agora = new Date()
   const mesesAtras = periodo === '3m' ? 3 : periodo === '6m' ? 6 : 12
 
-  // Gera os últimos N meses
   const mesesPeriodo = Array.from({ length: mesesAtras }, (_, i) => {
     const d = new Date(agora.getFullYear(), agora.getMonth() - (mesesAtras - 1 - i), 1)
     return { ano: d.getFullYear(), mes: d.getMonth(), label: `${MESES[d.getMonth()]}/${String(d.getFullYear()).slice(2)}` }
   })
 
-  // Receita por mês (apenas não cancelados)
   const receitaPorMes = mesesPeriodo.map(({ ano, mes, label }) => {
     const total = pedidos
       .filter(p => {
@@ -43,13 +41,11 @@ export default function GraficosFinanceiro({ pedidos }: Props) {
 
   const maxReceita = Math.max(...receitaPorMes.map(m => m.total), 1)
 
-  // Totais gerais
   const totalRecebido = pedidos.filter(p => p.status === 'concluido').reduce((s, p) => s + Number(p.valor_total), 0)
   const totalPendente = pedidos.filter(p => p.status === 'pendente' || p.status === 'confirmado').reduce((s, p) => s + Number(p.valor_total), 0)
   const totalCancelado = pedidos.filter(p => p.status === 'cancelado').reduce((s, p) => s + Number(p.valor_total), 0)
   const totalGeral = pedidos.filter(p => p.status !== 'cancelado').reduce((s, p) => s + Number(p.valor_total), 0)
 
-  // Formas de pagamento
   const pagamentos = pedidos
     .filter(p => p.status !== 'cancelado' && p.forma_pagamento)
     .reduce((acc, p) => {
@@ -70,31 +66,30 @@ export default function GraficosFinanceiro({ pedidos }: Props) {
 
   return (
     <div>
-
       {/* Cards resumo */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '24px' }}>
+      <div className="fin-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '24px' }}>
         {[
-          { label: 'Total geral', value: `R$ ${totalGeral.toFixed(2)}`, sub: 'Todos exceto cancelados', emoji: '💰', color: '#9900ff' },
-          { label: 'Recebido', value: `R$ ${totalRecebido.toFixed(2)}`, sub: 'Pedidos concluídos', emoji: '✅', color: '#00aa55' },
-          { label: 'A receber', value: `R$ ${totalPendente.toFixed(2)}`, sub: 'Pendentes + confirmados', emoji: '⏳', color: '#ff9900' },
-          { label: 'Cancelado', value: `R$ ${totalCancelado.toFixed(2)}`, sub: 'Pedidos cancelados', emoji: '❌', color: '#ff3333' },
+          { label: 'Total geral', value: `R$ ${totalGeral.toFixed(2).replace('.', ',')}`, sub: 'Todos exceto cancelados', emoji: '💰', color: '#9900ff' },
+          { label: 'Recebido', value: `R$ ${totalRecebido.toFixed(2).replace('.', ',')}`, sub: 'Pedidos concluídos', emoji: '✅', color: '#00aa55' },
+          { label: 'A receber', value: `R$ ${totalPendente.toFixed(2).replace('.', ',')}`, sub: 'Pendentes + confirmados', emoji: '⏳', color: '#ff9900' },
+          { label: 'Cancelado', value: `R$ ${totalCancelado.toFixed(2).replace('.', ',')}`, sub: 'Pedidos cancelados', emoji: '❌', color: '#ff3333' },
         ].map((card, i) => (
-          <div key={i} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${card.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+          <div key={i} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${card.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
               {card.emoji}
             </div>
-            <div>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', margin: '0 0 2px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{card.label}</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '20px', fontWeight: 900, color: card.color, margin: '0 0 1px 0', letterSpacing: '-0.5px' }}>{card.value}</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044', margin: 0 }}>{card.sub}</p>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#00000055', margin: '0 0 2px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{card.label}</p>
+              <p className="fin-card-value" style={{ fontFamily: 'Inter, sans-serif', fontSize: '18px', fontWeight: 900, color: card.color, margin: '0 0 1px 0', letterSpacing: '-0.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.value}</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#00000044', margin: 0 }}>{card.sub}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Gráfico de barras por mês */}
+      {/* Gráfico de barras */}
       <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
           <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: 0 }}>
             📈 Receita por mês
           </h2>
@@ -107,27 +102,26 @@ export default function GraficosFinanceiro({ pedidos }: Props) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '160px', padding: '0 4px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '160px', padding: '0 4px', overflowX: 'auto' }}>
           {receitaPorMes.map((m, i) => {
             const height = maxReceita > 0 ? Math.max((m.total / maxReceita) * 140, m.total > 0 ? 4 : 0) : 0
             return (
-              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <div key={i} style={{ flex: 1, minWidth: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                 {m.total > 0 && (
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 700, color: '#9900ff', margin: 0 }}>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 700, color: '#9900ff', margin: 0, whiteSpace: 'nowrap' }}>
                     {m.total >= 1000 ? `R$${(m.total / 1000).toFixed(1)}k` : `R$${m.total.toFixed(0)}`}
                   </p>
                 )}
                 <div style={{ width: '100%', height: `${height}px`, background: 'linear-gradient(180deg, #ff33cc, #9900ff)', borderRadius: '6px 6px 0 0', minHeight: m.total > 0 ? '4px' : '0' }} />
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#00000055', margin: 0, whiteSpace: 'nowrap' }}>{m.label}</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', color: '#00000055', margin: 0, whiteSpace: 'nowrap' }}>{m.label}</p>
               </div>
             )
           })}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-
-        {/* Pedidos pagos x pendentes */}
+      {/* Status + Pagamentos */}
+      <div className="fin-bottom-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         <div style={cardStyle}>
           <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
             💳 Status financeiro
@@ -142,7 +136,7 @@ export default function GraficosFinanceiro({ pedidos }: Props) {
               <div key={i} style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: item.color }}>{item.label}</span>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#140033' }}>R$ {item.value.toFixed(2)}</span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#140033' }}>R$ {item.value.toFixed(2).replace('.', ',')}</span>
                 </div>
                 <div style={{ height: '6px', background: '#f0f0f0', borderRadius: '99px', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: item.color, borderRadius: '99px' }} />
@@ -152,7 +146,6 @@ export default function GraficosFinanceiro({ pedidos }: Props) {
           })}
         </div>
 
-        {/* Formas de pagamento */}
         <div style={cardStyle}>
           <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
             💰 Formas de pagamento
@@ -177,6 +170,14 @@ export default function GraficosFinanceiro({ pedidos }: Props) {
           )}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .fin-cards-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+          .fin-card-value { font-size: 16px !important; }
+          .fin-bottom-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+        }
+      `}</style>
     </div>
   )
 }

@@ -73,28 +73,31 @@ export default async function PaginaInicio() {
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
       <PageHeader titulo="Início" subtitulo="Visão geral do seu negócio" />
 
-      <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '28px' }}>
+      <div className="page-content inicio-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
+
+        {/* Cards métricas */}
+        <div className="cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '28px' }}>
           {[
             { label: 'Pedidos este mês', value: pedidosMesArr.length, sub: `${pedidosTodosArr.length} no total`, emoji: '🛍️', grad: 'linear-gradient(135deg, #ff33cc, #9900ff)' },
-            { label: 'Receita este mês', value: `R$ ${receitaMes.toFixed(2)}`, sub: `R$ ${receitaTotal.toFixed(2)} no total`, emoji: '💰', grad: 'linear-gradient(135deg, #00cc88, #0066ff)' },
-            { label: 'Receita prevista', value: `R$ ${receitaPrevista.toFixed(2)}`, sub: 'Pedidos pendentes + confirmados', emoji: '📈', grad: 'linear-gradient(135deg, #ff9900, #ff33cc)' },
+            { label: 'Receita este mês', value: `R$ ${receitaMes.toFixed(2).replace('.', ',')}`, sub: `R$ ${receitaTotal.toFixed(2).replace('.', ',')} no total`, emoji: '💰', grad: 'linear-gradient(135deg, #00cc88, #0066ff)' },
+            { label: 'Receita prevista', value: `R$ ${receitaPrevista.toFixed(2).replace('.', ',')}`, sub: 'Pedidos pendentes + confirmados', emoji: '📈', grad: 'linear-gradient(135deg, #ff9900, #ff33cc)' },
             { label: 'Próximos eventos', value: proximosArr.length, sub: 'A partir de hoje', emoji: '📅', grad: 'linear-gradient(135deg, #9900ff, #0066ff)' },
           ].map((card, i) => (
-            <div key={i} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: card.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
+            <div key={i} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: card.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
                 {card.emoji}
               </div>
-              <div>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, color: '#00000055', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{card.label}</p>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: 900, color: '#140033', margin: '0 0 2px 0', letterSpacing: '-1px' }}>{card.value}</p>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000044', margin: 0 }}>{card.sub}</p>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{card.label}</p>
+                <p className="card-value" style={{ fontFamily: 'Inter, sans-serif', fontSize: '22px', fontWeight: 900, color: '#140033', margin: '0 0 2px 0', letterSpacing: '-1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.value}</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044', margin: 0 }}>{card.sub}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }}>
+        {/* Status + Temas */}
+        <div className="graficos-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }}>
           <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px' }}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>📊 Pedidos por status</h2>
             {Object.keys(statusCor).map(status => {
@@ -121,16 +124,17 @@ export default async function PaginaInicio() {
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>🎨 Temas mais pedidos</h2>
             {temasMaisPedidos.length > 0 ? temasMaisPedidos.map((tema, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < temasMaisPedidos.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#9900ff' }}>{i + 1}</div>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', color: '#140033', margin: 0 }}>{tema.nome}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#9900ff', flexShrink: 0 }}>{i + 1}</div>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', color: '#140033', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tema.nome}</p>
                 </div>
-                <span style={{ background: '#f5f0ff', borderRadius: '20px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#9900ff' }}>{tema.count}x</span>
+                <span style={{ background: '#f5f0ff', borderRadius: '20px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#9900ff', flexShrink: 0, marginLeft: '8px' }}>{tema.count}x</span>
               </div>
             )) : <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000044', textAlign: 'center', margin: '24px 0' }}>Nenhum pedido ainda</p>}
           </div>
         </div>
 
+        {/* Próximos eventos */}
         <div style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px' }}>
           <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>📅 Próximos eventos</h2>
           {proximosArr.length > 0 ? (
@@ -141,22 +145,22 @@ export default async function PaginaInicio() {
                 const urgente = diasRestantes <= 7
                 const temaNome = (pedido.catalogo_temas as { nome: string } | null)?.nome ?? '—'
                 return (
-                  <div key={pedido.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: urgente ? '#fff8ec' : '#f9f9f9', borderRadius: '12px', border: `1px solid ${urgente ? '#ffcc0033' : '#eeeeee'}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: urgente ? 'linear-gradient(135deg, #ff990022, #ff33cc22)' : 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div key={pedido.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: urgente ? '#fff8ec' : '#f9f9f9', borderRadius: '12px', border: `1px solid ${urgente ? '#ffcc0033' : '#eeeeee'}`, gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: urgente ? 'linear-gradient(135deg, #ff990022, #ff33cc22)' : 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 900, color: urgente ? '#cc7700' : '#9900ff', margin: 0, lineHeight: 1 }}>{dataEvento.getDate()}</p>
                         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 600, color: urgente ? '#cc7700' : '#9900ff', margin: 0, textTransform: 'uppercase' }}>{dataEvento.toLocaleString('pt-BR', { month: 'short' })}</p>
                       </div>
-                      <div>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0' }}>{pedido.nome_cliente}</p>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pedido.nome_cliente}</p>
                         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: 0 }}>{temaNome}</p>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: urgente ? '#cc7700' : '#00000055', margin: '0 0 2px 0' }}>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: urgente ? '#cc7700' : '#00000055', margin: '0 0 2px 0', whiteSpace: 'nowrap' }}>
                         {diasRestantes === 0 ? '🔴 Hoje!' : diasRestantes === 1 ? '🟡 Amanhã' : `${diasRestantes} dias`}
                       </p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0 }}>R$ {Number(pedido.valor_total).toFixed(2)}</p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0 }}>R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}</p>
                     </div>
                   </div>
                 )
@@ -170,6 +174,15 @@ export default async function PaginaInicio() {
           )}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .inicio-content { padding: 20px 16px !important; }
+          .cards-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .graficos-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .card-value { font-size: 18px !important; }
+        }
+      `}</style>
     </div>
   )
 }
