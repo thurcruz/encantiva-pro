@@ -13,18 +13,22 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { fatias, nome } = body as {
+    const { fatias, nome, orientacao } = body as {
       fatias: string[]
       nome: string
+      orientacao?: 'retrato' | 'paisagem'
     }
 
     if (!fatias || fatias.length === 0) throw new Error('Nenhuma fatia recebida')
 
     const pdfDoc = await PDFDocument.create()
 
-    const larguraPagina = 842  // A4 paisagem
-    const alturaPagina = 595
-    const sangria = 28  // 1cm
+    // Paisagem (2 cols × 3 linhas) = folha A4 deitada (842 × 595)
+    // Retrato  (3 cols × 2 linhas) = folha A4 em pé  (595 × 842)
+    const isPaisagem = orientacao === 'paisagem'
+    const larguraPagina = isPaisagem ? 842 : 595
+    const alturaPagina  = isPaisagem ? 595 : 842
+    const sangria = 28
 
     for (let i = 0; i < fatias.length; i++) {
       const page = pdfDoc.addPage([larguraPagina, alturaPagina])
@@ -39,7 +43,6 @@ Deno.serve(async (req) => {
         image = await pdfDoc.embedJpg(imageBytes)
       }
 
-      // Imagem dentro das margens, sem ultrapassar bordas
       page.drawImage(image, {
         x: sangria,
         y: sangria,
@@ -69,42 +72,96 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Página de montagem
+    // ─── PÁGINA DE MONTAGEM ───────────────────────────────────────────────────
     const paginaMontagem = pdfDoc.addPage([larguraPagina, alturaPagina])
-    const linhaY = alturaPagina - 80
+    const centroX = larguraPagina / 2
+    const topo = alturaPagina - 50
 
     paginaMontagem.drawText('GUIA DE MONTAGEM', {
-      x: larguraPagina / 2 - 80,
-      y: linhaY,
+      x: centroX - 85,
+      y: topo,
       size: 18,
       color: rgb(0.08, 0, 0.2),
     })
 
-    const instrucoes = [
-      'Grade: 2 colunas x 3 linhas (vertical)',
-      '',
-      '[ 1 ] [ 2 ]',
-      '[ 3 ] [ 4 ]',
-      '[ 5 ] [ 6 ]',
-      '',
-      '1. Imprima todas as 6 folhas em A4 vertical.',
-      '2. Recorte na linha de corte (marcas nos cantos).',
-      '3. Sobreponha 1cm nas bordas ao colar',
-      '   para esconder as emendas.',
-      '4. Cole na ordem indicada acima.',
-      '5. O painel finalizado tera ~50x50cm.',
-    ]
-
-    instrucoes.forEach((linha, idx) => {
-      if (!linha) return
-      paginaMontagem.drawText(linha, {
-        x: larguraPagina / 2 - 130,
-        y: linhaY - 50 - idx * 26,
-        size: linha.startsWith('[') ? 14 : 11,
-        color: linha.startsWith('[') ? rgb(0.6, 0, 0.8) : rgb(0.2, 0.2, 0.2),
+    if (isPaisagem) {
+      // ── Paisagem: 2 colunas × 3 linhas, folha deitada ──
+      paginaMontagem.drawText('Grade: 2 colunas x 3 linhas  |  Folha deitada (paisagem)', {
+        x: centroX - 155,
+        y: topo - 28,
+        size: 10,
+        color: rgb(0.4, 0.4, 0.4),
       })
-    })
 
+      const celulaW = 90
+      const celulaH = 58
+      const gap = 6
+      const grade = [['1','2'], ['3','4'], ['5','6']]
+      const gradeW = 2 * celulaW + gap
+      const gradeH = 3 * celulaH + 2 * gap
+      const startX = centroX - gradeW / 2
+      const startY = topo - 60
+
+      grade.forEach((linha, row) => {
+        linha.forEach((num, col) => {
+          const x = startX + col * (celulaW + gap)
+          const y = startY - row * (celulaH + gap) - celulaH
+          paginaMontagem.drawRectangle({ x, y, width: celulaW, height: celulaH, color: rgb(0.96, 0.90, 1.0), borderColor: rgb(0.6, 0, 0.8), borderWidth: 1 })
+          paginaMontagem.drawText(num, { x: x + celulaW / 2 - 5, y: y + celulaH / 2 - 7, size: 14, color: rgb(0.6, 0, 0.8) })
+        })
+      })
+
+      const instrucoes = [
+        '1. Imprima as 6 folhas em A4 paisagem (deitado).',
+        '2. Recorte nas marcas de corte dos cantos.',
+        '3. Cole: coluna 1 (folhas 1-3-5) e coluna 2 (folhas 2-4-6).',
+        '4. Sobreponha ~1cm nas bordas para esconder as emendas.',
+        '5. Painel finalizado: ~50 x 50cm.',
+      ]
+      instrucoes.forEach((linha, idx) => {
+        paginaMontagem.drawText(linha, { x: centroX - 185, y: startY - gradeH - 40 - idx * 22, size: 10, color: rgb(0.2, 0.2, 0.2) })
+      })
+
+    } else {
+      // ── Retrato: 3 colunas × 2 linhas, folha em pé ──
+      paginaMontagem.drawText('Grade: 3 colunas x 2 linhas  |  Folha em pe (retrato)', {
+        x: centroX - 155,
+        y: topo - 28,
+        size: 10,
+        color: rgb(0.4, 0.4, 0.4),
+      })
+
+      const celulaW = 58
+      const celulaH = 90
+      const gap = 6
+      const grade = [['1','2','3'], ['4','5','6']]
+      const gradeW = 3 * celulaW + 2 * gap
+      const gradeH = 2 * celulaH + gap
+      const startX = centroX - gradeW / 2
+      const startY = topo - 60
+
+      grade.forEach((linha, row) => {
+        linha.forEach((num, col) => {
+          const x = startX + col * (celulaW + gap)
+          const y = startY - row * (celulaH + gap) - celulaH
+          paginaMontagem.drawRectangle({ x, y, width: celulaW, height: celulaH, color: rgb(0.96, 0.90, 1.0), borderColor: rgb(0.6, 0, 0.8), borderWidth: 1 })
+          paginaMontagem.drawText(num, { x: x + celulaW / 2 - 5, y: y + celulaH / 2 - 7, size: 14, color: rgb(0.6, 0, 0.8) })
+        })
+      })
+
+      const instrucoes = [
+        '1. Imprima as 6 folhas em A4 retrato (em pe).',
+        '2. Recorte nas marcas de corte dos cantos.',
+        '3. Cole: linha 1 (folhas 1-2-3) e linha 2 (folhas 4-5-6).',
+        '4. Sobreponha ~1cm nas bordas para esconder as emendas.',
+        '5. Painel finalizado: ~50 x 50cm.',
+      ]
+      instrucoes.forEach((linha, idx) => {
+        paginaMontagem.drawText(linha, { x: centroX - 170, y: startY - gradeH - 40 - idx * 22, size: 10, color: rgb(0.2, 0.2, 0.2) })
+      })
+    }
+
+    // ─── EXPORTAR ─────────────────────────────────────────────────────────────
     const pdfBytes = await pdfDoc.save()
     const uint8Array = new Uint8Array(pdfBytes)
     let binary = ''

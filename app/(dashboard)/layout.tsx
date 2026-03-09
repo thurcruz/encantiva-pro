@@ -45,8 +45,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         width: '240px', flexShrink: 0, background: '#0d0022',
         display: 'flex', flexDirection: 'column',
         position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 40,
-        borderTopRightRadius: '24px',
-        borderBottomRightRadius: '24px',
+        borderTopRightRadius: '16px',
+        borderBottomRightRadius: '16px',
       }} className="sidebar-desktop">
 
         {/* Logo */}

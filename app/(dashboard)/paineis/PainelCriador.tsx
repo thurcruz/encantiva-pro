@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import NextImage from 'next/image'
 import Link from 'next/link'
 import { Download, Trash2, ImageIcon, Upload, Users, Lock, X, Check } from 'lucide-react'
+import OrientacaoToggle from '../componentes/OrientacaoToggle'
 
 interface Painel {
   id: string
@@ -33,6 +34,8 @@ interface Props {
   isAssinante: boolean
 }
 
+type Orientacao = 'paisagem' | 'retrato'
+
 export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAssinante }: Props) {
   const supabase = createClient()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -50,17 +53,19 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
   const [carregandoComunidade, setCarregandoComunidade] = useState(false)
   const [modalUpgrade, setModalUpgrade] = useState(false)
   const [publicando, setPublicando] = useState<string | null>(null)
+  const [orientacao, setOrientacao] = useState<Orientacao>('paisagem')
 
-  const COLS = 2
-  const ROWS = 3
+  // Paisagem = 2 colunas × 3 linhas | Retrato = 3 colunas × 2 linhas
+  const COLS = orientacao === 'paisagem' ? 2 : 3
+  const ROWS = orientacao === 'paisagem' ? 3 : 2
 
   const cortarImagem = useCallback((img: HTMLImageElement) => {
     const novasFatias: string[] = []
     for (let row = 0; row < ROWS; row++) {
       for (let col = 0; col < COLS; col++) {
         const canvas = document.createElement('canvas')
-        const larguraFatia = img.width / COLS
-        const alturaFatia = img.height / ROWS
+        const larguraFatia = img.naturalWidth / COLS
+        const alturaFatia = img.naturalHeight / ROWS
         canvas.width = larguraFatia
         canvas.height = alturaFatia
         const ctx = canvas.getContext('2d')!
@@ -71,19 +76,16 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       }
     }
     setFatias(novasFatias)
-  }, [])
+  }, [COLS, ROWS])
 
   useEffect(() => {
     if (!imagem) return
     cortarImagem(imagem)
-  }, [imagem, cortarImagem])
+  }, [imagem, orientacao, cortarImagem])
 
   const carregarComunidade = useCallback(async () => {
     setCarregandoComunidade(true)
-    const { data } = await supabase
-      .from('paineis_comunidade')
-      .select('*')
-      .order('downloads', { ascending: false })
+    const { data } = await supabase.from('paineis_comunidade').select('*').order('downloads', { ascending: false })
     if (data) setPaineisComunidade(data)
     setCarregandoComunidade(false)
   }, [supabase])
@@ -110,8 +112,11 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       const img = new window.Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
-        canvas.width = 1240
-        canvas.height = 1169
+        // Paisagem: fatia larga (1240×825) | Retrato: fatia alta (825×1240) aprox A4
+        const largura = orientacao === 'paisagem' ? 1240 : 827
+        const altura  = orientacao === 'paisagem' ? 825  : 1169
+        canvas.width = largura
+        canvas.height = altura
         const ctx = canvas.getContext('2d')!
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
@@ -138,15 +143,11 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ fatias: fatiasPequenas, nome }),
+          body: JSON.stringify({ fatias: fatiasPequenas, nome, orientacao }),
         }
       )
 
-      if (!response.ok) {
-        const texto = await response.text()
-        throw new Error(`Erro ${response.status}: ${texto}`)
-      }
-
+      if (!response.ok) throw new Error(`Erro ${response.status}: ${await response.text()}`)
       const result = await response.json()
       if (result.error) throw new Error(result.error)
 
@@ -156,9 +157,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
 
       let imagemUrl = null
       if (imagemFile) {
-        const { data: imgData } = await supabase.storage
-          .from('paineis')
-          .upload(`${usuarioId}/${Date.now()}_original.jpg`, imagemFile, { upsert: true })
+        const { data: imgData } = await supabase.storage.from('paineis').upload(`${usuarioId}/${Date.now()}_original.jpg`, imagemFile, { upsert: true })
         if (imgData) {
           const { data: urlData } = supabase.storage.from('paineis').getPublicUrl(imgData.path)
           imagemUrl = urlData.publicUrl
@@ -166,10 +165,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       }
 
       const pdfPath = `${usuarioId}/${Date.now()}_${nome}.pdf`
-      const { data: pdfData } = await supabase.storage
-        .from('paineis')
-        .upload(pdfPath, pdfBlob, { upsert: true })
-
+      const { data: pdfData } = await supabase.storage.from('paineis').upload(pdfPath, pdfBlob, { upsert: true })
       let pdfUrl = null
       if (pdfData) {
         const { data: urlData } = supabase.storage.from('paineis').getPublicUrl(pdfData.path)
@@ -177,12 +173,9 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       }
 
       const { data: novoPainel } = await supabase.from('paineis').insert({
-        usuario_id: usuarioId,
-        nome,
-        tipo: '6',
-        imagem_url: imagemUrl,
-        pdf_url: pdfUrl,
-        publicado_comunidade: false,
+        usuario_id: usuarioId, nome,
+        tipo: orientacao === 'paisagem' ? '6-paisagem' : '6-retrato',
+        imagem_url: imagemUrl, pdf_url: pdfUrl, publicado_comunidade: false,
       }).select().single()
 
       if (novoPainel) setPaineis(prev => [novoPainel, ...prev])
@@ -204,20 +197,14 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
   async function publicarNaComunidade(painel: Painel) {
     if (!painel.pdf_url || !painel.imagem_url) return
     setPublicando(painel.id)
-
     const { error } = await supabase.from('paineis_comunidade').insert({
-      usuario_id: usuarioId,
-      nome: painel.nome,
-      descricao: descricao || null,
-      imagem_url: painel.imagem_url,
-      pdf_url: painel.pdf_url,
+      usuario_id: usuarioId, nome: painel.nome, descricao: descricao || null,
+      imagem_url: painel.imagem_url, pdf_url: painel.pdf_url,
     })
-
     if (!error) {
       await supabase.from('paineis').update({ publicado_comunidade: true }).eq('id', painel.id)
       setPaineis(prev => prev.map(p => p.id === painel.id ? { ...p, publicado_comunidade: true } : p))
     }
-
     setPublicando(null)
   }
 
@@ -232,27 +219,12 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
     setPaineis(prev => prev.filter(p => p.id !== id))
   }
 
-  const cardStyle = {
-    background: '#fff', border: '1px solid #eeeeee',
-    borderRadius: '16px', padding: '24px', marginBottom: '20px',
-  }
-
-  const labelStyle = {
-    display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px',
-    fontWeight: 600, color: '#00000055', marginBottom: '6px',
-    letterSpacing: '1px', textTransform: 'uppercase' as const,
-  }
-
-  const inputStyle = {
-    width: '100%', background: '#fff', border: '1px solid #e5e5e5',
-    borderRadius: '12px', padding: '12px 16px', color: '#140033',
-    fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none',
-    boxSizing: 'border-box' as const,
-  }
+  const cardStyle = { background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px', marginBottom: '20px' }
+  const labelStyle = { display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', marginBottom: '6px', letterSpacing: '1px', textTransform: 'uppercase' as const }
+  const inputStyle = { width: '100%', background: '#fff', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '12px 16px', color: '#140033', fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }
 
   return (
     <div>
-
       {/* Abas */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
         {[
@@ -268,9 +240,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
             color: abaAtiva === aba.key ? '#fff' : '#140033',
           }}>
             {aba.label}
-            {aba.key === 'comunidade' && !isAssinante && (
-              <span style={{ marginLeft: '6px', fontSize: '11px', opacity: 0.8 }}>🔒 Download</span>
-            )}
+            {aba.key === 'comunidade' && !isAssinante && <span style={{ marginLeft: '6px', fontSize: '11px', opacity: 0.8 }}>🔒 Download</span>}
           </button>
         ))}
       </div>
@@ -278,76 +248,69 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       {/* ABA: MINHA BIBLIOTECA */}
       {abaAtiva === 'meus' && (
         <>
-          {/* Card exemplo + Upload */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          {/* Toggle de orientação */}
+          <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 2px 0' }}>📐 Orientação das folhas</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: 0 }}>
+                {orientacao === 'paisagem' ? 'Paisagem — 2 colunas × 3 linhas — folha deitada' : 'Retrato — 3 colunas × 2 linhas — folha em pé'}
+              </p>
+            </div>
+            <OrientacaoToggle value={orientacao} onChange={setOrientacao} />
+          </div>
 
-            {/* Card exemplo */}
+          {/* Cards exemplo + upload */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            {/* Exemplo */}
             <div style={{ ...cardStyle, marginBottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', background: 'linear-gradient(135deg, #fff5fd, #f5f0ff)', border: '1px solid #ff33cc22' }}>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', letterSpacing: '1px', textTransform: 'uppercase', margin: 0 }}>Exemplo de painel</p>
-              <div style={{ position: 'relative', width: '120px', height: '120px' }}>
-                <svg viewBox="0 0 120 120" width="120" height="120">
-                  <defs>
-                    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#ff33cc" />
-                      <stop offset="100%" stopColor="#9900ff" />
-                    </linearGradient>
-                  </defs>
-                  <circle cx="60" cy="60" r="58" fill="url(#grad)" />
-                  <text x="60" y="65" textAnchor="middle" fill="white" fontSize="22" fontFamily="Inter, sans-serif" fontWeight="700">Tema</text>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', letterSpacing: '1px', textTransform: 'uppercase', margin: 0 }}>Exemplo</p>
+              <div style={{ position: 'relative', width: orientacao === 'paisagem' ? '120px' : '80px', height: orientacao === 'paisagem' ? '80px' : '120px' }}>
+                <svg viewBox="0 0 120 80" width={orientacao === 'paisagem' ? '120' : '80'} height={orientacao === 'paisagem' ? '80' : '120'}
+                  style={{ transform: orientacao === 'retrato' ? 'rotate(90deg)' : 'none' }}>
+                  <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ff33cc" /><stop offset="100%" stopColor="#9900ff" /></linearGradient></defs>
+                  <rect width="120" height="80" fill="url(#grad)" rx="4" />
                 </svg>
-                <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr', gap: '1px' }}>
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} style={{ border: '1px dashed rgba(255,255,255,0.5)', borderRadius: '2px' }} />
-                  ))}
+                <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '1px' }}>
+                  {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ border: '1px dashed rgba(255,255,255,0.5)', borderRadius: '2px' }} />)}
                 </div>
               </div>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9900ff', fontWeight: 600, margin: 0, textAlign: 'center' }}>
-                Grade 2×3 — 6 folhas A4
+                Grade {COLS}×{ROWS} — 6 folhas A4
               </p>
             </div>
 
-            {/* Card imagem selecionada */}
-            <div
-              onClick={() => inputRef.current?.click()}
-              style={{
-                ...cardStyle, marginBottom: 0,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: '12px', cursor: 'pointer', minHeight: '200px',
-                border: `2px dashed ${imagem ? '#ff33cc55' : '#e5e5e5'}`,
-                background: imagem ? '#fff5fd' : '#fafafa',
-                transition: 'all 0.2s',
-              }}
-            >
+            {/* Upload */}
+            <div onClick={() => inputRef.current?.click()} style={{
+              ...cardStyle, marginBottom: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: '12px', cursor: 'pointer', minHeight: '200px',
+              border: `2px dashed ${imagem ? '#ff33cc55' : '#e5e5e5'}`,
+              background: imagem ? '#fff5fd' : '#fafafa', transition: 'all 0.2s',
+            }}>
               {imagem ? (
                 <>
                   <div style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '8px', overflow: 'hidden' }}>
                     <NextImage src={imagem.src} fill style={{ objectFit: 'cover' }} alt="Imagem selecionada" unoptimized />
-                    <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr', gap: '1px' }}>
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} style={{ border: '1px solid rgba(255,255,255,0.6)' }} />
-                      ))}
+                    <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '1px' }}>
+                      {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ border: '1px solid rgba(255,255,255,0.6)' }} />)}
                     </div>
                   </div>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ff33cc', fontWeight: 600, margin: 0 }}>
-                    ✅ Clique para trocar
-                  </p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ff33cc', fontWeight: 600, margin: 0 }}>✅ Clique para trocar</p>
                 </>
               ) : (
                 <>
                   <ImageIcon size={32} style={{ color: '#00000022' }} />
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000044', margin: 0, textAlign: 'center' }}>
-                    Clique para fazer upload
-                  </p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000044', margin: 0, textAlign: 'center' }}>Clique para fazer upload</p>
                 </>
               )}
             </div>
           </div>
 
-          {/* Recomendação */}
+          {/* Dica */}
           <div style={{ background: '#f5f0ff', border: '1px solid #9900ff22', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>💡</span>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9900ff', margin: 0 }}>
-              Para melhor qualidade, use imagens <strong>PNG ou JPEG</strong> de no mínimo <strong>3000×3000px</strong>, cobrindo toda a área do painel (50×50cm).
+              Use imagens <strong>PNG ou JPEG</strong> de no mínimo <strong>3000×3000px</strong> para melhor qualidade.
             </p>
           </div>
 
@@ -355,39 +318,35 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
 
           {/* Config */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 20px 0' }}>
-              ⚙️ Configurar painel
-            </h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 20px 0' }}>⚙️ Configurar painel</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={labelStyle}>Nome do painel</label>
                 <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Painel Unicórnio" style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Descrição (opcional — para compartilhar na comunidade)</label>
+                <label style={labelStyle}>Descrição (opcional)</label>
                 <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} placeholder="Ex: Painel floral rosa para mesversário" style={inputStyle} />
               </div>
             </div>
           </div>
 
-          {/* Preview fatias */}
+          {/* Preview */}
           {fatias.length > 0 && (
             <div style={cardStyle}>
               <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>
-                🔍 Preview — Grade 2×3
+                🔍 Preview — Grade {COLS}×{ROWS}
               </h2>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 16px 0' }}>
-                Clique em uma fatia para ampliar
-              </p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 16px 0' }}>Clique em uma fatia para ampliar</p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px', marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: '4px', marginBottom: '16px' }}>
                 {fatias.map((fatia, idx) => (
                   <div key={idx} onClick={() => setPreviewAtivo(previewAtivo === idx ? null : idx)} style={{
                     position: 'relative', cursor: 'pointer',
                     border: `2px solid ${previewAtivo === idx ? '#ff33cc' : 'transparent'}`,
                     borderRadius: '8px', overflow: 'hidden',
                   }}>
-                    <NextImage src={fatia} width={300} height={400} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${idx + 1}`} unoptimized />
+                    <NextImage src={fatia} width={300} height={300} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${idx + 1}`} unoptimized />
                     <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', borderRadius: '4px', padding: '2px 6px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#fff' }}>
                       {idx + 1}/6
                     </div>
@@ -397,7 +356,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
 
               {previewAtivo !== null && (
                 <div style={{ marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ff33cc33' }}>
-                  <NextImage src={fatias[previewAtivo]} width={800} height={1000} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${previewAtivo + 1} ampliada`} unoptimized />
+                  <NextImage src={fatias[previewAtivo]} width={800} height={800} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${previewAtivo + 1} ampliada`} unoptimized />
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', textAlign: 'center', padding: '8px', margin: 0 }}>
                     Folha {previewAtivo + 1} de 6
                   </p>
@@ -415,7 +374,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                 boxShadow: gerando || !nome.trim() ? 'none' : '0 8px 32px rgba(255,51,204,0.3)',
               }}>
                 <Download size={16} />
-                {gerando ? 'Gerando PDF...' : !nome.trim() ? 'Dê um nome ao painel' : 'Gerar e baixar PDF'}
+                {gerando ? 'Gerando PDF...' : !nome.trim() ? 'Dê um nome ao painel' : `Gerar PDF — ${orientacao === 'paisagem' ? '🖼️ Paisagem' : '📄 Retrato'}`}
               </button>
             </div>
           )}
@@ -423,9 +382,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
           {/* Histórico */}
           {paineis.length > 0 && (
             <div style={cardStyle}>
-              <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>
-                📁 Meus painéis
-              </h2>
+              <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>📁 Meus painéis</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {paineis.map(painel => (
                   <div key={painel.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f9f9f9', borderRadius: '12px', padding: '14px 16px', gap: '12px' }}>
@@ -438,17 +395,18 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                         </div>
                       )}
                       <div>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0' }}>
-                          {painel.nome}
-                        </p>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0' }}>{painel.nome}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000044', margin: 0 }}>
                             {new Date(painel.criado_em).toLocaleDateString('pt-BR')}
                           </p>
-                          {painel.publicado_comunidade && (
-                            <span style={{ background: '#e8f5e9', color: '#2e7d32', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '20px' }}>
-                              ✅ Na comunidade
+                          {painel.tipo && (
+                            <span style={{ background: '#f5f0ff', color: '#9900ff', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '20px' }}>
+                              {painel.tipo === '6-retrato' ? '📄 Retrato' : '🖼️ Paisagem'}
                             </span>
+                          )}
+                          {painel.publicado_comunidade && (
+                            <span style={{ background: '#e8f5e9', color: '#2e7d32', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '20px' }}>✅ Comunidade</span>
                           )}
                         </div>
                       </div>
@@ -486,12 +444,8 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                 <Lock size={20} style={{ color: '#fff' }} />
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 4px 0' }}>
-                  Download bloqueado no plano gratuito
-                </p>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: 0 }}>
-                  Você pode visualizar e publicar painéis. Para baixar, faça upgrade.
-                </p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 4px 0' }}>Download bloqueado no plano gratuito</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: 0 }}>Você pode visualizar e publicar painéis. Para baixar, faça upgrade.</p>
               </div>
               <button onClick={() => setModalUpgrade(true)} style={{ background: 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '10px', padding: '10px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                 Ver planos
@@ -500,18 +454,12 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
           )}
 
           {carregandoComunidade ? (
-            <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif', color: '#00000044' }}>
-              Carregando painéis...
-            </div>
+            <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif', color: '#00000044' }}>Carregando painéis...</div>
           ) : paineisComunidade.length === 0 ? (
             <div style={{ ...cardStyle, textAlign: 'center', padding: '60px' }}>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '32px', margin: '0 0 12px 0' }}>🖼️</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>
-                Nenhum painel na comunidade ainda
-              </p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000055', margin: 0 }}>
-                Seja o primeiro a compartilhar um painel!
-              </p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>Nenhum painel na comunidade ainda</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000055', margin: 0 }}>Seja o primeiro a compartilhar um painel!</p>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
@@ -524,18 +472,10 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                     </div>
                   </div>
                   <div style={{ padding: '14px 16px' }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 4px 0' }}>
-                      {painel.nome}
-                    </p>
-                    {painel.descricao && (
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: '0 0 10px 0' }}>
-                        {painel.descricao}
-                      </p>
-                    )}
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 4px 0' }}>{painel.nome}</p>
+                    {painel.descricao && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: '0 0 10px 0' }}>{painel.descricao}</p>}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044' }}>
-                        ⬇️ {painel.downloads} downloads
-                      </span>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044' }}>⬇️ {painel.downloads} downloads</span>
                       <button onClick={() => baixarDaComunidade(painel)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isAssinante ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#f0f0f0', border: 'none', borderRadius: '8px', padding: '8px 12px', color: isAssinante ? '#fff' : '#00000044', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
                         {isAssinante ? <Download size={12} /> : <Lock size={12} />}
                         {isAssinante ? 'Baixar PDF' : 'Upgrade'}
@@ -560,20 +500,11 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
               <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <Upload size={24} style={{ color: '#fff' }} />
               </div>
-              <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#140033', margin: '0 0 8px 0' }}>
-                Acesse a Comunidade
-              </h2>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000055', margin: 0 }}>
-                Faça upgrade para baixar todos os painéis compartilhados pela comunidade Encantiva.
-              </p>
+              <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#140033', margin: '0 0 8px 0' }}>Acesse a Comunidade</h2>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000055', margin: 0 }}>Faça upgrade para baixar todos os painéis compartilhados.</p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-              {[
-                'Download ilimitado de painéis da comunidade',
-                'Acesso a painéis exclusivos da Encantiva',
-                'Geração ilimitada de painéis personalizados',
-                'Suporte prioritário',
-              ].map((item, i) => (
+              {['Download ilimitado de painéis da comunidade', 'Acesso a painéis exclusivos da Encantiva', 'Geração ilimitada de painéis personalizados', 'Suporte prioritário'].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Check size={11} style={{ color: '#fff' }} />
@@ -582,7 +513,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                 </div>
               ))}
             </div>
-            <Link href="/assinar" style={{ display: 'block', textAlign: 'center', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '14px', padding: '16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', textDecoration: 'none', boxShadow: '0 8px 32px rgba(255,51,204,0.3)' }}>
+            <Link href="/planos" style={{ display: 'block', textAlign: 'center', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '14px', padding: '16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', textDecoration: 'none', boxShadow: '0 8px 32px rgba(255,51,204,0.3)' }}>
               Ver planos →
             </Link>
           </div>
