@@ -1,18 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function PaginaAtualizarSenha() {
+function PaginaAtualizarSenhaConteudo() {
   const [senha, setSenha] = useState('')
   const [confirmarSenha, setConfirmarSenha] = useState('')
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [sucesso, setSucesso] = useState(false)
+  const [tokenValido, setTokenValido] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const token_hash = searchParams.get('token_hash')
+  const type = searchParams.get('type')
+  const linkValido = !!token_hash && type === 'recovery'
+  const [verificando, setVerificando] = useState(linkValido)
+
+  useEffect(() => {
+    if (!linkValido) return
+
+    supabase.auth.verifyOtp({ token_hash: token_hash!, type: 'recovery' }).then(({ error }) => {
+      if (error) {
+        setErro('Link inválido ou expirado. Solicite um novo e-mail de redefinição.')
+      } else {
+        setTokenValido(true)
+      }
+      setVerificando(false)
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,13 +75,39 @@ export default function PaginaAtualizarSenha() {
 
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '40px', backdropFilter: 'blur(20px)' }}>
 
-          {sucesso ? (
+          {/* Verificando token */}
+          {verificando && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '40px', marginBottom: '16px' }}>🔐</div>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff66', margin: 0 }}>Verificando link...</p>
+            </div>
+          )}
+
+          {/* Token inválido */}
+          {!verificando && !tokenValido && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
+              <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 700, color: '#fff', margin: '0 0 12px 0' }}>Link inválido</h1>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff66', margin: '0 0 24px 0' }}>
+                {erro || 'Link inválido. Solicite um novo e-mail de redefinição.'}
+              </p>
+              <Link href="/esqueci-senha" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '14px 24px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+                Solicitar novo link
+              </Link>
+            </div>
+          )}
+
+          {/* Sucesso */}
+          {sucesso && (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
               <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 700, color: '#fff', margin: '0 0 8px 0' }}>Senha atualizada!</h1>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff66', margin: 0 }}>Redirecionando...</p>
             </div>
-          ) : (
+          )}
+
+          {/* Formulário */}
+          {!verificando && tokenValido && !sucesso && (
             <>
               <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: 700, color: '#fff', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
                 Nova senha
@@ -73,11 +119,29 @@ export default function PaginaAtualizarSenha() {
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#ffffff55', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '8px' }}>Nova senha</label>
-                  <input type="password" value={senha} onChange={e => setSenha(e.target.value)} required placeholder="Mínimo 6 caracteres" style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = '#ff33cc66'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                  <input
+                    type="password"
+                    value={senha}
+                    onChange={e => setSenha(e.target.value)}
+                    required
+                    placeholder="Mínimo 6 caracteres"
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={e => e.target.style.borderColor = '#ff33cc66'}
+                    onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                  />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#ffffff55', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '8px' }}>Confirmar senha</label>
-                  <input type="password" value={confirmarSenha} onChange={e => setConfirmarSenha(e.target.value)} required placeholder="••••••••" style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = '#ff33cc66'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                  <input
+                    type="password"
+                    value={confirmarSenha}
+                    onChange={e => setConfirmarSenha(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={e => e.target.style.borderColor = '#ff33cc66'}
+                    onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                  />
                 </div>
 
                 {erro && (
@@ -86,7 +150,11 @@ export default function PaginaAtualizarSenha() {
                   </div>
                 )}
 
-                <button type="submit" disabled={carregando} style={{ width: '100%', background: carregando ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '16px', color: carregando ? '#ffffff44' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', cursor: carregando ? 'not-allowed' : 'pointer', boxShadow: carregando ? 'none' : '0 8px 32px rgba(255,51,204,0.3)' }}>
+                <button
+                  type="submit"
+                  disabled={carregando}
+                  style={{ width: '100%', background: carregando ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '16px', color: carregando ? '#ffffff44' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', cursor: carregando ? 'not-allowed' : 'pointer', boxShadow: carregando ? 'none' : '0 8px 32px rgba(255,51,204,0.3)' }}
+                >
                   {carregando ? 'Atualizando...' : 'Atualizar senha'}
                 </button>
               </form>
@@ -103,5 +171,17 @@ export default function PaginaAtualizarSenha() {
 
       <style>{`input::placeholder { color: rgba(255,255,255,0.2); }`}</style>
     </div>
+  )
+}
+
+export default function PaginaAtualizarSenha() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', background: '#0a0018', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: '#ffffff66', fontFamily: 'Inter, sans-serif' }}>Carregando...</p>
+      </div>
+    }>
+      <PaginaAtualizarSenhaConteudo />
+    </Suspense>
   )
 }
