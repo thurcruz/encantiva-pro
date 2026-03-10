@@ -42,7 +42,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
 
   const cortarImagem = useCallback(async (img: HTMLImageElement) => {
     if (img.decode) {
-      try { await img.decode() } catch (_) {}
+     try { await img.decode() } catch { }
     }
     const novasFatias: string[] = []
     for (let row = 0; row < ROWS; row++) {

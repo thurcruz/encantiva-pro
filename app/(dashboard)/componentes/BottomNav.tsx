@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   Home, Package, CalendarDays, Users, TrendingUp,
-  LayoutTemplate, ShoppingBag, FileText, Calculator, Clock,
+  ShoppingBag, FileText, Calculator, Clock,
   BarChart2, Scissors,
   type LucideIcon,
 } from 'lucide-react'
@@ -96,6 +96,7 @@ function submenuPos(indice: number, total: number) {
   return { left: `${pct}%`, right: 'auto', transform: 'translateX(-50%)' }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function BottomNav({ isAdmin, isBeta }: { isAdmin: boolean; isBeta: boolean }) {
   const pathname = usePathname()
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
@@ -272,7 +273,7 @@ export default function BottomNav({ isAdmin, isBeta }: { isAdmin: boolean; isBet
       {/* Barra de navegação */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: '70px',
+        height: '80px',
         background: 'rgba(10, 0, 26, 0.97)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
