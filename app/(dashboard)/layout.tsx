@@ -64,6 +64,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           }
           .main-desktop {
             margin-left: 0 !important;
+            padding-bottom: 90px !important;
           }
           .bottom-nav-wrapper {
             display: block;

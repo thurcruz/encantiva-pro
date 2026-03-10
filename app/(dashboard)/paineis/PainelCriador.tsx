@@ -94,17 +94,24 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
     if (abaAtiva === 'comunidade') carregarComunidade()
   }, [abaAtiva, carregarComunidade])
 
+  // ✅ FIX: FileReader em vez de createObjectURL — evita canvas preto no mobile
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setImagemFile(file)
-    const img = new window.Image()
-    img.onload = () => {
-      setImagem(img)
-      setFatias([])
-      setPreviewAtivo(null)
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const src = ev.target?.result as string
+      const img = new window.Image()
+      img.onload = () => {
+        setImagem(img)
+        setFatias([])
+        setPreviewAtivo(null)
+      }
+      img.onerror = () => alert('Erro ao carregar imagem. Tente outro arquivo.')
+      img.src = src
     }
-    img.src = URL.createObjectURL(file)
+    reader.readAsDataURL(file)
   }
 
   async function comprimirFatia(fatia: string): Promise<string> {
@@ -268,7 +275,8 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                 <svg viewBox="0 0 120 80" width={orientacao === 'paisagem' ? '120' : '80'} height={orientacao === 'paisagem' ? '80' : '120'}
                   style={{ transform: orientacao === 'retrato' ? 'rotate(90deg)' : 'none' }}>
                   <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ff33cc" /><stop offset="100%" stopColor="#9900ff" /></linearGradient></defs>
-<circle cx="60" cy="40" r="38" fill="url(#grad2)" />                </svg>
+                  <circle cx="60" cy="40" r="38" fill="url(#grad)" />
+                </svg>
                 <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '1px' }}>
                   {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ border: '1px dashed rgba(255,255,255,0.5)', borderRadius: '2px' }} />)}
                 </div>
