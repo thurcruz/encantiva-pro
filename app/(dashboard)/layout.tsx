@@ -26,7 +26,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, expira_em, trial_expira_em, is_beta')
+    .select('status, expira_em, trial_expira_em, plano, is_beta')
     .eq('usuario_id', user.id)
     .single()
 
@@ -39,46 +39,70 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : 0
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#140033' }}>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
 
-      {/* Sidebar — apenas desktop */}
-      <aside style={{
-        width: '240px', flexShrink: 0, background: '#0d0022',
-        display: 'flex', flexDirection: 'column',
-        position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 40,
-        borderTopRightRadius: '24px',
-        borderBottomRightRadius: '24px',
-      }} className="sidebar-desktop">
+      {/* ── Estilos responsivos globais do layout ── */}
+      <style>{`
+        /* Sidebar: visível apenas acima de 768px */
+        .sidebar-desktop {
+          display: flex;
+        }
+        /* Main: margem lateral da sidebar */
+        .main-desktop {
+          margin-left: 240px;
+          flex: 1;
+          min-width: 0;
+        }
+        /* BottomNav: oculto no desktop */
+        .bottom-nav-wrapper {
+          display: none;
+        }
 
+        @media (max-width: 768px) {
+          .sidebar-desktop {
+            display: none !important;
+          }
+          .main-desktop {
+            margin-left: 0 !important;
+          }
+          .bottom-nav-wrapper {
+            display: block;
+          }
+        }
+      `}</style>
+
+      {/* ── SIDEBAR — apenas desktop ── */}
+      <aside
+        className="sidebar-desktop"
+        style={{
+          width: '240px',
+          flexShrink: 0,
+          background: '#0d0022',
+          flexDirection: 'column',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          height: '100vh',
+          zIndex: 40,
+          borderTopRightRadius: '16px',
+          borderBottomRightRadius: '16px',
+        }}
+      >
         {/* Logo */}
         <div style={{
-          padding: '20px 20px 16px', borderBottom: '1px solid #ffffff08',
-          display: 'flex', alignItems: 'center',
+          padding: '20px 20px 16px',
+          borderBottom: '1px solid #ffffff08',
+          display: 'flex',
+          alignItems: 'center',
         }}>
           <Image src="/enc_logotipo.svg" width={160} height={27} alt="Encantiva" />
         </div>
 
-        {/* Badge beta */}
-        {isBeta && !isAdmin && (
-          <div style={{
-            margin: '12px', padding: '10px 14px',
-            background: 'rgba(0,204,136,0.1)',
-            border: '1px solid rgba(0,204,136,0.25)',
-            borderRadius: '10px',
-          }}>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00cc88', margin: '0 0 2px 0' }}>
-              🧪 ACESSO BETA
-            </p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff55', margin: 0 }}>
-              Você testa tudo em primeira mão
-            </p>
-          </div>
-        )}
-
         {/* Badge trial */}
-        {isTrial && !isAdmin && !isBeta && (
+        {isTrial && !isAdmin && (
           <div style={{
-            margin: '12px', padding: '10px 14px',
+            margin: '12px',
+            padding: '10px 14px',
             background: 'rgba(255,51,204,0.1)',
             border: '1px solid rgba(255,51,204,0.25)',
             borderRadius: '10px',
@@ -92,9 +116,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         )}
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
-
+        {/* Nav links */}
+        <nav style={{
+          flex: 1,
+          padding: '16px 12px',
+          overflowY: 'auto',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255,255,255,0.1) transparent',
+        }}>
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '0 0 4px 0' }}>Geral</p>
           <NavItem href="/inicio" icon={<Home size={16} />} label="Início" />
 
@@ -134,16 +163,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </aside>
 
-      {/* Conteúdo principal */}
-      <main style={{ marginLeft: '240px', flex: 1 }} className="main-desktop">
+      {/* ── MAIN ── */}
+      <main className="main-desktop">
 
         {/* Banner trial */}
-        {isTrial && !isAdmin && !isBeta && (
+        {isTrial && !isAdmin && (
           <div style={{
             background: 'linear-gradient(135deg, rgba(255,51,204,0.15), rgba(153,0,255,0.15))',
             borderBottom: '1px solid rgba(255,51,204,0.2)',
             padding: '10px 24px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
           }}>
             <span style={{ fontSize: '14px' }}>🧪</span>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff99', margin: 0 }}>
@@ -156,22 +188,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {children}
       </main>
 
-      <BottomNav isAdmin={isAdmin} isBeta={isBeta} />
+      {/* ── BOTTOM NAV — apenas mobile ── */}
+      <div className="bottom-nav-wrapper">
+        <BottomNav isAdmin={isAdmin} isBeta={isBeta} />
+      </div>
 
-      <style>{`
-        @media (max-width: 768px) {
-          .sidebar-desktop { display: none !important; }
-          .main-desktop { margin-left: 0 !important; padding-bottom: 72px !important; }
-        }
-        @media (min-width: 769px) {
-          .bottom-nav-mobile { display: none !important; }
-        }
-        aside::-webkit-scrollbar { width: 3px; }
-        aside::-webkit-scrollbar-track { background: transparent; }
-        aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
-        aside::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-        aside { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
-      `}</style>
     </div>
   )
 }

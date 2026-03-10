@@ -34,8 +34,37 @@ export default async function PaginaAgenda() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
+      <style>{`
+        .agenda-wrapper {
+          max-width: 1000px;
+          margin: 0 auto;
+          padding: 32px 40px 100px 40px;
+        }
+        @media (max-width: 900px) {
+          .agenda-wrapper {
+            padding: 24px 24px 100px 24px;
+          }
+        }
+        @media (max-width: 600px) {
+          .agenda-wrapper {
+            padding: 16px 16px 100px 16px;
+          }
+          /* Filtros de status em scroll horizontal — já tratado inline, mas garante */
+          .agenda-filtros {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          /* Calendário: células menores no mobile */
+          .agenda-cal-cell p:first-child {
+            font-size: 11px !important;
+          }
+        }
+      `}</style>
+
       <PageHeader titulo="Agenda" subtitulo="Seus eventos e pedidos organizados por data" />
-      <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
+
+      <div className="agenda-wrapper">
         <AgendaCliente pedidos={pedidos ?? []} />
       </div>
     </div>
