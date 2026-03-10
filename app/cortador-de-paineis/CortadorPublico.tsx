@@ -36,7 +36,6 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
   const [pdfBaixado, setPdfBaixado] = useState(false)
   const [orientacao, setOrientacao] = useState<Orientacao>('paisagem')
 
-  // Paisagem = 2 colunas × 3 linhas | Retrato = 3 colunas × 2 linhas
   const COLS = orientacao === 'paisagem' ? 2 : 3
   const ROWS = orientacao === 'paisagem' ? 3 : 2
 
@@ -92,7 +91,6 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
       const img = new window.Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
-        // Paisagem: fatia larga | Retrato: fatia alta
         const largura = orientacao === 'paisagem' ? 1240 : 827
         const altura  = orientacao === 'paisagem' ? 825  : 1169
         canvas.width = largura
@@ -204,8 +202,9 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>Centenas de painéis feitos por artesãs — entre para baixar grátis</p>
           </div>
         </div>
-        <a href="/login" className="banner-comunidade-btn" style={{ background: 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '10px', padding: '10px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', textDecoration: 'none', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 16px rgba(255,51,204,0.4)', flexShrink: 0 }}>
-          Ver painéis <ArrowRight size={13} />
+        {/* ✅ ALTERADO: "Ver painéis" → "Em breve" apontando para página de captura */}
+        <a href="/pagina-de-captura" className="banner-comunidade-btn" style={{ background: 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '10px', padding: '10px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', textDecoration: 'none', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 16px rgba(255,51,204,0.4)', flexShrink: 0 }}>
+          Em breve ✨
         </a>
       </div>
 
@@ -272,7 +271,8 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
             <svg viewBox="0 0 120 80" width={orientacao === 'paisagem' ? '120' : '80'} height={orientacao === 'paisagem' ? '80' : '120'}
               style={{ transform: orientacao === 'retrato' ? 'rotate(90deg)' : 'none' }}>
               <defs><linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ff33cc" /><stop offset="100%" stopColor="#9900ff" /></linearGradient></defs>
-<circle cx="60" cy="40" r="38" fill="url(#grad2)" />            </svg>
+              <circle cx="60" cy="40" r="38" fill="url(#grad2)" />
+            </svg>
             <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '1px' }}>
               {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ border: '1px dashed rgba(255,255,255,0.5)', borderRadius: '2px' }} />)}
             </div>

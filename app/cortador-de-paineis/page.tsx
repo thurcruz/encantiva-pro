@@ -1,11 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import CortadorPublico from './CortadorPublico'
-import { BookOpen, Calendar, DollarSign, Users, Scissors, ArrowRight } from 'lucide-react'
+import { BookOpen, Calendar, DollarSign, Users, Scissors } from 'lucide-react'
 
 export const metadata = {
   title: 'Cortador de Painéis Grátis — Encantiva',
   description: 'Transforme qualquer imagem em um painel 50×50cm dividido em 6 folhas A4, pronto para imprimir. Grátis, sem baixar nada.',
 }
+
+const WHATSAPP_LINK = 'https://chat.whatsapp.com/LRqQ4Gnlw0740Zup1aPLQh?mode=hq1tcla'
+
+const WhatsAppIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 1.41.37 2.74 1.01 3.89L0 16l4.22-1.01A8 8 0 1 0 8 0zm3.52 9.6c-.19-.1-1.13-.56-1.31-.62-.17-.06-.3-.1-.43.1-.13.19-.5.62-.61.75-.11.13-.23.14-.42.05-.19-.1-.81-.3-1.54-.95-.57-.51-.95-1.13-1.06-1.32-.11-.19-.01-.29.08-.38.09-.09.19-.23.29-.34.1-.11.13-.19.19-.32.06-.13.03-.24-.02-.34-.05-.1-.43-1.04-.59-1.42-.15-.37-.31-.32-.43-.33h-.36c-.13 0-.34.05-.51.24-.17.19-.67.65-.67 1.59 0 .94.68 1.84.78 1.97.1.13 1.35 2.06 3.27 2.89.46.2.82.32 1.1.41.46.14.88.12 1.21.07.37-.05 1.13-.46 1.29-.9.16-.44.16-.82.11-.9-.05-.08-.18-.13-.38-.23z"/>
+  </svg>
+)
 
 const MODULOS = [
   {
@@ -140,19 +148,40 @@ export default async function PaginaCortadorPublico() {
             ))}
           </div>
 
-          <a href="/login" style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-            borderRadius: '14px', padding: '16px',
-            color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
-            textDecoration: 'none', boxShadow: '0 8px 32px rgba(255,51,204,0.3)',
+          {/* Aviso de lançamento */}
+          <div style={{
+            background: 'linear-gradient(135deg, #f7f0ff, #fff5fd)',
+            border: '1px solid #e5d0ff',
+            borderRadius: '16px',
+            padding: '20px 24px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
           }}>
-            Criar conta grátis e explorar tudo <ArrowRight size={16} />
+            <div style={{ fontSize: '28px', flexShrink: 0 }}>🚀</div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#1a0040', margin: '0 0 4px 0' }}>
+                Plataforma em lançamento — entre no grupo!
+              </p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#7755aa', margin: 0, lineHeight: 1.5 }}>
+                Seja a primeira a testar, participe do sorteio ao vivo e receba novidades em primeira mão.
+              </p>
+            </div>
+          </div>
+
+          <a href={WHATSAPP_LINK} target="_blank" rel="noopener" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            background: 'linear-gradient(135deg, #25D366, #128C7E)',
+            borderRadius: '64px', padding: '16px',
+            color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
+            textDecoration: 'none', boxShadow: '0 8px 24px rgba(37,211,102,0.3)',
+            marginBottom: '10px',
+          }}>
+            <WhatsAppIcon />
+            Entrar no grupo de lançamento
           </a>
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000033', textAlign: 'center', margin: '12px 0 0 0' }}>
-            Sem cartão de crédito • Acesso imediato • Plano gratuito disponível
-          </p>
         </div>
       </div>
 
