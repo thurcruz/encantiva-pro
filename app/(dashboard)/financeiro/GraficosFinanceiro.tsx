@@ -171,13 +171,7 @@ export default function GraficosFinanceiro({ pedidos }: Props) {
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 640px) {
-          .fin-cards-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
-          .fin-card-value { font-size: 16px !important; }
-          .fin-bottom-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
-        }
-      `}</style>
+    
     </div>
   )
 }

@@ -414,12 +414,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
         </>
       )}
 
-      <style>{`
-        @media (max-width: 640px) {
-          .cat-grid-2 { grid-template-columns: 1fr !important; }
-          .cat-temas-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+    
     </div>
   )
 }

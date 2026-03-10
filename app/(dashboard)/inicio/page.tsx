@@ -175,14 +175,6 @@ export default async function PaginaInicio() {
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 640px) {
-          .inicio-content { padding: 20px 16px !important; }
-          .cards-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
-          .graficos-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
-          .card-value { font-size: 18px !important; }
-        }
-      `}</style>
     </div>
   )
 }

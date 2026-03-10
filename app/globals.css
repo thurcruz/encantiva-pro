@@ -33,6 +33,22 @@ body {
     padding: 16px !important;
   }
 
+  /* Início */
+  .cards-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .graficos-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .card-value { font-size: 18px !important; }
+  .inicio-content { padding: 20px 16px !important; }
+
+  /* Financeiro */
+  .fin-cards-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .fin-card-value { font-size: 16px !important; }
+  .fin-bottom-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* Catálogo */
+  .cat-grid-2 { grid-template-columns: 1fr !important; }
+  .cat-temas-grid { grid-template-columns: 1fr !important; }
+
+
   /* Formulários em grid */
   .form-grid-2,
   .form-grid-3,
@@ -54,10 +70,11 @@ body {
   .contrato-grid {
     grid-template-columns: 1fr !important;
   }
-}
+
 
 @media (max-width: 480px) {
   .grid-materiais {
     grid-template-columns: 1fr !important;
   }
+}
 }
