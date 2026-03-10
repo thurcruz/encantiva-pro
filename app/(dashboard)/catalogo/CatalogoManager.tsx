@@ -188,7 +188,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
           <div style={cardStyle}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>➕ Novo tema</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div className="cat-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="cat-grid-2" style={{ display: 'grid', gap: '12px' }}>
                 <div>
                   <label style={labelStyle}>Nome do tema</label>
                   <input value={novoTema.nome} onChange={e => setNovoTema(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Urso Marinheiro" style={inputStyle} />
@@ -217,7 +217,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
               <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>Nenhum tema cadastrado</p>
             </div>
           ) : (
-            <div className="cat-temas-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+            <div className="cat-temas-grid" style={{ display: 'grid', gap: '12px' }}>
               {temas.map(tema => (
                 <div key={tema.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', overflow: 'hidden' }}>
                   <div style={{ height: '120px', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -249,7 +249,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
           <div style={cardStyle}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>➕ Novo kit</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div className="cat-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="cat-grid-2" style={{ display: 'grid', gap: '12px' }}>
                 <div>
                   <label style={labelStyle}>Nome do kit</label>
                   <input value={novoKit.nome} onChange={e => setNovoKit(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Kit Básico" style={inputStyle} />
@@ -321,7 +321,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
           <div style={cardStyle}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>➕ Novo adicional</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div className="cat-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="cat-grid-2" style={{ display: 'grid', gap: '12px' }}>
                 <div>
                   <label style={labelStyle}>Nome</label>
                   <input value={novoAdicional.nome} onChange={e => setNovoAdicional(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Fotografia" style={inputStyle} />
@@ -414,7 +414,6 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
         </>
       )}
 
-    
     </div>
   )
 }
