@@ -21,7 +21,6 @@ const PLANOS: Record<string, { nome: string; valor: number; descricao: string }>
 async function buscarOuCriarCliente(email: string, nome: string, cpfCnpj: string): Promise<string> {
   const { key, url } = getAsaasConfig()
 
-  // Tenta encontrar cliente existente pelo e-mail
   const busca = await fetch(`${url}/customers?email=${encodeURIComponent(email)}`, {
     headers: { accept: 'application/json', access_token: key },
   })
@@ -29,14 +28,14 @@ async function buscarOuCriarCliente(email: string, nome: string, cpfCnpj: string
 
   if (buscaJson?.data?.length > 0) {
     const clienteExistente = buscaJson.data[0]
-    // Atualiza CPF/CNPJ se ainda não tiver
-    if (!clienteExistente.cpfCnpj && cpfCnpj) {
-      await fetch(`${url}/customers/${clienteExistente.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
-        body: JSON.stringify({ cpfCnpj }),
-      })
-    }
+
+    // Sempre atualiza o CPF/CNPJ
+    await fetch(`${url}/customers/${clienteExistente.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
+      body: JSON.stringify({ name: nome, email, cpfCnpj }),
+    })
+
     return clienteExistente.id
   }
 
