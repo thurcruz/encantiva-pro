@@ -18,19 +18,33 @@ const PLANOS: Record<string, { nome: string; valor: number; descricao: string }>
   elite:     { nome: 'Encantiva Pro — Elite',      valor: 94.00, descricao: 'Plano Elite — acesso mensal'     },
 }
 
-async function buscarOuCriarCliente(email: string, nome: string): Promise<string> {
+async function buscarOuCriarCliente(email: string, nome: string, cpfCnpj: string): Promise<string> {
   const { key, url } = getAsaasConfig()
 
+  // Tenta encontrar cliente existente pelo e-mail
   const busca = await fetch(`${url}/customers?email=${encodeURIComponent(email)}`, {
     headers: { accept: 'application/json', access_token: key },
   })
   const buscaJson = await busca.json()
-  if (buscaJson?.data?.length > 0) return buscaJson.data[0].id
 
+  if (buscaJson?.data?.length > 0) {
+    const clienteExistente = buscaJson.data[0]
+    // Atualiza CPF/CNPJ se ainda não tiver
+    if (!clienteExistente.cpfCnpj && cpfCnpj) {
+      await fetch(`${url}/customers/${clienteExistente.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
+        body: JSON.stringify({ cpfCnpj }),
+      })
+    }
+    return clienteExistente.id
+  }
+
+  // Cria novo cliente com CPF/CNPJ
   const criacao = await fetch(`${url}/customers`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
-    body: JSON.stringify({ name: nome, email }),
+    body: JSON.stringify({ name: nome, email, cpfCnpj }),
   })
   const cliente = await criacao.json()
   if (!cliente.id) throw new Error(`Erro ao criar cliente Asaas: ${JSON.stringify(cliente)}`)
@@ -43,9 +57,10 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ erro: 'Não autenticado' }, { status: 401 })
 
-    const { plano } = await req.json()
+    const { plano, cpfCnpj } = await req.json()
     const config = PLANOS[plano]
     if (!config) return NextResponse.json({ erro: 'Plano inválido' }, { status: 400 })
+    if (!cpfCnpj) return NextResponse.json({ erro: 'CPF/CNPJ obrigatório' }, { status: 400 })
 
     const { data: perfil } = await supabase
       .from('perfis')
@@ -57,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     let customerId = perfil?.asaas_customer_id as string | null
     if (!customerId) {
-      customerId = await buscarOuCriarCliente(user.email!, nomeCliente)
+      customerId = await buscarOuCriarCliente(user.email!, nomeCliente, cpfCnpj)
       await supabase.from('perfis').upsert({ id: user.id, asaas_customer_id: customerId })
     }
 
@@ -67,7 +82,6 @@ export async function POST(req: NextRequest) {
     proximoVencimento.setDate(proximoVencimento.getDate() + 1)
     const nextDueDate = proximoVencimento.toISOString().split('T')[0]
 
-    // Cria assinatura com UNDEFINED para gerar paymentLink com checkout completo
     const subRes = await fetch(`${url}/subscriptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
@@ -83,8 +97,6 @@ export async function POST(req: NextRequest) {
     })
 
     const sub = await subRes.json()
-    console.log('[criar-assinatura] resposta Asaas:', JSON.stringify(sub))
-
     if (!sub.id) throw new Error(`Erro Asaas: ${JSON.stringify(sub)}`)
 
     // Salva assinatura pendente no Supabase
@@ -97,13 +109,11 @@ export async function POST(req: NextRequest) {
       atualizado_em:         new Date().toISOString(),
     }, { onConflict: 'usuario_id' })
 
-    // Busca a primeira cobrança da assinatura para pegar o paymentLink
+    // Busca a primeira cobrança para pegar o link de pagamento
     const cobrancasRes = await fetch(`${url}/payments?subscription=${sub.id}`, {
       headers: { accept: 'application/json', access_token: key },
     })
     const cobrancas = await cobrancasRes.json()
-    console.log('[criar-assinatura] cobranças:', JSON.stringify(cobrancas))
-
     const primeiraCobranca = cobrancas?.data?.[0]
     const checkoutUrl = primeiraCobranca?.invoiceUrl ?? sub.paymentLink ?? null
 
