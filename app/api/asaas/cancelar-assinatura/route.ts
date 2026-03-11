@@ -1,13 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-const ASAAS_URL = process.env.ASAAS_SANDBOX === 'true'
-  ? 'https://sandbox.asaas.com/api/v3'
-  : 'https://api.asaas.com/v3'
+function getAsaasConfig() {
+  const key = process.env.ASAAS_API_KEY
+  if (!key) throw new Error('ASAAS_API_KEY não configurada')
 
-const ASAAS_KEY = process.env.ASAAS_API_KEY!
+  const url = process.env.ASAAS_SANDBOX === 'true'
+    ? 'https://sandbox.asaas.com/api/v3'
+    : 'https://api.asaas.com/v3'
 
-export async function POST(req: NextRequest) {
+  return { key, url }
+}
+
+export async function POST() {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -23,9 +28,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ erro: 'Assinatura não encontrada' }, { status: 404 })
     }
 
-    const res = await fetch(`${ASAAS_URL}/subscriptions/${assinatura.asaas_subscription_id}`, {
+    const { key, url } = getAsaasConfig()
+
+    const res = await fetch(`${url}/subscriptions/${assinatura.asaas_subscription_id}`, {
       method: 'DELETE',
-      headers: { accept: 'application/json', access_token: ASAAS_KEY },
+      headers: { accept: 'application/json', access_token: key },
     })
 
     if (!res.ok) {

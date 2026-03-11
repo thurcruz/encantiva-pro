@@ -21,12 +21,14 @@ const PLANOS: Record<string, { nome: string; valor: number; descricao: string }>
 async function buscarOuCriarCliente(email: string, nome: string): Promise<string> {
   const { key, url } = getAsaasConfig()
 
+  // 1. Tenta encontrar cliente existente pelo e-mail
   const busca = await fetch(`${url}/customers?email=${encodeURIComponent(email)}`, {
     headers: { accept: 'application/json', access_token: key },
   })
   const buscaJson = await busca.json()
   if (buscaJson?.data?.length > 0) return buscaJson.data[0].id
 
+  // 2. Cria novo cliente
   const criacao = await fetch(`${url}/customers`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
@@ -47,6 +49,7 @@ export async function POST(req: NextRequest) {
     const config = PLANOS[plano]
     if (!config) return NextResponse.json({ erro: 'Plano inválido' }, { status: 400 })
 
+    // Dados do usuário
     const { data: perfil } = await supabase
       .from('perfis')
       .select('nome_loja, asaas_customer_id')
@@ -55,6 +58,7 @@ export async function POST(req: NextRequest) {
 
     const nomeCliente = perfil?.nome_loja || user.email!.split('@')[0]
 
+    // Busca ou cria cliente no Asaas
     let customerId = perfil?.asaas_customer_id as string | null
     if (!customerId) {
       customerId = await buscarOuCriarCliente(user.email!, nomeCliente)
@@ -63,6 +67,7 @@ export async function POST(req: NextRequest) {
 
     const { key, url } = getAsaasConfig()
 
+    // Cria assinatura mensal
     const proximoVencimento = new Date()
     proximoVencimento.setDate(proximoVencimento.getDate() + 1)
     const nextDueDate = proximoVencimento.toISOString().split('T')[0]
@@ -84,6 +89,7 @@ export async function POST(req: NextRequest) {
     const sub = await subRes.json()
     if (!sub.id) throw new Error(`Erro Asaas: ${JSON.stringify(sub)}`)
 
+    // Salva assinatura pendente no Supabase
     await supabase.from('assinaturas').upsert({
       usuario_id:            user.id,
       status:                'pending',
