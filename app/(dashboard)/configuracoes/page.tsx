@@ -10,21 +10,8 @@ export default async function PaginaConfiguracoes() {
 
   const [{ data: perfil }, { data: assinatura }] = await Promise.all([
     supabase.from('perfis').select('*').eq('id', user.id).single(),
-    supabase.from('assinaturas').select('status, expira_em, trial_expira_em, abacatepay_subscription_id').eq('usuario_id', user.id).single(),
+    supabase.from('assinaturas').select('status, plano, asaas_subscription_id').eq('usuario_id', user.id).single(),
   ])
-
-  const agora = new Date()
-  const trialAtivo = assinatura?.trial_expira_em
-    ? new Date(assinatura.trial_expira_em) > agora
-    : false
-
-  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
-
-  const assinaturaAtiva =
-    isAdmin ||
-    trialAtivo ||
-    ((assinatura?.status === 'ativo' || assinatura?.status === 'cancelando') &&
-    (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
@@ -43,11 +30,9 @@ export default async function PaginaConfiguracoes() {
       </div>
 
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-        
-        {/* Formulário de perfil */}
+
         <FormularioPerfil usuarioId={user.id} perfil={perfil} />
 
-        {/* Divisor */}
         <div style={{ borderTop: '1px solid #eeeeee', paddingTop: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
             <div style={{ width: '4px', height: '24px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
@@ -57,11 +42,8 @@ export default async function PaginaConfiguracoes() {
           </div>
           <GerenciarPlanoClient
             status={assinatura?.status ?? null}
-            expiraEm={assinatura?.expira_em ?? null}
-            trialExpiraEm={assinatura?.trial_expira_em ?? null}
-            assinaturaAtiva={assinaturaAtiva}
-            temSubscriptionId={!!assinatura?.abacatepay_subscription_id}
-            isAdmin={isAdmin}
+            planoAtual={assinatura?.plano ?? ''}
+            asaasSubscriptionId={assinatura?.asaas_subscription_id ?? null}
           />
         </div>
 
