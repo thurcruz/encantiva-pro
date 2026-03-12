@@ -25,12 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.text()
     const token = req.headers.get('asaas-access-token') ?? ''
-    
-    console.log('[webhook] token recebido:', token)
-    console.log('[webhook] token esperado:', process.env.ASAAS_WEBHOOK_TOKEN)
-    console.log('[webhook] body:', body.slice(0, 200))
 
-  
     if (!verificarToken(token)) {
       return NextResponse.json({ erro: 'Token inválido' }, { status: 401 })
     }
@@ -56,26 +51,29 @@ export async function POST(req: NextRequest) {
       console.log('[asaas-webhook] userId:', userId, '| plano:', plano, '| novoStatus:', novoStatus)
 
       if (userId) {
-        const patch: Record<string, string | null> = {
+        // Update do status e plano
+        const patch: Record<string, string> = {
           status:        novoStatus,
           atualizado_em: new Date().toISOString(),
         }
-
-        if (novoStatus === 'active') {
-          // Limpa o trial e define o plano
-          patch.trial_expira_em = null
-          if (plano) patch.plano = plano
+        if (novoStatus === 'active' && plano) {
+          patch.plano = plano
         }
 
         const { data, error } = await supabase
-  .from('assinaturas')
-  .update(patch)
-  .eq('usuario_id', userId)
-  .select()
+          .from('assinaturas')
+          .update(patch)
+          .eq('usuario_id', userId)
+          .select()
 
         console.log('[asaas-webhook] update resultado:', JSON.stringify({ data, error }))
 
-        // Se não atualizou nenhuma linha, tenta upsert
+        // Limpa trial_expira_em separadamente (null não funciona no patch tipado)
+        if (novoStatus === 'active') {
+          await supabase.rpc('limpar_trial', { p_usuario_id: userId })
+        }
+
+        // Se não atualizou, tenta upsert
         if (error) {
           console.log('[asaas-webhook] erro no update, tentando upsert...')
           const { data: data2, error: error2 } = await supabase
