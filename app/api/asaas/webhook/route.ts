@@ -68,9 +68,10 @@ export async function POST(req: NextRequest) {
         }
 
         const { data, error } = await supabase
-          .from('assinaturas')
-          .update(patch)
-          .eq('usuario_id', userId)
+  .from('assinaturas')
+  .update(patch)
+  .eq('usuario_id', userId)
+  .select()
 
         console.log('[asaas-webhook] update resultado:', JSON.stringify({ data, error }))
 
