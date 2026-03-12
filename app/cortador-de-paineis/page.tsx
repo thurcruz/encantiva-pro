@@ -76,19 +76,6 @@ export default async function PaginaCortadorPublico() {
             </p>
           </div>
         </div>
-
-        {!user && (
-          <a href="/login" style={{
-            background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-            borderRadius: '10px', padding: '10px 20px',
-            color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700,
-            fontSize: '13px', textDecoration: 'none',
-            boxShadow: '0 4px 16px rgba(255,51,204,0.25)',
-            whiteSpace: 'nowrap',
-          }}>
-            Entrar na Encantiva
-          </a>
-        )}
       </div>
 
       {/* Cortador */}
