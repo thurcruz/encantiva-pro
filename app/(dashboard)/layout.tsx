@@ -162,16 +162,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Banner trial ativo */}
         {isTrial && !isAdmin && (
           <div style={{
-            background: 'linear-gradient(135deg, rgba(255,51,204,0.15), rgba(153,0,255,0.15))',
-            borderBottom: '1px solid rgba(255,51,204,0.2)',
+            background: '#ff33cc',
+            borderBottom: 'none',
             padding: '10px 24px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           }}>
             <span style={{ fontSize: '14px' }}>🧪</span>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff99', margin: 0 }}>
-              Você está no <strong style={{ color: '#ff33cc' }}>modo de teste</strong> — {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'}.{' '}
-              <Link href="/planos" style={{ color: '#ff33cc', fontWeight: 700 }}>Assinar agora →</Link>
-            </p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#fff', margin: 0 }}>
+                Você está no <strong>modo de teste</strong> — {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'}.{' '}
+                <Link href="/planos" style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>Assinar agora →</Link>
+              </p>
           </div>
         )}
 
