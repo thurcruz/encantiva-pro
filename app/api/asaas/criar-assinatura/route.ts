@@ -13,6 +13,7 @@ function getAsaasConfig() {
 }
 
 const PLANOS: Record<string, { nome: string; valor: number; descricao: string }> = {
+  teste:     { nome: 'Encantiva Pro — Teste',     valor: 5.00,  descricao: 'Plano Teste'                    },
   iniciante: { nome: 'Encantiva Pro — Iniciante', valor: 24.90, descricao: 'Plano Iniciante — acesso mensal' },
   avancado:  { nome: 'Encantiva Pro — Avançado',  valor: 54.90, descricao: 'Plano Avançado — acesso mensal'  },
   elite:     { nome: 'Encantiva Pro — Elite',      valor: 94.00, descricao: 'Plano Elite — acesso mensal'     },

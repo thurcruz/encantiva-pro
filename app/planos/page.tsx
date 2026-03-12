@@ -4,6 +4,15 @@ import Link from 'next/link'
 import BotaoAssinarClient from './BotaoAssinarClient'
 
 const PLANOS = [
+{
+  id: 'teste',
+  nome: 'Teste',
+  preco: '5,00',
+  descricao: 'Para testar a plataforma',
+  destaque: false,
+  beneficios: ['Acesso completo por 1 mês'],
+},
+
   {
     id: 'iniciante',
     nome: 'Iniciante',
