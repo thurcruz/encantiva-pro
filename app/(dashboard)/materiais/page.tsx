@@ -30,7 +30,7 @@ export default async function PaginaMateriais({
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!temAcesso('bibliotecaMateriais', limites, isBeta, isAdmin)) {
+  if (!temAcesso('downloadMateriais', limites, isBeta, isAdmin)) {
     return <ModuloBloqueado titulo="Materiais para Download" descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas." planoMinimo="iniciante" icone="🎨" />
   }
 
