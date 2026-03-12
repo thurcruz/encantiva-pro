@@ -13,10 +13,9 @@ function getAsaasConfig() {
 }
 
 const PLANOS: Record<string, { nome: string; valor: number; descricao: string }> = {
-  teste:     { nome: 'Encantiva Pro — Teste',     valor: 5.00,  descricao: 'Plano Teste'                     },
-  iniciante: { nome: 'Encantiva Pro — Iniciante', valor: 24.90, descricao: 'Plano Iniciante — acesso mensal' },
-  avancado:  { nome: 'Encantiva Pro — Avançado',  valor: 54.90, descricao: 'Plano Avançado — acesso mensal'  },
-  elite:     { nome: 'Encantiva Pro — Elite',      valor: 94.00, descricao: 'Plano Elite — acesso mensal'     },
+  iniciante: { nome: 'Encantiva Pro — Iniciante', valor: 19.90, descricao: 'Plano Iniciante — acesso mensal' },
+  avancado:  { nome: 'Encantiva Pro — Avançado',  valor: 34.90, descricao: 'Plano Avançado — acesso mensal'  },
+  elite:     { nome: 'Encantiva Pro — Elite',      valor: 54.90, descricao: 'Plano Elite — acesso mensal'     },
 }
 
 async function buscarOuCriarCliente(email: string, nome: string, cpfCnpj: string): Promise<string> {
@@ -29,7 +28,6 @@ async function buscarOuCriarCliente(email: string, nome: string, cpfCnpj: string
 
   if (buscaJson?.data?.length > 0) {
     const clienteExistente = buscaJson.data[0]
-    // Sempre atualiza CPF/CNPJ
     await fetch(`${url}/customers/${clienteExistente.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
@@ -38,7 +36,6 @@ async function buscarOuCriarCliente(email: string, nome: string, cpfCnpj: string
     return clienteExistente.id
   }
 
-  // Cria novo cliente com CPF/CNPJ
   const criacao = await fetch(`${url}/customers`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
@@ -84,7 +81,6 @@ export async function POST(req: NextRequest) {
       customerId = await buscarOuCriarCliente(user.email!, nomeCliente, cpfCnpj)
       await supabase.from('perfis').upsert({ id: user.id, asaas_customer_id: customerId })
     } else {
-      // Atualiza CPF/CNPJ mesmo que o cliente já exista
       await buscarOuCriarCliente(user.email!, nomeCliente, cpfCnpj)
     }
 
@@ -111,7 +107,6 @@ export async function POST(req: NextRequest) {
     const sub = await subRes.json()
     if (!sub.id) throw new Error(`Erro Asaas: ${JSON.stringify(sub)}`)
 
-    // Salva assinatura pendente no Supabase
     await supabase.from('assinaturas').upsert({
       usuario_id:            user.id,
       status:                'pending',
@@ -121,7 +116,6 @@ export async function POST(req: NextRequest) {
       atualizado_em:         new Date().toISOString(),
     }, { onConflict: 'usuario_id' })
 
-    // Busca a primeira cobrança para pegar o link de pagamento
     const cobrancasRes = await fetch(`${url}/payments?subscription=${sub.id}`, {
       headers: { accept: 'application/json', access_token: key },
     })
