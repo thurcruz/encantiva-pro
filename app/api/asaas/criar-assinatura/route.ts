@@ -13,7 +13,7 @@ function getAsaasConfig() {
 }
 
 const PLANOS: Record<string, { nome: string; valor: number; descricao: string }> = {
-  teste:     { nome: 'Encantiva Pro — Teste',     valor: 5.00,  descricao: 'Plano Teste'                    },
+  teste:     { nome: 'Encantiva Pro — Teste',     valor: 5.00,  descricao: 'Plano Teste'                     },
   iniciante: { nome: 'Encantiva Pro — Iniciante', valor: 24.90, descricao: 'Plano Iniciante — acesso mensal' },
   avancado:  { nome: 'Encantiva Pro — Avançado',  valor: 54.90, descricao: 'Plano Avançado — acesso mensal'  },
   elite:     { nome: 'Encantiva Pro — Elite',      valor: 94.00, descricao: 'Plano Elite — acesso mensal'     },
@@ -29,14 +29,12 @@ async function buscarOuCriarCliente(email: string, nome: string, cpfCnpj: string
 
   if (buscaJson?.data?.length > 0) {
     const clienteExistente = buscaJson.data[0]
-
-    // Sempre atualiza o CPF/CNPJ
+    // Sempre atualiza CPF/CNPJ
     await fetch(`${url}/customers/${clienteExistente.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
       body: JSON.stringify({ name: nome, email, cpfCnpj }),
     })
-
     return clienteExistente.id
   }
 
@@ -62,6 +60,17 @@ export async function POST(req: NextRequest) {
     if (!config) return NextResponse.json({ erro: 'Plano inválido' }, { status: 400 })
     if (!cpfCnpj) return NextResponse.json({ erro: 'CPF/CNPJ obrigatório' }, { status: 400 })
 
+    // Verifica se já tem assinatura ativa
+    const { data: assinaturaExistente } = await supabase
+      .from('assinaturas')
+      .select('asaas_subscription_id, status')
+      .eq('usuario_id', user.id)
+      .single()
+
+    if (assinaturaExistente?.status === 'active') {
+      return NextResponse.json({ erro: 'Você já possui uma assinatura ativa.' }, { status: 400 })
+    }
+
     const { data: perfil } = await supabase
       .from('perfis')
       .select('nome_loja, asaas_customer_id')
@@ -74,6 +83,9 @@ export async function POST(req: NextRequest) {
     if (!customerId) {
       customerId = await buscarOuCriarCliente(user.email!, nomeCliente, cpfCnpj)
       await supabase.from('perfis').upsert({ id: user.id, asaas_customer_id: customerId })
+    } else {
+      // Atualiza CPF/CNPJ mesmo que o cliente já exista
+      await buscarOuCriarCliente(user.email!, nomeCliente, cpfCnpj)
     }
 
     const { key, url } = getAsaasConfig()
