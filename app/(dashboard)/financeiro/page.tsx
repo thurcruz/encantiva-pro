@@ -33,9 +33,9 @@ export default async function PaginaFinanceiro() {
     .order('criado_em', { ascending: true })
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
       <PageHeader titulo="Financeiro" subtitulo="Acompanhe suas entradas e lucros" />
-      <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
+      <div className="page-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 24px 60px' }}>
         <GraficosFinanceiro pedidos={pedidos ?? []} />
       </div>
     </div>
