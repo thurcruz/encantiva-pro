@@ -61,7 +61,7 @@ export default function FormularioContrato({ usuarioId }: Props) {
   useEffect(() => {
     async function carregarClientes() {
       const { data } = await supabase
-        .from('clientes')
+        .from('listaClientes')
         .select('id, nome, telefone, email, endereco')
         .eq('usuario_id', usuarioId)
         .order('nome')

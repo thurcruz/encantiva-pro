@@ -39,7 +39,7 @@ const GRUPOS: Grupo[] = [
     ],
   },
   {
-    id: 'pedidos',
+    id: 'gestorPedidos',
     label: 'Pedidos',
     icon: CalendarDays,
     rotas: ['/agenda', '/catalogo'],
@@ -59,7 +59,7 @@ const GRUPOS: Grupo[] = [
     ],
   },
   {
-    id: 'clientes',
+    id: 'listaClientes',
     label: 'Clientes',
     icon: Users,
     rotas: ['/clientes', '/contratos'],

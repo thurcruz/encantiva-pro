@@ -88,9 +88,9 @@ export default async function PaginaInicio() {
     { data: proximosEventos },
     { data: temas },
   ] = await Promise.all([
-    supabase.from('pedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
-    supabase.from('pedidos').select('*').eq('usuario_id', user.id),
-    supabase.from('pedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
+    supabase.from('gestorPedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
+    supabase.from('gestorPedidos').select('*').eq('usuario_id', user.id),
+    supabase.from('gestorPedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
     supabase.from('catalogo_temas').select('id, nome').eq('usuario_id', user.id),
   ])
 

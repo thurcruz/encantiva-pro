@@ -22,7 +22,7 @@ export default async function PaginaCatalogo() {
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!temAcesso('pedidos', limites, isBeta, isAdmin)) {
+  if (!temAcesso('gestorPedidos', limites, isBeta, isAdmin)) {
     return <ModuloBloqueado titulo="Catálogo & Pedidos" descricao="Monte seu catálogo de temas e kits e receba pedidos pelo WhatsApp." planoMinimo="avancado" icone="🛍️" />
   }
 
@@ -30,7 +30,7 @@ export default async function PaginaCatalogo() {
     supabase.from('catalogo_temas').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
     supabase.from('catalogo_kits').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
     supabase.from('adicionais').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
-    supabase.from('pedidos').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
+    supabase.from('gestorPedidos').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
   ])
 
   return (

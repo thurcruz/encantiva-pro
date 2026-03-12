@@ -27,7 +27,7 @@ export default async function PaginaFinanceiro() {
   }
 
   const { data: pedidos } = await supabase
-    .from('pedidos')
+    .from('gestorPedidos')
     .select('*')
     .eq('usuario_id', user.id)
     .order('criado_em', { ascending: true })

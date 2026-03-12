@@ -30,7 +30,7 @@ export default async function PaginaClientes({
   if (!assinaturaAtiva) redirect('/materiais')
 
   let query = supabase
-    .from('clientes')
+    .from('listaClientes')
     .select('*')
     .eq('usuario_id', user.id)
     .order('nome', { ascending: true })

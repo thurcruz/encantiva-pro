@@ -100,7 +100,7 @@ export default function PaginaAssinar({ contrato }: Props) {
 
     if (nome) {
       if (clienteId) {
-        await supabase.from('clientes').update({
+        await supabase.from('listaClientes').update({
           telefone: telefone || undefined,
           email: emailCliente || undefined,
           endereco: enderecoCliente || undefined,
@@ -108,7 +108,7 @@ export default function PaginaAssinar({ contrato }: Props) {
         }).eq('id', clienteId)
       } else {
         const { data: novoCliente } = await supabase
-          .from('clientes')
+          .from('listaClientes')
           .insert({
             usuario_id: contrato.usuario_id,
             nome,

@@ -39,7 +39,7 @@ export default function ClienteDetalhes({ cliente, contratos, usuarioId }: Props
 
   async function deletarCliente() {
     setDeletando(true)
-    await supabase.from('clientes').delete().eq('id', cliente.id)
+    await supabase.from('listaClientes').delete().eq('id', cliente.id)
     router.push('/clientes')
     router.refresh()
   }

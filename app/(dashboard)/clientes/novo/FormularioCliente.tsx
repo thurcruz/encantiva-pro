@@ -37,7 +37,7 @@ export default function FormularioCliente({ usuarioId, clienteInicial }: Props) 
     setErro(null)
 
     if (clienteInicial) {
-      const { error } = await supabase.from('clientes').update({
+      const { error } = await supabase.from('listaClientes').update({
         nome, telefone: telefone || null, email: email || null,
         endereco: endereco || null,
         data_aniversario: dataAniversario || null,
@@ -48,7 +48,7 @@ export default function FormularioCliente({ usuarioId, clienteInicial }: Props) 
       if (error) { setErro('Erro ao salvar.'); setSalvando(false); return }
       router.push(`/clientes/${clienteInicial.id}`)
     } else {
-      const { data, error } = await supabase.from('clientes').insert({
+      const { data, error } = await supabase.from('listaClientes').insert({
         usuario_id: usuarioId, nome,
         telefone: telefone || null, email: email || null,
         endereco: endereco || null,

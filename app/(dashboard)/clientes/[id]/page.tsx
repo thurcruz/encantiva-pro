@@ -9,7 +9,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
   if (!user) redirect('/login')
 
   const { data: cliente } = await supabase
-    .from('clientes')
+    .from('listaClientes')
     .select('*')
     .eq('id', id)
     .eq('usuario_id', user.id)

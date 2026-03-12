@@ -67,7 +67,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
   const [kits, setKits] = useState<Kit[]>(kitsIniciais)
   const [adicionais, setAdicionais] = useState<Adicional[]>(adicionaisIniciais)
   const [pedidos, setPedidos] = useState<Pedido[]>(pedidosIniciais)
-  const [abaAtiva, setAbaAtiva] = useState<'temas' | 'kits' | 'adicionais' | 'pedidos'>('temas')
+  const [abaAtiva, setAbaAtiva] = useState<'temas' | 'kits' | 'adicionais' | 'gestorPedidos'>('temas')
   const [salvando, setSalvando] = useState(false)
   const [linkCopiado, setLinkCopiado] = useState(false)
 
@@ -131,7 +131,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
   }
 
   async function atualizarStatusPedido(id: string, status: string) {
-    await supabase.from('pedidos').update({ status }).eq('id', id)
+    await supabase.from('gestorPedidos').update({ status }).eq('id', id)
     setPedidos(prev => prev.map(p => p.id === id ? { ...p, status } : p))
   }
 
@@ -171,7 +171,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
           { key: 'temas', label: '🎨 Temas', count: temas.length },
           { key: 'kits', label: '📦 Kits', count: kits.length },
           { key: 'adicionais', label: '✨ Adicionais', count: adicionais.length },
-          { key: 'pedidos', label: '🛍️ Pedidos', count: pedidos.length },
+          { key: 'gestorPedidos', label: '🛍️ Pedidos', count: pedidos.length },
         ].map(aba => (
           <button key={aba.key} onClick={() => setAbaAtiva(aba.key as typeof abaAtiva)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', whiteSpace: 'nowrap', background: abaAtiva === aba.key ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#fff', border: `1px solid ${abaAtiva === aba.key ? 'transparent' : '#e5e5e5'}`, borderRadius: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: abaAtiva === aba.key ? '#fff' : '#140033' }}>
             {aba.label}
@@ -367,7 +367,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
       )}
 
       {/* ABA PEDIDOS */}
-      {abaAtiva === 'pedidos' && (
+      {abaAtiva === 'gestorPedidos' && (
         <>
           {pedidos.length === 0 ? (
             <div style={{ ...cardStyle, textAlign: 'center', padding: '48px' }}>

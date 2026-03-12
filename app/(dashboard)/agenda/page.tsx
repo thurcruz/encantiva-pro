@@ -22,12 +22,12 @@ export default async function PaginaAgenda() {
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!temAcesso('agenda', limites, isBeta, isAdmin)) {
+  if (!temAcesso('eventosPorMes', limites, isBeta, isAdmin)) {
     return <ModuloBloqueado titulo="Agenda de Festas" descricao="Visualize todos os seus eventos em um calendário organizado. Nunca mais perca um prazo." planoMinimo="avancado" icone="📅" />
   }
 
   const { data: pedidos } = await supabase
-    .from('pedidos')
+    .from('gestorPedidos')
     .select('*, catalogo_temas(nome), catalogo_kits(nome)')
     .eq('usuario_id', user.id)
     .order('data_evento', { ascending: true })

@@ -73,7 +73,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais }: Prop
     setEnviando(true)
     setErroEnvio(null)
 
-    const { error } = await supabase.from('pedidos').insert({
+    const { error } = await supabase.from('gestorPedidos').insert({
       usuario_id: usuarioId,
       tema_id: temaSelecionado.id,
       catalogo_kit_id: kitSelecionado.id,
