@@ -15,50 +15,36 @@ export default function PaginaCadastro() {
   const [sucesso, setSucesso] = useState(false)
   const supabase = createClient()
 
-
   async function handleCadastro(e: React.FormEvent) {
-  e.preventDefault()
-  if (senha !== confirmarSenha) return setErro('As senhas não coincidem.')
-  if (senha.length < 6) return setErro('A senha deve ter pelo menos 6 caracteres.')
-  setCarregando(true)
-  setErro(null)
+    e.preventDefault()
+    if (senha !== confirmarSenha) return setErro('As senhas não coincidem.')
+    if (senha.length < 6) return setErro('A senha deve ter pelo menos 6 caracteres.')
+    setCarregando(true)
+    setErro(null)
 
-  const { data, error } = await supabase.auth.signUp({ email, password: senha })
+    const { data, error } = await supabase.auth.signUp({ email, password: senha })
 
-  if (error) {
-  setErro(error.message) // ← mostra o erro real
-  setCarregando(false)
-  return
-}
-
-  if (data.user) {
-    const trialExpira = new Date()
-    trialExpira.setDate(trialExpira.getDate() + 7)
-
-    const { error: erroAssinatura } = await supabase.from('assinaturas').insert({
-      usuario_id: data.user.id,
-      status: 'ativo',
-      trial_expira_em: trialExpira.toISOString(),
-      expira_em: trialExpira.toISOString(),
-    })
-
-    if (erroAssinatura) {
-      setErro(`Erro ao criar trial: ${erroAssinatura.message}`)
+    if (error) {
+      setErro(error.message)
       setCarregando(false)
       return
     }
 
-    if (nomeLoja) {
-      await supabase.from('perfis').upsert({
-        id: data.user.id,
-        nome_loja: nomeLoja,
-      })
+    if (data.user) {
+      // Só cria o perfil — sem trial ainda
+      // O trial começa quando a pessoa entrar no dashboard pela primeira vez
+      if (nomeLoja) {
+        await supabase.from('perfis').upsert({
+          id: data.user.id,
+          nome_loja: nomeLoja,
+        })
+      }
     }
+
+    setSucesso(true)
+    setCarregando(false)
   }
 
-  setSucesso(true)
-  setCarregando(false)
-}
   const inputStyle = {
     width: '100%',
     background: 'rgba(255,255,255,0.06)',
@@ -127,18 +113,12 @@ export default function PaginaCadastro() {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '24px', position: 'relative', overflow: 'hidden',
     }}>
-
-      {/* Blobs */}
       <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, #9900ff22 0%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '-20%', left: '-10%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, #ff33cc18 0%, transparent 70%)', pointerEvents: 'none' }} />
 
       <div style={{ width: '100%', maxWidth: '440px', position: 'relative', zIndex: 1 }}>
-
-      {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-           <Image src="/enc_logotipo.svg" width="240" height="33" alt="Encantiva" />
-          </div>
+          <Image src="/enc_logotipo.svg" width={240} height={33} alt="Encantiva" />
         </div>
 
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '40px', backdropFilter: 'blur(20px)' }}>
@@ -152,47 +132,19 @@ export default function PaginaCadastro() {
           <form onSubmit={handleCadastro} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={labelStyle}>Nome da loja</label>
-              <input
-                type="text" value={nomeLoja}
-                onChange={e => setNomeLoja(e.target.value)}
-                placeholder="Ex: Encantiva Festas"
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = '#ff33cc66'}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-              />
+              <input type="text" value={nomeLoja} onChange={e => setNomeLoja(e.target.value)} placeholder="Ex: Encantiva Festas" style={inputStyle} onFocus={e => e.target.style.borderColor = '#ff33cc66'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
             </div>
             <div>
               <label style={labelStyle}>E-mail *</label>
-              <input
-                type="email" value={email}
-                onChange={e => setEmail(e.target.value)}
-                required placeholder="seu@email.com"
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = '#ff33cc66'}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-              />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="seu@email.com" style={inputStyle} onFocus={e => e.target.style.borderColor = '#ff33cc66'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
             </div>
             <div>
               <label style={labelStyle}>Senha *</label>
-              <input
-                type="password" value={senha}
-                onChange={e => setSenha(e.target.value)}
-                required placeholder="Mínimo 6 caracteres"
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = '#ff33cc66'}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-              />
+              <input type="password" value={senha} onChange={e => setSenha(e.target.value)} required placeholder="Mínimo 6 caracteres" style={inputStyle} onFocus={e => e.target.style.borderColor = '#ff33cc66'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
             </div>
             <div>
               <label style={labelStyle}>Confirmar senha *</label>
-              <input
-                type="password" value={confirmarSenha}
-                onChange={e => setConfirmarSenha(e.target.value)}
-                required placeholder="••••••••"
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = '#ff33cc66'}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-              />
+              <input type="password" value={confirmarSenha} onChange={e => setConfirmarSenha(e.target.value)} required placeholder="••••••••" style={inputStyle} onFocus={e => e.target.style.borderColor = '#ff33cc66'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
             </div>
 
             {erro && (
