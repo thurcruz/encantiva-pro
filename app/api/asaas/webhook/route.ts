@@ -13,7 +13,7 @@ const STATUS_MAP: Record<string, string> = {
 
 function verificarToken(token: string): boolean {
   const secret = process.env.ASAAS_WEBHOOK_TOKEN
-  if (!secret) return true // dev sem token configurado
+  if (!secret) return true
   try {
     return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(secret))
   } catch {
@@ -48,24 +48,38 @@ export async function POST(req: NextRequest) {
       const extRef: string = payment.externalReference ?? ''
       const [userId, plano] = extRef.split('::')
 
+      console.log('[asaas-webhook] userId:', userId, '| plano:', plano, '| novoStatus:', novoStatus)
+
       if (userId) {
-        const patch: Record<string, string> = {
+        const patch: Record<string, string | null> = {
           status:        novoStatus,
           atualizado_em: new Date().toISOString(),
         }
+
         if (novoStatus === 'active') {
-          const expira = new Date()
-          expira.setDate(expira.getDate() + 32)
-          patch.trial_expira_em = expira.toISOString()
+          // Limpa o trial e define o plano
+          patch.trial_expira_em = null
           if (plano) patch.plano = plano
         }
 
-        await supabase
+        const { data, error } = await supabase
           .from('assinaturas')
-          .upsert(
-            { usuario_id: userId, asaas_subscription_id: subscriptionId, ...patch },
-            { onConflict: 'usuario_id' }
-          )
+          .update(patch)
+          .eq('usuario_id', userId)
+
+        console.log('[asaas-webhook] update resultado:', JSON.stringify({ data, error }))
+
+        // Se não atualizou nenhuma linha, tenta upsert
+        if (error) {
+          console.log('[asaas-webhook] erro no update, tentando upsert...')
+          const { data: data2, error: error2 } = await supabase
+            .from('assinaturas')
+            .upsert(
+              { usuario_id: userId, asaas_subscription_id: subscriptionId, ...patch },
+              { onConflict: 'usuario_id' }
+            )
+          console.log('[asaas-webhook] upsert resultado:', JSON.stringify({ data2, error2 }))
+        }
       }
     }
 
