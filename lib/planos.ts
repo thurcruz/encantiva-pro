@@ -1,129 +1,145 @@
 // lib/planos.ts
 
-export type PlanoId = 'free' | 'iniciante' | 'avancado' | 'elite' | 'admin'
+export type PlanoId = 'free' | 'trial' | 'iniciante' | 'avancado' | 'elite' | 'admin'
 
 export interface LimitesPlano {
-  // Painéis
-  cortesPoMes: number | 'ilimitado'
+  // Cortador
+  cortadorPaineis: boolean
 
-  // Iniciante
-  bibliotecaMateriais: boolean
-  calculadoraPrecificacao: boolean
-  criarSalvarKits: boolean
-  catalogoKits: boolean
+  // Materiais
+  downloadMateriais: number | 'ilimitado'
 
-  // Avançado
-  enviarKitContrato: boolean
-  contratosDigitais: boolean
-  listaClientes: boolean
-  gestorPedidos: boolean
-  agendaFestas: boolean
-  configuracaoLoja: boolean
+  // Contratos
+  contratosPoMes: number | 'ilimitado'
+  contratoPersonalizado: boolean
 
-  // Elite
-  controleEstoque: boolean
-  rastreamentoPecas: boolean
+  // Ferramentas básicas
+  calculadora: boolean
+  salvarKits: boolean
+  catalogo: boolean
+  adicionarKitsCatalogo: boolean
+
+  // Ferramentas avançadas
+  agenda: boolean
+  pedidos: boolean
+  clientes: boolean
   financeiro: boolean
-  dashboardVendas: boolean
-  temaMaisVendido: boolean
-  cartaoFidelidade: boolean
+
+  // Extras
+  comunidade: boolean
+  fidelidade: boolean
+  checklistMontagem: boolean
+  acessoFuncionalidadesNovas: boolean
 }
 
 export const LIMITES: Record<PlanoId, LimitesPlano> = {
   free: {
-    cortesPoMes: 10,
-    bibliotecaMateriais: false,
-    calculadoraPrecificacao: false,
-    criarSalvarKits: false,
-    catalogoKits: false,
-    enviarKitContrato: false,
-    contratosDigitais: false,
-    listaClientes: false,
-    gestorPedidos: false,
-    agendaFestas: false,
-    configuracaoLoja: false,
-    controleEstoque: false,
-    rastreamentoPecas: false,
-    financeiro: false,
-    dashboardVendas: false,
-    temaMaisVendido: false,
-    cartaoFidelidade: false,
+    cortadorPaineis:           true,
+    downloadMateriais:         10,
+    contratosPoMes:            5,
+    contratoPersonalizado:     false,
+    calculadora:               false,
+    salvarKits:                false,
+    catalogo:                  false,
+    adicionarKitsCatalogo:     false,
+    agenda:                    false,
+    pedidos:                   false,
+    clientes:                  false,
+    financeiro:                false,
+    comunidade:                false,
+    fidelidade:                false,
+    checklistMontagem:         false,
+    acessoFuncionalidadesNovas: false,
+  },
+  trial: {
+    cortadorPaineis:           true,
+    downloadMateriais:         10,
+    contratosPoMes:            5,
+    contratoPersonalizado:     false,
+    calculadora:               true,
+    salvarKits:                false,
+    catalogo:                  true,
+    adicionarKitsCatalogo:     false,
+    agenda:                    true,
+    pedidos:                   true,
+    clientes:                  true,
+    financeiro:                true,
+    comunidade:                false,
+    fidelidade:                false,
+    checklistMontagem:         false,
+    acessoFuncionalidadesNovas: false,
   },
   iniciante: {
-    cortesPoMes: 'ilimitado',
-    bibliotecaMateriais: true,
-    calculadoraPrecificacao: true,
-    criarSalvarKits: true,
-    catalogoKits: true,
-    enviarKitContrato: false,
-    contratosDigitais: false,
-    listaClientes: false,
-    gestorPedidos: false,
-    agendaFestas: false,
-    configuracaoLoja: false,
-    controleEstoque: false,
-    rastreamentoPecas: false,
-    financeiro: false,
-    dashboardVendas: false,
-    temaMaisVendido: false,
-    cartaoFidelidade: false,
+    cortadorPaineis:           true,
+    downloadMateriais:         'ilimitado',
+    contratosPoMes:            15,
+    contratoPersonalizado:     false,
+    calculadora:               true,
+    salvarKits:                true,
+    catalogo:                  true,
+    adicionarKitsCatalogo:     true,
+    agenda:                    false,
+    pedidos:                   false,
+    clientes:                  false,
+    financeiro:                false,
+    comunidade:                true,
+    fidelidade:                false,
+    checklistMontagem:         false,
+    acessoFuncionalidadesNovas: false,
   },
   avancado: {
-    cortesPoMes: 'ilimitado',
-    bibliotecaMateriais: true,
-    calculadoraPrecificacao: true,
-    criarSalvarKits: true,
-    catalogoKits: true,
-    enviarKitContrato: true,
-    contratosDigitais: true,
-    listaClientes: true,
-    gestorPedidos: true,
-    agendaFestas: true,
-    configuracaoLoja: true,
-    controleEstoque: false,
-    rastreamentoPecas: false,
-    financeiro: false,
-    dashboardVendas: false,
-    temaMaisVendido: false,
-    cartaoFidelidade: false,
+    cortadorPaineis:           true,
+    downloadMateriais:         'ilimitado',
+    contratosPoMes:            'ilimitado',
+    contratoPersonalizado:     true,
+    calculadora:               true,
+    salvarKits:                true,
+    catalogo:                  true,
+    adicionarKitsCatalogo:     true,
+    agenda:                    true,
+    pedidos:                   true,
+    clientes:                  true,
+    financeiro:                false,
+    comunidade:                true,
+    fidelidade:                false,
+    checklistMontagem:         false,
+    acessoFuncionalidadesNovas: false,
   },
   elite: {
-    cortesPoMes: 'ilimitado',
-    bibliotecaMateriais: true,
-    calculadoraPrecificacao: true,
-    criarSalvarKits: true,
-    catalogoKits: true,
-    enviarKitContrato: true,
-    contratosDigitais: true,
-    listaClientes: true,
-    gestorPedidos: true,
-    agendaFestas: true,
-    configuracaoLoja: true,
-    controleEstoque: true,
-    rastreamentoPecas: true,
-    financeiro: true,
-    dashboardVendas: true,
-    temaMaisVendido: true,
-    cartaoFidelidade: true,
+    cortadorPaineis:           true,
+    downloadMateriais:         'ilimitado',
+    contratosPoMes:            'ilimitado',
+    contratoPersonalizado:     true,
+    calculadora:               true,
+    salvarKits:                true,
+    catalogo:                  true,
+    adicionarKitsCatalogo:     true,
+    agenda:                    true,
+    pedidos:                   true,
+    clientes:                  true,
+    financeiro:                true,
+    comunidade:                true,
+    fidelidade:                true,
+    checklistMontagem:         true,
+    acessoFuncionalidadesNovas: true,
   },
   admin: {
-    cortesPoMes: 'ilimitado',
-    bibliotecaMateriais: true,
-    calculadoraPrecificacao: true,
-    criarSalvarKits: true,
-    catalogoKits: true,
-    enviarKitContrato: true,
-    contratosDigitais: true,
-    listaClientes: true,
-    gestorPedidos: true,
-    agendaFestas: true,
-    configuracaoLoja: true,
-    controleEstoque: true,
-    rastreamentoPecas: true,
-    financeiro: true,
-    dashboardVendas: true,
-    temaMaisVendido: true,
-    cartaoFidelidade: true,
+    cortadorPaineis:           true,
+    downloadMateriais:         'ilimitado',
+    contratosPoMes:            'ilimitado',
+    contratoPersonalizado:     true,
+    calculadora:               true,
+    salvarKits:                true,
+    catalogo:                  true,
+    adicionarKitsCatalogo:     true,
+    agenda:                    true,
+    pedidos:                   true,
+    clientes:                  true,
+    financeiro:                true,
+    comunidade:                true,
+    fidelidade:                true,
+    checklistMontagem:         true,
+    acessoFuncionalidadesNovas: true,
   },
 }
 
@@ -134,19 +150,21 @@ export function getPlanoId(
   isAdmin: boolean,
 ): PlanoId {
   if (isAdmin) return 'admin'
+
   const planoNorm = plano?.toLowerCase().trim()
 
-  // Status pagos — active (Asaas), ativo/cancelando (legado)
+  // Assinatura paga ativa
   if (status === 'active' || status === 'ativo' || status === 'cancelando') {
     if (planoNorm === 'iniciante') return 'iniciante'
     if (planoNorm === 'avancado') return 'avancado'
     if (planoNorm === 'elite') return 'elite'
   }
 
-  // Trial ativo = acesso free
+  // Trial ativo
   const trialAtivo = trialExpiraEm ? new Date(trialExpiraEm) > new Date() : false
-  if (trialAtivo) return 'free'
+  if (status === 'trial' && trialAtivo) return 'trial'
 
+  // Free (trial expirado ou sem assinatura)
   return 'free'
 }
 
@@ -163,41 +181,44 @@ export function temAcesso(
   if (isAdmin || isBeta) return true
   const valor = limites[feature]
   if (typeof valor === 'boolean') return valor
+  // Para number | 'ilimitado' (downloadMateriais, contratosPoMes) — sempre passa aqui
+  // O controle de quantidade fica no contador (implementar depois)
   return true
 }
 
 export const NOMES_PLANO: Record<PlanoId, string> = {
-  free: 'Gratuito',
+  free:      'Gratuito',
+  trial:     'Teste grátis',
   iniciante: 'Iniciante',
-  avancado: 'Avançado',
-  elite: 'Elite',
-  admin: 'Admin',
+  avancado:  'Avançado',
+  elite:     'Elite',
+  admin:     'Admin',
 }
 
 export const PLANO_MINIMO: Record<keyof LimitesPlano, PlanoId | null> = {
-  cortesPoMes: null,
-  bibliotecaMateriais: 'iniciante',
-  calculadoraPrecificacao: 'iniciante',
-  criarSalvarKits: 'iniciante',
-  catalogoKits: 'iniciante',
-  enviarKitContrato: 'avancado',
-  contratosDigitais: 'avancado',
-  listaClientes: 'avancado',
-  gestorPedidos: 'avancado',
-  agendaFestas: 'avancado',
-  configuracaoLoja: 'avancado',
-  controleEstoque: 'elite',
-  rastreamentoPecas: 'elite',
-  financeiro: 'elite',
-  dashboardVendas: 'elite',
-  temaMaisVendido: 'elite',
-  cartaoFidelidade: 'elite',
+  cortadorPaineis:            null,
+  downloadMateriais:          null,
+  contratosPoMes:             null,
+  contratoPersonalizado:      'avancado',
+  calculadora:                'iniciante',
+  salvarKits:                 'iniciante',
+  catalogo:                   'iniciante',
+  adicionarKitsCatalogo:      'iniciante',
+  agenda:                     'avancado',
+  pedidos:                    'avancado',
+  clientes:                   'avancado',
+  financeiro:                 'elite',
+  comunidade:                 'iniciante',
+  fidelidade:                 'elite',
+  checklistMontagem:          'elite',
+  acessoFuncionalidadesNovas: 'elite',
 }
 
 export const PRECOS: Record<PlanoId, string | null> = {
-  free: null,
+  free:      null,
+  trial:     null,
   iniciante: 'R$ 24,90/mês',
-  avancado: 'R$ 54,90/mês',
-  elite: 'R$ 94,00/mês',
-  admin: null,
+  avancado:  'R$ 54,90/mês',
+  elite:     'R$ 94,00/mês',
+  admin:     null,
 }

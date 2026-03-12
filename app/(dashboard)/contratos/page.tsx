@@ -70,7 +70,7 @@ export default async function PaginaContratos() {
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!temAcesso('contratosDigitais', limites, isBeta, isAdmin)) {
+  if (!temAcesso('contratosPoMes', limites, isBeta, isAdmin)) {
     return <ModuloBloqueado titulo="Contratos Digitais" descricao="Gere contratos profissionais e envie para seus clientes assinarem." planoMinimo="avancado" icone="📋" />
   }
 

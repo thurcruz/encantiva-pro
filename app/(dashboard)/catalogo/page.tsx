@@ -22,7 +22,7 @@ export default async function PaginaCatalogo() {
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!temAcesso('gestorPedidos', limites, isBeta, isAdmin)) {
+  if (!temAcesso('pedidos', limites, isBeta, isAdmin)) {
     return <ModuloBloqueado titulo="Catálogo & Pedidos" descricao="Monte seu catálogo de temas e kits e receba pedidos pelo WhatsApp." planoMinimo="avancado" icone="🛍️" />
   }
 

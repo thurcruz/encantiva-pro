@@ -22,7 +22,7 @@ export default async function PaginaAgenda() {
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!temAcesso('agendaFestas', limites, isBeta, isAdmin)) {
+  if (!temAcesso('agenda', limites, isBeta, isAdmin)) {
     return <ModuloBloqueado titulo="Agenda de Festas" descricao="Visualize todos os seus eventos em um calendário organizado. Nunca mais perca um prazo." planoMinimo="avancado" icone="📅" />
   }
 
