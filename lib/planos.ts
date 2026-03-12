@@ -135,13 +135,18 @@ export function getPlanoId(
 ): PlanoId {
   if (isAdmin) return 'admin'
   const planoNorm = plano?.toLowerCase().trim()
-  if (status === 'ativo' || status === 'cancelando') {
+
+  // Status pagos — active (Asaas), ativo/cancelando (legado)
+  if (status === 'active' || status === 'ativo' || status === 'cancelando') {
     if (planoNorm === 'iniciante') return 'iniciante'
     if (planoNorm === 'avancado') return 'avancado'
     if (planoNorm === 'elite') return 'elite'
   }
+
+  // Trial ativo = acesso free
   const trialAtivo = trialExpiraEm ? new Date(trialExpiraEm) > new Date() : false
   if (trialAtivo) return 'free'
+
   return 'free'
 }
 
@@ -149,11 +154,6 @@ export function getLimites(planoId: PlanoId): LimitesPlano {
   return LIMITES[planoId] ?? LIMITES.free
 }
 
-/**
- * Verifica se uma feature está liberada, levando em conta beta e admin.
- * Beta tem acesso a tudo — igual ao admin mas identificado como usuária comum.
- * Uso: temAcesso('financeiro', limites, isBeta, isAdmin)
- */
 export function temAcesso(
   feature: keyof LimitesPlano,
   limites: LimitesPlano,
@@ -163,7 +163,7 @@ export function temAcesso(
   if (isAdmin || isBeta) return true
   const valor = limites[feature]
   if (typeof valor === 'boolean') return valor
-  return true // cortesPoMes é number | 'ilimitado', não é boolean — sempre passa
+  return true
 }
 
 export const NOMES_PLANO: Record<PlanoId, string> = {
