@@ -25,7 +25,12 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.text()
     const token = req.headers.get('asaas-access-token') ?? ''
+    
+    console.log('[webhook] token recebido:', token)
+    console.log('[webhook] token esperado:', process.env.ASAAS_WEBHOOK_TOKEN)
+    console.log('[webhook] body:', body.slice(0, 200))
 
+  
     if (!verificarToken(token)) {
       return NextResponse.json({ erro: 'Token inválido' }, { status: 401 })
     }
