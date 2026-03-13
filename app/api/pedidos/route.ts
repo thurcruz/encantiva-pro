@@ -11,33 +11,16 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+    const { nome_cliente, data_evento, valor_total, status, tema_id, kit_id, forma_pagamento, observacoes } = body
 
-    const {
-      nome_cliente,
-      data_evento,
-      valor_total,
-      status,
-      tema_id,
-      kit_id,
-      forma_pagamento,
-      observacoes,
-    } = body
-
-    // Validações básicas
-    if (!nome_cliente?.trim()) {
-      return NextResponse.json({ error: 'Nome do cliente obrigatório' }, { status: 400 })
-    }
-    if (!data_evento) {
-      return NextResponse.json({ error: 'Data do evento obrigatória' }, { status: 400 })
-    }
-    if (valor_total === undefined || isNaN(Number(valor_total))) {
-      return NextResponse.json({ error: 'Valor inválido' }, { status: 400 })
-    }
+    if (!nome_cliente?.trim()) return NextResponse.json({ error: 'Nome do cliente obrigatório' }, { status: 400 })
+    if (!data_evento) return NextResponse.json({ error: 'Data do evento obrigatória' }, { status: 400 })
+    if (valor_total === undefined || isNaN(Number(valor_total))) return NextResponse.json({ error: 'Valor inválido' }, { status: 400 })
 
     const { data, error } = await supabase
       .from('gestorPedidos')
       .insert({
-        usuario_id: user.id,
+        usuario_id: user.id,          // sempre da sessão, nunca do body
         nome_cliente: nome_cliente.trim(),
         data_evento,
         valor_total: Number(valor_total),
@@ -51,7 +34,7 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      console.error('[POST /api/pedidos]', error)
+      console.error('[POST /api/pedidos]', error.message)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
@@ -67,9 +50,7 @@ export async function GET(request: Request) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
+    if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
@@ -80,19 +61,14 @@ export async function GET(request: Request) {
       .eq('usuario_id', user.id)
       .order('data_evento', { ascending: true })
 
-    if (status) {
-      query = query.eq('status', status)
-    }
+    if (status) query = query.eq('status', status)
 
     const { data, error } = await query
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     return NextResponse.json(data)
   } catch (err) {
-    console.error('[GET /api/pedidos] erro inesperado', err)
+    console.error('[GET /api/pedidos]', err)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

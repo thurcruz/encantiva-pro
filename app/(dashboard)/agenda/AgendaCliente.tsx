@@ -32,7 +32,7 @@ const STATUS: Record<string, { dot: string; color: string; bg: string; label: st
   cancelado:  { dot: '#ef4444', color: '#dc2626', bg: '#fef2f2', label: 'Cancelado'  },
 }
 
-// ── Ícones ───────────────────────────────────────────────
+// ── Ícones ────────────────────────────────────────────────
 const IconChevLeft  = () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 4L6 8l4 4"/></svg>
 const IconChevRight = () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4l4 4-4 4"/></svg>
 const IconCalendar  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"><rect x="1" y="2" width="11" height="10" rx="1.5"/><path d="M1 5h11M4 1v2M9 1v2"/></svg>
@@ -43,14 +43,37 @@ const IconX         = () => <svg width="14" height="14" viewBox="0 0 14 14" fill
 const IconEmpty     = () => <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#e0e0e6" strokeWidth="1.4" strokeLinecap="round"><rect x="6" y="6" width="28" height="28" rx="3"/><path d="M12 20h16M12 26h10M20 8v6"/></svg>
 const IconCheck     = () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6l3 3 5-5"/></svg>
 
+// ── Estilos reutilizáveis ────────────────────────────────
+const inputStyle: React.CSSProperties = {
+  width: '100%', boxSizing: 'border-box',
+  fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#111827',
+  background: '#fafafa', border: '1px solid #e8e8ec', borderRadius: '10px',
+  padding: '10px 12px', outline: 'none',
+}
+const labelStyle: React.CSSProperties = {
+  fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600,
+  color: '#9ca3af', letterSpacing: '0.5px', textTransform: 'uppercase',
+  display: 'block', marginBottom: '5px',
+}
+const btnPrimario: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+  background: '#ff33cc', color: '#fff', border: 'none',
+  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
+  borderRadius: '999px', cursor: 'pointer', padding: '9px 18px',
+  whiteSpace: 'nowrap',
+}
+const btnSecundario: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+  background: 'transparent', color: '#ff33cc',
+  border: '1.5px solid #ff33cc',
+  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px',
+  borderRadius: '999px', cursor: 'pointer', padding: '6px 14px',
+  whiteSpace: 'nowrap',
+}
+
 // ── Modal de novo pedido ──────────────────────────────────
 function ModalNovoPedido({
-  onClose,
-  dataInicial,
-  usuarioId,
-  temas,
-  kits,
-  onSalvo,
+  onClose, dataInicial, usuarioId, temas, kits, onSalvo,
 }: {
   onClose: () => void
   dataInicial: string
@@ -73,90 +96,81 @@ function ModalNovoPedido({
   const [erro, setErro] = useState('')
   const [salvo, setSalvo] = useState(false)
 
-  const kitsFiltrados = form.tema_id ? kits.filter(k => k.tema_id === form.tema_id) : kits
+  // ✅ Fix: mostra todos os kits se nenhum tema selecionado, filtra se tem tema
+  const kitsFiltrados = form.tema_id
+    ? kits.filter(k => k.tema_id === form.tema_id)
+    : kits
 
   async function handleSalvar() {
     if (!form.nome_cliente.trim()) return setErro('Informe o nome do cliente')
     if (!form.data_evento) return setErro('Informe a data do evento')
-    if (!form.valor_total || isNaN(Number(form.valor_total))) return setErro('Informe um valor válido')
+    if (!form.valor_total || isNaN(Number(form.valor_total.replace(',', '.')))) return setErro('Informe um valor válido')
     setErro('')
 
     startTransition(async () => {
-      const res = await fetch('/api/pedidos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          usuario_id: usuarioId,
-          nome_cliente: form.nome_cliente,
-          data_evento: form.data_evento,
-          valor_total: Number(form.valor_total),
-          status: form.status,
-          tema_id: form.tema_id || null,
-          kit_id: form.kit_id || null,
-          forma_pagamento: form.forma_pagamento || null,
-          observacoes: form.observacoes || null,
-        }),
-      })
-      if (!res.ok) {
-        setErro('Erro ao salvar pedido. Tente novamente.')
-        return
+      try {
+        const res = await fetch('/api/pedidos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            usuario_id: usuarioId,
+            nome_cliente: form.nome_cliente.trim(),
+            data_evento: form.data_evento,
+            valor_total: Number(form.valor_total.replace(',', '.')),
+            status: form.status,
+            tema_id: form.tema_id || null,
+            kit_id: form.kit_id || null,
+            forma_pagamento: form.forma_pagamento || null,
+            observacoes: form.observacoes || null,
+          }),
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          setErro(data?.error ?? 'Erro ao salvar pedido. Tente novamente.')
+          return
+        }
+
+        setSalvo(true)
+        setTimeout(() => { onSalvo(data); onClose() }, 700)
+      } catch {
+        setErro('Erro de conexão. Verifique sua internet.')
       }
-      const data = await res.json()
-      setSalvo(true)
-      setTimeout(() => { onSalvo(data); onClose() }, 800)
     })
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', boxSizing: 'border-box',
-    fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#111827',
-    background: '#fafafa', border: '1px solid #e8e8ec', borderRadius: '9px',
-    padding: '10px 12px', outline: 'none',
-  }
-  const labelStyle: React.CSSProperties = {
-    fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600,
-    color: '#9ca3af', letterSpacing: '0.5px', textTransform: 'uppercase',
-    display: 'block', marginBottom: '5px',
-  }
-
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: '540px', padding: '0 0 32px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)' }}>
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{ background: '#fff', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: '540px', padding: '0 0 36px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)' }}>
 
-        {/* Header do modal */}
-        <div style={{ position: 'sticky', top: 0, background: '#fff', borderBottom: '1px solid #f3f4f6', padding: '18px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: '20px 20px 0 0', zIndex: 1 }}>
+        {/* Header */}
+        <div style={{ position: 'sticky', top: 0, background: '#fff', borderBottom: '1px solid #f3f4f6', padding: '18px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: '24px 24px 0 0', zIndex: 1 }}>
           <div>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '15px', color: '#111827', margin: 0 }}>Novo pedido</p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '2px 0 0' }}>Preencha os dados do evento</p>
           </div>
-          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '8px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
             <IconX />
           </button>
         </div>
 
         <div style={{ padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-          {/* Nome do cliente */}
+          {/* Nome */}
           <div>
             <label style={labelStyle}>Nome do cliente *</label>
-            <input
-              style={inputStyle}
-              placeholder="Ex: Maria Silva"
-              value={form.nome_cliente}
-              onChange={e => setForm(f => ({ ...f, nome_cliente: e.target.value }))}
-            />
+            <input style={inputStyle} placeholder="Ex: Maria Silva" value={form.nome_cliente} onChange={e => setForm(f => ({ ...f, nome_cliente: e.target.value }))} />
           </div>
 
-          {/* Data + Status lado a lado */}
+          {/* Data + Status */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
               <label style={labelStyle}>Data do evento *</label>
-              <input
-                type="date"
-                style={inputStyle}
-                value={form.data_evento}
-                onChange={e => setForm(f => ({ ...f, data_evento: e.target.value }))}
-              />
+              <input type="date" style={inputStyle} value={form.data_evento} onChange={e => setForm(f => ({ ...f, data_evento: e.target.value }))} />
             </div>
             <div>
               <label style={labelStyle}>Status</label>
@@ -169,7 +183,7 @@ function ModalNovoPedido({
             </div>
           </div>
 
-          {/* Valor + Forma de pagamento */}
+          {/* Valor + Pagamento */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
               <label style={labelStyle}>Valor total *</label>
@@ -177,7 +191,7 @@ function ModalNovoPedido({
                 style={inputStyle}
                 placeholder="0,00"
                 value={form.valor_total}
-                onChange={e => setForm(f => ({ ...f, valor_total: e.target.value.replace(',', '.') }))}
+                onChange={e => setForm(f => ({ ...f, valor_total: e.target.value }))}
               />
             </div>
             <div>
@@ -193,23 +207,38 @@ function ModalNovoPedido({
             </div>
           </div>
 
-          {/* Tema + Kit */}
-          {temas.length > 0 && (
+          {/* Tema + Kit — sempre visível se tiver kits */}
+          {(temas.length > 0 || kits.length > 0) && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <div>
-                <label style={labelStyle}>Tema</label>
-                <select style={inputStyle} value={form.tema_id} onChange={e => setForm(f => ({ ...f, tema_id: e.target.value, kit_id: '' }))}>
-                  <option value="">Selecione</option>
-                  {temas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Kit</label>
-                <select style={inputStyle} value={form.kit_id} onChange={e => setForm(f => ({ ...f, kit_id: e.target.value }))} disabled={!form.tema_id && kits.length > 0}>
-                  <option value="">Selecione</option>
-                  {kitsFiltrados.map(k => <option key={k.id} value={k.id}>{k.nome}</option>)}
-                </select>
-              </div>
+              {temas.length > 0 && (
+                <div>
+                  <label style={labelStyle}>Tema</label>
+                  <select
+                    style={inputStyle}
+                    value={form.tema_id}
+                    onChange={e => setForm(f => ({ ...f, tema_id: e.target.value, kit_id: '' }))}
+                  >
+                    <option value="">Todos os temas</option>
+                    {temas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                  </select>
+                </div>
+              )}
+              {kits.length > 0 && (
+                <div>
+                  <label style={labelStyle}>
+                    Kit {form.tema_id ? `(${kitsFiltrados.length})` : `(${kits.length})`}
+                  </label>
+                  {/* ✅ Fix: nunca disabled, sempre mostra kits disponíveis */}
+                  <select
+                    style={inputStyle}
+                    value={form.kit_id}
+                    onChange={e => setForm(f => ({ ...f, kit_id: e.target.value }))}
+                  >
+                    <option value="">Selecione o kit</option>
+                    {kitsFiltrados.map(k => <option key={k.id} value={k.id}>{k.nome}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
@@ -217,7 +246,7 @@ function ModalNovoPedido({
           <div>
             <label style={labelStyle}>Observações</label>
             <textarea
-              style={{ ...inputStyle, resize: 'vertical', minHeight: '72px' }}
+              style={{ ...inputStyle, resize: 'vertical', minHeight: '68px' }}
               placeholder="Detalhes extras sobre o evento..."
               value={form.observacoes}
               onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))}
@@ -226,7 +255,7 @@ function ModalNovoPedido({
 
           {/* Erro */}
           {erro && (
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '8px 12px', margin: 0 }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '8px 12px', margin: 0 }}>
               {erro}
             </p>
           )}
@@ -236,17 +265,16 @@ function ModalNovoPedido({
             onClick={handleSalvar}
             disabled={isPending || salvo}
             style={{
+              ...btnPrimario,
               width: '100%', padding: '14px',
-              background: salvo ? '#059669' : 'linear-gradient(135deg, #ff33cc, #9900ff)',
-              border: 'none', borderRadius: '12px',
-              color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px',
+              borderRadius: '999px', fontSize: '14px',
+              background: salvo ? '#059669' : '#ff33cc',
+              opacity: isPending ? 0.75 : 1,
               cursor: isPending || salvo ? 'default' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              transition: 'background .3s',
-              opacity: isPending ? 0.8 : 1,
+              transition: 'background .2s, opacity .2s',
             }}
           >
-            {salvo ? <><IconCheck /> Pedido salvo!</> : isPending ? 'Salvando...' : <><IconPlus /> Criar pedido</>}
+            {salvo ? <><IconCheck /> Pedido criado!</> : isPending ? 'Salvando...' : <><IconPlus /> Criar pedido</>}
           </button>
 
         </div>
@@ -273,18 +301,15 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
   function proximoMes() {
     if (mes === 11) { setMes(0); setAno(a => a + 1) } else setMes(m => m + 1)
   }
-
   function abrirModal(data?: string) {
     setDataModal(data ?? agora.toISOString().split('T')[0])
     setModalAberto(true)
   }
 
   const pedidosFiltrados = pedidos.filter(p => filtro === 'todos' || p.status === filtro)
-
   const alertas = pedidos.filter(p => {
     if (p.status === 'cancelado' || p.status === 'concluido') return false
-    const d = new Date(p.data_evento + 'T00:00:00')
-    const dias = Math.ceil((d.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
+    const dias = Math.ceil((new Date(p.data_evento + 'T00:00:00').getTime() - agora.getTime()) / 86400000)
     return dias >= 0 && dias <= 7
   })
 
@@ -299,7 +324,6 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
 
   const pedidosDiaSel = diaSel ? pedidosFiltrados.filter(p => p.data_evento === diaSel) : []
 
-  // Agrupar lista por mês
   const porMes: Record<string, Pedido[]> = {}
   pedidosFiltrados.forEach(p => {
     const key = p.data_evento.slice(0, 7)
@@ -307,9 +331,8 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
     porMes[key].push(p)
   })
 
-  const toggle = { display: 'flex', gap: '3px', background: '#f3f4f6', borderRadius: '9px', padding: '3px' } as const
-  const toggleBtn = (ativo: boolean): React.CSSProperties => ({
-    padding: '6px 14px', borderRadius: '7px', border: 'none',
+  const toggleBtnStyle = (ativo: boolean): React.CSSProperties => ({
+    padding: '6px 14px', borderRadius: '999px', border: 'none',
     background: ativo ? '#fff' : 'transparent',
     color: ativo ? '#111827' : '#9ca3af',
     fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px',
@@ -324,7 +347,7 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
 
       {/* ── Alertas ── */}
       {alertas.length > 0 && (
-        <div style={{ background: '#fffbf0', border: '1px solid #fde68a', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px' }}>
+        <div style={{ background: '#fffbf0', border: '1px solid #fde68a', borderRadius: '16px', padding: '14px 16px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
             <span style={{ color: '#d97706' }}><IconBell /></span>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#92400e', margin: 0 }}>
@@ -333,15 +356,14 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {alertas.map(p => {
-              const d = new Date(p.data_evento + 'T00:00:00')
-              const dias = Math.ceil((d.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
+              const dias = Math.ceil((new Date(p.data_evento + 'T00:00:00').getTime() - agora.getTime()) / 86400000)
               return (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderRadius: '9px', padding: '9px 12px', gap: '8px', border: '1px solid #fef3c7' }}>
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderRadius: '10px', padding: '9px 12px', gap: '8px', border: '1px solid #fef3c7' }}>
                   <div style={{ minWidth: 0 }}>
                     <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nome_cliente}</p>
                     <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>{p.catalogo_temas?.nome ?? '—'}</p>
                   </div>
-                  <span style={{ background: dias === 0 ? '#fef2f2' : '#fffbf0', color: dias === 0 ? '#dc2626' : '#d97706', borderRadius: '6px', padding: '3px 8px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>
+                  <span style={{ background: dias === 0 ? '#fef2f2' : '#fffbf0', color: dias === 0 ? '#dc2626' : '#d97706', borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>
                     {dias === 0 ? 'Hoje' : dias === 1 ? 'Amanhã' : `${dias}d`}
                   </span>
                 </div>
@@ -353,50 +375,42 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
 
       {/* ── Barra de controles ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {/* Filtros de status */}
+        {/* Filtros */}
         <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', flexShrink: 1 }}>
-          {[
-            { key: 'todos', label: 'Todos' },
-            { key: 'pendente', label: 'Pendente' },
-            { key: 'confirmado', label: 'Confirmado' },
-            { key: 'concluido', label: 'Concluído' },
-            { key: 'cancelado', label: 'Cancelado' },
-          ].map(f => (
+          {(['todos', 'pendente', 'confirmado', 'concluido', 'cancelado'] as const).map(f => (
             <button
-              key={f.key}
-              onClick={() => setFiltro(f.key)}
+              key={f}
+              onClick={() => setFiltro(f)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '5px',
-                padding: '6px 12px', borderRadius: '8px', border: '1px solid',
-                borderColor: filtro === f.key ? 'transparent' : '#e8e8ec',
-                background: filtro === f.key ? '#1a0040' : '#fff',
-                color: filtro === f.key ? '#fff' : '#6b7280',
+                padding: '6px 12px', borderRadius: '999px',
+                border: `1.5px solid ${filtro === f ? '#ff33cc' : '#e8e8ec'}`,
+                background: filtro === f ? '#ff33cc' : '#fff',
+                color: filtro === f ? '#fff' : '#6b7280',
                 fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px',
                 cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                transition: 'all .15s',
               }}
             >
-              {f.key !== 'todos' && (
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: STATUS[f.key]?.dot, display: 'inline-block' }} />
+              {f !== 'todos' && (
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: filtro === f ? '#fff' : STATUS[f]?.dot, display: 'inline-block' }} />
               )}
-              {f.label}
+              {f === 'todos' ? 'Todos' : STATUS[f]?.label}
             </button>
           ))}
         </div>
 
-        {/* Toggle vis + botão novo */}
+        {/* Toggle + botão novo */}
         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-          <div style={toggle}>
-            <button style={toggleBtn(vis === 'calendario')} onClick={() => setVis('calendario')}>
+          <div style={{ display: 'flex', gap: '3px', background: '#f3f4f6', borderRadius: '999px', padding: '3px' }}>
+            <button style={toggleBtnStyle(vis === 'calendario')} onClick={() => setVis('calendario')}>
               <IconCalendar /> Calendário
             </button>
-            <button style={toggleBtn(vis === 'lista')} onClick={() => setVis('lista')}>
+            <button style={toggleBtnStyle(vis === 'lista')} onClick={() => setVis('lista')}>
               <IconList /> Lista
             </button>
           </div>
-          <button
-            onClick={() => abrirModal()}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '9px', border: 'none', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-          >
+          <button onClick={() => abrirModal()} style={btnPrimario}>
             <IconPlus /> Novo pedido
           </button>
         </div>
@@ -404,30 +418,26 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
 
       {/* ── CALENDÁRIO ── */}
       {vis === 'calendario' && (
-        <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden' }}>
-
-          {/* Cabeçalho do mês */}
+        <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '16px', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f3f4f6' }}>
-            <button onClick={mesAnterior} style={{ width: 32, height: 32, borderRadius: '8px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+            <button onClick={mesAnterior} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
               <IconChevLeft />
             </button>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>
               {MESES_FULL[mes]} {ano}
             </p>
-            <button onClick={proximoMes} style={{ width: 32, height: 32, borderRadius: '8px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+            <button onClick={proximoMes} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
               <IconChevRight />
             </button>
           </div>
 
-          {/* Dias da semana */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid #f3f4f6' }}>
             {DIAS.map(d => (
               <p key={d} style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#9ca3af', textAlign: 'center', margin: 0, padding: '8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{d}</p>
             ))}
           </div>
 
-          {/* Grid de dias */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '8px', gap: '2px' }}>
             {Array.from({ length: primeiroDia }).map((_, i) => <div key={`e-${i}`} />)}
             {Array.from({ length: diasNoMes }, (_, i) => i + 1).map(dia => {
               const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
@@ -437,21 +447,22 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
               return (
                 <button
                   key={dia}
-                  onClick={() => setDiaSel(isSel ? null : dataStr)}                  
+                  onClick={() => setDiaSel(isSel ? null : dataStr)}
                   style={{
-                    aspectRatio: '1', borderRadius: '9px', border: 'none',
-                    background: isSel ? '#1a0040' : isHoje ? '#f5f0ff' : 'transparent',
+                    aspectRatio: '1', borderRadius: '999px', border: 'none',
+                    background: isSel ? '#ff33cc' : isHoje ? '#fff0fb' : 'transparent',
                     cursor: 'pointer',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
-                    padding: '3px',
-                    outline: isHoje && !isSel ? '2px solid #e9d5ff' : 'none',
+                    padding: '2px',
+                    outline: isHoje && !isSel ? '2px solid #ffccee' : 'none',
+                    outlineOffset: '1px',
                   }}
                 >
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: isHoje ? 800 : 500, color: isSel ? '#fff' : isHoje ? '#7700ff' : '#374151', margin: 0, lineHeight: 1 }}>{dia}</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: isHoje ? 800 : 500, color: isSel ? '#fff' : isHoje ? '#ff33cc' : '#374151', margin: 0, lineHeight: 1 }}>{dia}</p>
                   {pp.length > 0 && (
                     <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
                       {pp.slice(0, 3).map((p, i) => (
-                        <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: isSel ? '#ffffff99' : STATUS[p.status]?.dot ?? '#9900ff', display: 'inline-block' }} />
+                        <span key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: isSel ? '#ffffff99' : STATUS[p.status]?.dot ?? '#ff33cc', display: 'inline-block' }} />
                       ))}
                     </div>
                   )}
@@ -460,25 +471,20 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
             })}
           </div>
 
-          {/* Detalhe do dia selecionado */}
+          {/* Detalhe dia selecionado */}
           {diaSel && (
             <div style={{ borderTop: '1px solid #f3f4f6', padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: 0 }}>
                   {new Date(diaSel + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
-                <button
-                  onClick={() => abrirModal(diaSel)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '7px', border: '1px solid #e8e8ec', background: '#fafafa', color: '#7700ff', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}
-                >
+                <button onClick={() => abrirModal(diaSel)} style={btnSecundario}>
                   <IconPlus /> Adicionar
                 </button>
               </div>
               {pedidosDiaSel.length > 0
                 ? <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{pedidosDiaSel.map(p => <PedidoCard key={p.id} pedido={p} />)}</div>
-                : <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#d1d5db', margin: 0 }}>Nenhum evento neste dia</p>
-                  </div>
+                : <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#d1d5db', margin: 0, textAlign: 'center', padding: '16px 0' }}>Nenhum evento neste dia</p>
               }
             </div>
           )}
@@ -489,11 +495,11 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
       {vis === 'lista' && (
         <div>
           {Object.keys(porMes).length === 0 ? (
-            <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', textAlign: 'center', padding: '60px 24px' }}>
+            <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '16px', textAlign: 'center', padding: '60px 24px' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}><IconEmpty /></div>
               <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum pedido encontrado</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 16px' }}>Tente mudar o filtro ou crie um novo pedido</p>
-              <button onClick={() => abrirModal()} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', borderRadius: '9px', border: 'none', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 20px' }}>Tente mudar o filtro ou crie um novo pedido</p>
+              <button onClick={() => abrirModal()} style={btnPrimario}>
                 <IconPlus /> Criar pedido
               </button>
             </div>
@@ -537,34 +543,26 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
   const s = STATUS[pedido.status] ?? STATUS.pendente
   const agora = new Date()
   const dataEvento = new Date(pedido.data_evento + 'T00:00:00')
-  const dias = Math.ceil((dataEvento.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
+  const dias = Math.ceil((dataEvento.getTime() - agora.getTime()) / 86400000)
   const urgente = dias >= 0 && dias <= 7 && pedido.status !== 'cancelado' && pedido.status !== 'concluido'
 
   return (
-    <div style={{ background: urgente ? '#fffbf0' : '#fff', border: `1px solid ${urgente ? '#fde68a' : '#e8e8ec'}`, borderRadius: '11px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-      {/* Data */}
+    <div style={{ background: urgente ? '#fffbf0' : '#fff', border: `1px solid ${urgente ? '#fde68a' : '#e8e8ec'}`, borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
       <div style={{ width: '36px', textAlign: 'center', flexShrink: 0 }}>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '16px', fontWeight: 900, color: '#7700ff', margin: 0, lineHeight: 1 }}>{dataEvento.getDate()}</p>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '16px', fontWeight: 900, color: '#ff33cc', margin: 0, lineHeight: 1 }}>{dataEvento.getDate()}</p>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 600, color: '#9ca3af', margin: 0, textTransform: 'uppercase' }}>{MESES_SHORT[dataEvento.getMonth()]}</p>
       </div>
-
       <div style={{ width: 1, height: 28, background: '#e5e7eb', flexShrink: 0 }} />
-
-      {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pedido.nome_cliente}</p>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {[pedido.catalogo_temas?.nome, pedido.catalogo_kits?.nome].filter(Boolean).join(' · ') || '—'}
         </p>
       </div>
-
-      {/* Badge status */}
-      <span style={{ background: s.bg, color: s.color, borderRadius: '6px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <span style={{ background: s.bg, color: s.color, borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
         <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.dot, display: 'inline-block' }} />
         {s.label}
       </span>
-
-      {/* Valor + prazo */}
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
         <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px', letterSpacing: '-0.2px' }}>
           R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}
