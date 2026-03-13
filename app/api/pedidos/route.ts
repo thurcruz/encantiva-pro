@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         valor_total: Number(valor_total),
         status: status ?? 'pendente',
         tema_id: tema_id ?? null,
-        kit_id: kit_id ?? null,
+        catalogo_kit_id: kit_id ?? null,
         forma_pagamento: forma_pagamento ?? null,
         observacoes: observacoes ?? null,
       })
