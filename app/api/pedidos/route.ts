@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     if (valor_total === undefined || isNaN(Number(valor_total))) return NextResponse.json({ error: 'Valor inválido' }, { status: 400 })
 
     const { data, error } = await supabase
-      .from('gestorPedidos')
+      .from('pedidos')
       .insert({
         usuario_id: user.id,          // sempre da sessão, nunca do body
         nome_cliente: nome_cliente.trim(),
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
     const status = searchParams.get('status')
 
     let query = supabase
-      .from('gestorPedidos')
+      .from('pedidos')
       .select('*, catalogo_temas(nome), catalogo_kits(nome)')
       .eq('usuario_id', user.id)
       .order('data_evento', { ascending: true })
