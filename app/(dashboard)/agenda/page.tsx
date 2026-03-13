@@ -26,46 +26,34 @@ export default async function PaginaAgenda() {
     return <ModuloBloqueado titulo="Agenda de Festas" descricao="Visualize todos os seus eventos em um calendário organizado. Nunca mais perca um prazo." planoMinimo="avancado" icone="📅" />
   }
 
-  const { data: pedidos } = await supabase
-    .from('gestorPedidos')
-    .select('*, catalogo_temas(nome), catalogo_kits(nome)')
-    .eq('usuario_id', user.id)
-    .order('data_evento', { ascending: true })
+  const [{ data: pedidos }, { data: temas }, { data: kits }] = await Promise.all([
+    supabase
+      .from('gestorPedidos')
+      .select('*, catalogo_temas(nome), catalogo_kits(nome)')
+      .eq('usuario_id', user.id)
+      .order('data_evento', { ascending: true }),
+    supabase
+      .from('catalogo_temas')
+      .select('id, nome')
+      .eq('usuario_id', user.id)
+      .order('nome'),
+    supabase
+      .from('catalogo_kits')
+      .select('id, nome, tema_id')
+      .eq('usuario_id', user.id)
+      .order('nome'),
+  ])
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <style>{`
-        .agenda-wrapper {
-          max-width: 1000px;
-          margin: 0 auto;
-          padding: 32px 40px 100px 40px;
-        }
-        @media (max-width: 900px) {
-          .agenda-wrapper {
-            padding: 24px 24px 100px 24px;
-          }
-        }
-        @media (max-width: 600px) {
-          .agenda-wrapper {
-            padding: 16px 16px 100px 16px;
-          }
-          /* Filtros de status em scroll horizontal — já tratado inline, mas garante */
-          .agenda-filtros {
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-          }
-          /* Calendário: células menores no mobile */
-          .agenda-cal-cell p:first-child {
-            font-size: 11px !important;
-          }
-        }
-      `}</style>
-
-      <PageHeader titulo="Agenda" subtitulo="Seus eventos e pedidos organizados por data" />
-
-      <div className="agenda-wrapper">
-        <AgendaCliente pedidos={pedidos ?? []} />
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
+      <PageHeader titulo="Agenda" subtitulo="Seus eventos organizados por data" />
+      <div style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 24px 80px' }}>
+        <AgendaCliente
+          pedidos={pedidos ?? []}
+          usuarioId={user.id}
+          temas={temas ?? []}
+          kits={kits ?? []}
+        />
       </div>
     </div>
   )
