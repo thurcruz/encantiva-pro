@@ -1,494 +1,347 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Plus, Trash2, Save, FolderOpen, X, Pencil } from 'lucide-react'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { ItemAcervo } from '../acervo/AcervoCliente'
 
-interface Item {
-  id: number
+// ── Ícones ───────────────────────────────────────────────
+const IconPlus    = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M7 2v10M2 7h10"/></svg>
+const IconTrash   = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h9M5 3V2h3v1M3.5 3l.5 8h5l.5-8"/></svg>
+const IconCalc    = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="1" width="12" height="12" rx="2"/><path d="M4 4h2M8 4h2M4 7h2M8 7h2M4 10h2M8 10h2"/></svg>
+const IconExport  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 10v2h10v-2M7 1v8M4 6l3 3 3-3"/></svg>
+const IconCheck   = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 7l3.5 3.5L11 3"/></svg>
+const IconPackage = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9.5V4.5L7 2 2 4.5v5L7 12l5-2.5z"/><path d="M2 4.5l5 2.5 5-2.5M7 7v5"/></svg>
+const IconEmpty   = () => <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#e0e0e6" strokeWidth="1.2" strokeLinecap="round"><rect x="4" y="4" width="28" height="28" rx="3"/><path d="M12 18h12M18 12v12"/></svg>
+
+const input: React.CSSProperties = {
+  width: '100%', boxSizing: 'border-box',
+  fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#111827',
+  background: '#fafafa', border: '1px solid #e8e8ec', borderRadius: '10px',
+  padding: '10px 12px', outline: 'none',
+}
+const lbl: React.CSSProperties = {
+  display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px',
+  fontWeight: 600, color: '#9ca3af', letterSpacing: '0.6px',
+  textTransform: 'uppercase', marginBottom: '5px',
+}
+const btnPrimario: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+  background: '#ff33cc', color: '#fff', border: 'none',
+  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
+  borderRadius: '999px', cursor: 'pointer', padding: '10px 20px', whiteSpace: 'nowrap',
+}
+const btnSec: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+  background: 'transparent', color: '#ff33cc', border: '1.5px solid #ff33cc',
+  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px',
+  borderRadius: '999px', cursor: 'pointer', padding: '8px 16px', whiteSpace: 'nowrap',
+}
+
+interface ItemKit {
+  acervoId: string
   nome: string
   custo: number
-  meses: number
-  festasporMes: number
+  unidade: string
+  quantidade: number
 }
 
-interface Kit {
+interface KitSalvo {
   id: string
   nome: string
-  itens: Item[]
-  lucro: number
-  frete: number
-  custo_vida: number
-  criado_em: string
+  itens: ItemKit[]
+  custoTotal: number
+  precoSugerido: number
+  margem: number
+  exportado: boolean
 }
 
-export default function Calculadora() {
-  const [itens, setItens] = useState<Item[]>([
-    { id: 1, nome: '', custo: 0, meses: 6, festasporMes: 4 },
-  ])
-  const [lucro, setLucro] = useState(30)
-  const [frete, setFrete] = useState(0)
-  const [custoVida, setCustoVida] = useState(0)
+interface Props {
+  usuarioId: string
+  acervo: ItemAcervo[]
+}
 
-  const [kits, setKits] = useState<Kit[]>([])
-  const [modalSalvar, setModalSalvar] = useState(false)
-  const [modalKits, setModalKits] = useState(false)
-  const [nomeKit, setNomeKit] = useState('')
-  const [editandoId, setEditandoId] = useState<string | null>(null)
-  const [salvando, setSalvando] = useState(false)
-  const [carregandoKits, setCarregandoKits] = useState(false)
-
+export default function CalculadoraCliente({ usuarioId, acervo }: Props) {
   const supabase = createClient()
 
-  async function carregarKits() {
-  setCarregandoKits(true)
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  const { data } = await supabase
-    .from('kits')
-    .select('*')
-    .eq('usuario_id', user.id)
-    .order('criado_em', { ascending: false })
-  if (data) setKits(data)
-  setCarregandoKits(false)
-}
+  // Kit em montagem
+  const [nomeKit, setNomeKit] = useState('')
+  const [itensKit, setItensKit] = useState<ItemKit[]>([])
+  const [margem, setMargem] = useState(30)
+  const [busca, setBusca] = useState('')
 
-  useEffect(() => {
-    carregarKits()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // Kits salvos nesta sessão
+  const [kitsSalvos, setKitsSalvos] = useState<KitSalvo[]>([])
+  const [salvando, setSalvando] = useState<string | null>(null)
+  const [exportando, setExportando] = useState(false)
 
-  async function salvarKit() {
-    if (!nomeKit.trim()) return
-    setSalvando(true)
+  const acervoFiltrado = acervo.filter(a =>
+    busca.trim() === '' || a.nome.toLowerCase().includes(busca.toLowerCase())
+  )
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  function adicionarItem(item: ItemAcervo) {
+    setItensKit(prev => {
+      const existe = prev.find(i => i.acervoId === item.id)
+      if (existe) return prev.map(i => i.acervoId === item.id ? { ...i, quantidade: i.quantidade + 1 } : i)
+      return [...prev, { acervoId: item.id, nome: item.nome, custo: Number(item.custo), unidade: item.unidade, quantidade: 1 }]
+    })
+  }
 
-    if (editandoId) {
-      await supabase.from('kits').update({
-        nome: nomeKit, itens, lucro, frete,
-        custo_vida: custoVida,
-        atualizado_em: new Date().toISOString(),
-      }).eq('id', editandoId)
-    } else {
-      await supabase.from('kits').insert({
-        usuario_id: user.id, nome: nomeKit, itens, lucro, frete, custo_vida: custoVida,
-      })
+  function removerItem(acervoId: string) {
+    setItensKit(prev => prev.filter(i => i.acervoId !== acervoId))
+  }
+
+  function alterarQtd(acervoId: string, qtd: number) {
+    if (qtd < 1) return removerItem(acervoId)
+    setItensKit(prev => prev.map(i => i.acervoId === acervoId ? { ...i, quantidade: qtd } : i))
+  }
+
+  const custoTotal = itensKit.reduce((s, i) => s + i.custo * i.quantidade, 0)
+  const precoSugerido = custoTotal * (1 + margem / 100)
+
+  function salvarKit() {
+    if (!nomeKit.trim() || itensKit.length === 0) return
+    const kit: KitSalvo = {
+      id: crypto.randomUUID(),
+      nome: nomeKit,
+      itens: [...itensKit],
+      custoTotal,
+      precoSugerido,
+      margem,
+      exportado: false,
+    }
+    setKitsSalvos(p => [kit, ...p])
+    setNomeKit('')
+    setItensKit([])
+    setMargem(30)
+  }
+
+  async function exportarParaCatalogo(kit: KitSalvo) {
+    setExportando(true)
+    setSalvando(kit.id)
+
+    const { error } = await supabase.from('catalogo_kits').insert({
+      usuario_id: usuarioId,
+      nome: kit.nome,
+      descricao: `Kit com ${kit.itens.length} item(ns)`,
+      preco: kit.precoSugerido,
+      itens: kit.itens.map(i => i.nome),
+      foto_url: null,
+    })
+
+    if (!error) {
+      setKitsSalvos(p => p.map(k => k.id === kit.id ? { ...k, exportado: true } : k))
     }
 
-    await carregarKits()
-    setModalSalvar(false)
-    setSalvando(false)
-  }
-
-  function carregarKit(kit: Kit) {
-    setItens(kit.itens)
-    setLucro(kit.lucro)
-    setFrete(kit.frete)
-    setCustoVida(kit.custo_vida)
-    setEditandoId(kit.id)
-    setNomeKit(kit.nome)
-    setModalKits(false)
-  }
-
- async function deletarKit(id: string) {
-  const { error } = await supabase.from('kits').delete().eq('id', id)
-  if (error) {
-    alert('Erro: ' + error.message)
-    return
-  }
-  setKits(prev => prev.filter(k => k.id !== id))
-  if (editandoId === id) { setEditandoId(null); setNomeKit('') }
-}
-
-  function novaCalculadora() {
-    setItens([{ id: 1, nome: '', custo: 0, meses: 6, festasporMes: 4 }])
-    setLucro(30); setFrete(0); setCustoVida(0)
-    setEditandoId(null); setNomeKit('')
-  }
-
-  function adicionarItem() {
-    setItens(prev => [...prev, { id: Date.now(), nome: '', custo: 0, meses: 6, festasporMes: 4 }])
-  }
-
-  function removerItem(id: number) {
-    setItens(prev => prev.filter(i => i.id !== id))
-  }
-
-  function atualizarItem(id: number, campo: keyof Item, valor: string) {
-    setItens(prev => prev.map(i =>
-      i.id === id ? { ...i, [campo]: campo === 'nome' ? valor : parseFloat(valor) || 0 } : i
-    ))
-  }
-
-  const itensCusto = itens.map(item => {
-    const totalFestas = item.meses * item.festasporMes
-    const custoPorFesta = totalFestas > 0 ? item.custo / totalFestas : 0
-    return { ...item, totalFestas, custoPorFesta }
-  })
-
-  const totalFestasGeral = itensCusto.reduce((acc, i) => acc + i.totalFestas, 0) / (itens.length || 1)
-  const custoPorFestaTotal = itensCusto.reduce((acc, i) => acc + i.custoPorFesta, 0)
-  const custoVidaPorFesta = totalFestasGeral > 0 ? custoVida / totalFestasGeral : 0
-  const subtotal = custoPorFestaTotal + custoVidaPorFesta + frete
-  const valorLucro = subtotal * (lucro / 100)
-  const precoFinal = subtotal + valorLucro
-
-  const inputStyle = {
-    width: '100%',
-    background: '#fff',
-    border: '1px solid #e5e5e5',
-    borderRadius: '10px',
-    padding: '10px 12px',
-    color: '#140033',
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '13px',
-    outline: 'none',
-    boxSizing: 'border-box' as const,
-  }
-
-  const labelStyle = {
-    display: 'block',
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: '#00000055',
-    marginBottom: '6px',
-    letterSpacing: '1px',
-    textTransform: 'uppercase' as const,
-  }
-
-  const cardStyle = {
-    background: '#fff',
-    border: '1px solid #eeeeee',
-    borderRadius: '16px',
-    padding: '24px',
-    marginBottom: '20px',
+    setSalvando(null)
+    setExportando(false)
   }
 
   return (
     <div>
 
-      {/* Barra de ações */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: '24px', flexWrap: 'wrap', gap: '12px',
-      }}>
+      {/* ── Montagem do kit ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '16px', alignItems: 'start' }}>
+
+        {/* Coluna esquerda: acervo para selecionar */}
         <div>
-          {editandoId && (
-            <span style={{
-              fontFamily: 'Inter, sans-serif', fontSize: '13px',
-              color: '#9900ff', fontWeight: 600,
-              background: '#f5f0ff', padding: '6px 12px', borderRadius: '100px',
-              border: '1px solid #9900ff22',
-            }}>
-              ✏️ {nomeKit}
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {editandoId && (
-            <button onClick={novaCalculadora} style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              background: '#fff', border: '1px solid #e5e5e5',
-              borderRadius: '10px', padding: '10px 14px',
-              color: '#00000066', fontFamily: 'Inter, sans-serif',
-              fontWeight: 600, fontSize: '13px', cursor: 'pointer',
-            }}>
-              <X size={14} /> Novo
-            </button>
-          )}
-          <button onClick={() => { setModalKits(true); carregarKits() }} style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            background: '#fff', border: '1px solid #e5e5e5',
-            borderRadius: '10px', padding: '10px 14px',
-            color: '#140033', fontFamily: 'Inter, sans-serif',
-            fontWeight: 600, fontSize: '13px', cursor: 'pointer',
-          }}>
-            <FolderOpen size={14} />
-            Kits {kits.length > 0 && `(${kits.length})`}
-          </button>
-          <button onClick={() => setModalSalvar(true)} style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-            border: 'none', borderRadius: '10px', padding: '10px 14px',
-            color: '#fff', fontFamily: 'Inter, sans-serif',
-            fontWeight: 700, fontSize: '13px', cursor: 'pointer',
-          }}>
-            <Save size={14} />
-            {editandoId ? 'Salvar' : 'Salvar kit'}
-          </button>
-        </div>
-      </div>
-
-      {/* Itens do kit */}
-      <div style={cardStyle}>
-        <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 6px 0' }}>
-          🎪 Itens do kit
-        </h2>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 20px 0' }}>
-          Cada item tem seu próprio período de uso e número de festas
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
-
-          {/* Header — só desktop */}
-          <div className="calc-header-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 36px', gap: '10px', alignItems: 'end' }}>
-            <span style={labelStyle}>Item</span>
-            <span style={labelStyle}>Custo (R$)</span>
-            <span style={labelStyle}>Meses</span>
-            <span style={labelStyle}>Festas/mês</span>
-            <div />
-          </div>
-
-          {itens.map((item) => (
-            <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {/* Desktop: linha única */}
-              <div className="calc-item-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 36px', gap: '10px', alignItems: 'center' }}>
-                <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="Ex: Painel, Totem..." style={inputStyle} />
-                <input type="number" value={item.custo || ''} onChange={e => atualizarItem(item.id, 'custo', e.target.value)} placeholder="0,00" min="0" step="0.01" style={inputStyle} />
-                <input type="number" value={item.meses || ''} onChange={e => atualizarItem(item.id, 'meses', e.target.value)} placeholder="6" min="1" style={inputStyle} />
-                <input type="number" value={item.festasporMes || ''} onChange={e => atualizarItem(item.id, 'festasporMes', e.target.value)} placeholder="4" min="1" style={inputStyle} />
-                <button onClick={() => removerItem(item.id)} disabled={itens.length === 1} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: '36px', height: '36px',
-                  background: itens.length === 1 ? '#f9f9f9' : '#fff5fd',
-                  border: `1px solid ${itens.length === 1 ? '#eeeeee' : '#ff33cc33'}`,
-                  borderRadius: '8px',
-                  color: itens.length === 1 ? '#00000022' : '#ff33cc',
-                  cursor: itens.length === 1 ? 'not-allowed' : 'pointer',
-                  flexShrink: 0,
-                }}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-
-              {/* Mobile: cards empilhados */}
-              <div className="calc-item-mobile" style={{ display: 'none', flexDirection: 'column', gap: '10px', background: '#f9f9f9', borderRadius: '12px', padding: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={labelStyle}>Item</span>
-                  <button onClick={() => removerItem(item.id)} disabled={itens.length === 1} style={{
-                    background: itens.length === 1 ? 'transparent' : '#fff5fd',
-                    border: `1px solid ${itens.length === 1 ? 'transparent' : '#ff33cc33'}`,
-                    borderRadius: '6px', padding: '4px 8px',
-                    color: itens.length === 1 ? '#00000022' : '#ff33cc',
-                    cursor: itens.length === 1 ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '4px',
-                    fontFamily: 'Inter, sans-serif', fontSize: '12px',
-                  }}>
-                    <Trash2 size={12} /> Remover
-                  </button>
-                </div>
-                <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="Ex: Painel, Totem..." style={inputStyle} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                  <div>
-                    <span style={labelStyle}>Custo (R$)</span>
-                    <input type="number" value={item.custo || ''} onChange={e => atualizarItem(item.id, 'custo', e.target.value)} placeholder="0,00" min="0" step="0.01" style={inputStyle} />
-                  </div>
-                  <div>
-                    <span style={labelStyle}>Meses</span>
-                    <input type="number" value={item.meses || ''} onChange={e => atualizarItem(item.id, 'meses', e.target.value)} placeholder="6" min="1" style={inputStyle} />
-                  </div>
-                  <div>
-                    <span style={labelStyle}>Festas/mês</span>
-                    <input type="number" value={item.festasporMes || ''} onChange={e => atualizarItem(item.id, 'festasporMes', e.target.value)} placeholder="4" min="1" style={inputStyle} />
-                  </div>
-                </div>
-              </div>
-
-              {item.custo > 0 && (
-                <div style={{ display: 'flex', gap: '16px', paddingLeft: '4px' }}>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044' }}>
-                    {item.meses * item.festasporMes} festas
-                  </span>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9900ff', fontWeight: 600 }}>
-                    R$ {(item.custo / (item.meses * item.festasporMes)).toFixed(2).replace('.', ',')} por festa
-                  </span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <button onClick={adicionarItem} style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          background: 'transparent', border: '1px dashed #9900ff55',
-          borderRadius: '10px', padding: '10px 16px', color: '#9900ff',
-          fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px',
-          cursor: 'pointer', width: '100%', justifyContent: 'center',
-        }}>
-          <Plus size={14} /> Adicionar item
-        </button>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000066' }}>Custo total por festa</span>
-          <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033' }}>
-            R$ {custoPorFestaTotal.toFixed(2).replace('.', ',')}
-          </span>
-        </div>
-      </div>
-
-      {/* Custos adicionais */}
-      <div style={cardStyle}>
-        <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 6px 0' }}>
-          💰 Custos adicionais
-        </h2>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 20px 0' }}>
-          Outros custos que entram no preço final por festa
-        </p>
-        <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-          <div>
-            <label style={labelStyle}>Custo de vida mensal (R$)</label>
-            <input type="number" value={custoVida || ''} onChange={e => setCustoVida(parseFloat(e.target.value) || 0)} placeholder="Ex: 3000,00" min="0" step="0.01" style={inputStyle} />
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044', margin: '4px 0 0 0' }}>Dividido pela média de festas</p>
-          </div>
-          <div>
-            <label style={labelStyle}>Frete por festa (R$)</label>
-            <input type="number" value={frete || ''} onChange={e => setFrete(parseFloat(e.target.value) || 0)} placeholder="Ex: 50,00" min="0" step="0.01" style={inputStyle} />
-          </div>
-          <div>
-  <label style={labelStyle}>Lucro desejado (%)</label>
-  <input
-    type="number"
-    value={lucro || ''}
-    onChange={e => setLucro(parseFloat(e.target.value) || 0)}
-    placeholder="Ex: 30"
-    min="0"
-    style={inputStyle}
-  />
-  <p style={{
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '11px',
-    color: lucro < 100 ? '#ff33cc' : '#00aa55',
-    margin: '4px 0 0 0',
-    fontWeight: 600,
-  }}>
-    {lucro < 100
-      ? `⚠️ Recomendado: 100% a 150%`
-      : `✅ Dentro do recomendado`}
-  </p>
-</div>
-        </div>
-      </div>
-
-      {/* Resultado */}
-      <div style={{ background: 'linear-gradient(135deg, #140033, #1a0044)', border: '1px solid #ffffff12', borderRadius: '16px', padding: '28px' }}>
-        <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#ffffff88', margin: '0 0 20px 0' }}>
-          📊 Resultado
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-          {[
-            { label: 'Custo dos itens por festa', valor: custoPorFestaTotal },
-            { label: 'Custo de vida por festa', valor: custoVidaPorFesta },
-            { label: 'Frete', valor: frete },
-            { label: `Lucro (${lucro}%)`, valor: valorLucro },
-          ].map(linha => (
-            <div key={linha.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff66' }}>{linha.label}</span>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffffcc', fontWeight: 600 }}>
-                R$ {linha.valor.toFixed(2).replace('.', ',')}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div style={{ borderTop: '1px solid #ffffff18', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '18px', color: '#fff' }}>Preço por festa</span>
-          <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '36px', color: '#ff33cc', letterSpacing: '-1px' }}>
-            R$ {precoFinal.toFixed(2).replace('.', ',')}
-          </span>
-        </div>
-      </div>
-
-      {/* Modal — Salvar kit */}
-      {modalSalvar && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#00000055', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '420px', boxShadow: '0 24px 60px #00000033' }}>
-            <h3 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#140033', margin: '0 0 8px 0' }}>
-              {editandoId ? '✏️ Salvar alterações' : '💾 Salvar kit'}
-            </h3>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 24px 0' }}>
-              {editandoId ? 'Atualize o nome do kit se quiser' : 'Dê um nome para identificar este kit'}
+          <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '18px', marginBottom: '16px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#111827', margin: '0 0 12px' }}>
+              Selecione os itens do acervo
             </p>
             <input
-              type="text" value={nomeKit} onChange={e => setNomeKit(e.target.value)}
-              placeholder="Ex: Kit Dinossáuro..." autoFocus
-              onKeyDown={e => e.key === 'Enter' && salvarKit()}
-              style={{ width: '100%', background: '#f9f9f9', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '14px 16px', color: '#140033', fontFamily: 'Inter, sans-serif', fontSize: '15px', outline: 'none', boxSizing: 'border-box', marginBottom: '16px' }}
+              style={{ ...input, marginBottom: '12px' }}
+              placeholder="Buscar item..."
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
             />
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setModalSalvar(false)} style={{ flex: 1, padding: '12px', background: '#f5f5f5', border: 'none', borderRadius: '10px', color: '#00000066', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
-                Cancelar
-              </button>
-              <button onClick={salvarKit} disabled={!nomeKit.trim() || salvando} style={{ flex: 2, padding: '12px', background: nomeKit.trim() ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#f0f0f0', border: 'none', borderRadius: '10px', color: nomeKit.trim() ? '#fff' : '#00000033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: nomeKit.trim() ? 'pointer' : 'not-allowed' }}>
-                {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Salvar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal — Meus kits */}
-      {modalKits && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#00000055', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '480px', boxShadow: '0 24px 60px #00000033', maxHeight: '80vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <h3 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#140033', margin: 0 }}>
-                📁 Meus kits salvos
-              </h3>
-              <button onClick={() => setModalKits(false)} style={{ background: '#f5f5f5', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: '#00000066', display: 'flex', alignItems: 'center' }}>
-                <X size={16} />
-              </button>
-            </div>
-
-            {carregandoKits ? (
-              <p style={{ textAlign: 'center', fontFamily: 'Inter, sans-serif', color: '#00000044', fontSize: '14px', padding: '32px 0' }}>Carregando...</p>
-            ) : kits.length === 0 ? (
+            {acervo.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                <p style={{ fontSize: '40px', marginBottom: '8px' }}>📭</p>
-                <p style={{ fontFamily: 'Inter, sans-serif', color: '#00000044', fontSize: '14px' }}>Nenhum kit salvo ainda</p>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}><IconEmpty /></div>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>
+                  Cadastre itens no Acervo primeiro
+                </p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {kits.map(kit => (
-                  <div key={kit.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: editandoId === kit.id ? '#f5f0ff' : '#f9f9f9', border: `1px solid ${editandoId === kit.id ? '#9900ff33' : '#eeeeee'}`, borderRadius: '12px', padding: '14px 16px' }}>
-                    <div>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0' }}>
-                        {kit.nome}
-                        {editandoId === kit.id && <span style={{ color: '#9900ff', fontSize: '11px', marginLeft: '8px' }}>● editando</span>}
-                      </p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000044', margin: 0 }}>
-                        {kit.itens.length} {kit.itens.length === 1 ? 'item' : 'itens'} · {new Date(kit.criado_em).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => carregarKit(kit)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>
-                        <Pencil size={12} /> Carregar
-                      </button>
-                      <button onClick={() => deletarKit(kit.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer' }}>
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '380px', overflowY: 'auto' }}>
+                {acervoFiltrado.map(item => {
+                  const noKit = itensKit.find(i => i.acervoId === item.id)
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => adicionarItem(item)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '10px 12px', borderRadius: '10px', width: '100%', textAlign: 'left',
+                        border: `1.5px solid ${noKit ? '#ff33cc' : '#e8e8ec'}`,
+                        background: noKit ? '#fff0fb' : '#fafafa',
+                        cursor: 'pointer', gap: '8px',
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', color: '#111827', margin: '0 0 1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.nome}
+                        </p>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                          R$ {Number(item.custo).toFixed(2).replace('.', ',')} / {item.unidade}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                        {noKit && (
+                          <span style={{ background: '#ff33cc', color: '#fff', borderRadius: '999px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700 }}>
+                            ×{noKit.quantidade}
+                          </span>
+                        )}
+                        <span style={{ width: 24, height: 24, borderRadius: '999px', background: noKit ? '#ff33cc' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: noKit ? '#fff' : '#9ca3af' }}>
+                          <IconPlus />
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>
         </div>
-      )}
 
-      {/* CSS mobile */}
-      <style>{`
-        @media (max-width: 768px) {
-          .calc-header-desktop { display: none !important; }
-          .calc-item-desktop { display: none !important; }
-          .calc-item-mobile { display: flex !important; }
-          .form-grid-3 { grid-template-columns: 1fr 1fr !important; }
-        }
-        @media (max-width: 480px) {
-          .form-grid-3 { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+        {/* Coluna direita: resumo do kit */}
+        <div style={{ position: 'sticky', top: '80px' }}>
+          <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '18px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#111827', margin: '0 0 14px' }}>
+              Kit em montagem
+            </p>
+
+            {/* Nome do kit */}
+            <div style={{ marginBottom: '12px' }}>
+              <span style={lbl}>Nome do kit</span>
+              <input style={input} placeholder="Ex: Kit Básico Flores" value={nomeKit} onChange={e => setNomeKit(e.target.value)} />
+            </div>
+
+            {/* Itens adicionados */}
+            {itensKit.length === 0 ? (
+              <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '20px', textAlign: 'center', marginBottom: '12px' }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>
+                  Clique nos itens à esquerda para adicionar
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+                {itensKit.map(item => (
+                  <div key={item.acervoId} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: '#fafafa', borderRadius: '9px', border: '1px solid #e8e8ec' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.nome}
+                      </p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                        R$ {(item.custo * item.quantidade).toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+                    {/* Quantidade */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                      <button onClick={() => alterarQtd(item.acervoId, item.quantidade - 1)} style={{ width: 22, height: 22, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fff', cursor: 'pointer', fontFamily: 'Inter', fontWeight: 700, fontSize: '14px', color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#111827', minWidth: '16px', textAlign: 'center' }}>{item.quantidade}</span>
+                      <button onClick={() => alterarQtd(item.acervoId, item.quantidade + 1)} style={{ width: 22, height: 22, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fff', cursor: 'pointer', fontFamily: 'Inter', fontWeight: 700, fontSize: '14px', color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                    </div>
+                    <button onClick={() => removerItem(item.acervoId)} style={{ width: 22, height: 22, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <IconTrash />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Margem */}
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ ...lbl, margin: 0 }}>Margem de lucro</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#ff33cc' }}>{margem}%</span>
+              </div>
+              <input
+                type="range" min={0} max={200} value={margem}
+                onChange={e => setMargem(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#ff33cc' }}
+              />
+            </div>
+
+            {/* Resumo de valores */}
+            <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '12px 14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280' }}>Custo total</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#374151' }}>
+                  R$ {custoTotal.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280' }}>Margem ({margem}%)</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#059669' }}>
+                  + R$ {(precoSugerido - custoTotal).toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+              <div style={{ borderTop: '1px solid #e8e8ec', paddingTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#111827' }}>Preço sugerido</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '15px', fontWeight: 900, color: '#ff33cc', letterSpacing: '-0.3px' }}>
+                  R$ {precoSugerido.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={salvarKit}
+              disabled={!nomeKit.trim() || itensKit.length === 0}
+              style={{ ...btnPrimario, width: '100%', padding: '12px', borderRadius: '999px', opacity: !nomeKit.trim() || itensKit.length === 0 ? 0.4 : 1, cursor: !nomeKit.trim() || itensKit.length === 0 ? 'not-allowed' : 'pointer' }}
+            >
+              <IconCalc /> Salvar orçamento
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Kits salvos ── */}
+      {kitsSalvos.length > 0 && (
+        <div style={{ marginTop: '24px' }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 12px 2px' }}>
+            Orçamentos salvos nesta sessão
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {kitsSalvos.map(kit => (
+              <div key={kit.id} style={{ background: '#fff', border: `1px solid ${kit.exportado ? '#bbf7d0' : '#e8e8ec'}`, borderRadius: '14px', padding: '14px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>{kit.nome}</p>
+                      {kit.exportado && (
+                        <span style={{ background: '#dcfce7', color: '#16a34a', borderRadius: '999px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <IconCheck /> No catálogo
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                      {kit.itens.map(i => `${i.nome}${i.quantidade > 1 ? ` ×${i.quantidade}` : ''}`).join(' · ')}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '0 0 1px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Preço sugerido</p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '15px', color: '#ff33cc', margin: 0, letterSpacing: '-0.3px' }}>
+                        R$ {kit.precoSugerido.toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+                    {!kit.exportado && (
+                      <button
+                        onClick={() => exportarParaCatalogo(kit)}
+                        disabled={salvando === kit.id}
+                        style={{ ...btnSec, opacity: salvando === kit.id ? 0.6 : 1 }}
+                      >
+                        <IconExport />
+                        {salvando === kit.id ? 'Exportando...' : 'Enviar ao catálogo'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
