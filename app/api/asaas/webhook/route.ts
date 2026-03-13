@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import crypto from 'crypto'
 
 const STATUS_MAP: Record<string, string> = {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const evento: string = payload.event
     console.log('[asaas-webhook] evento:', evento)
 
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     // Eventos de cobrança
     if (evento.startsWith('PAYMENT_')) {
@@ -51,10 +51,10 @@ export async function POST(req: NextRequest) {
       console.log('[asaas-webhook] userId:', userId, '| plano:', plano, '| novoStatus:', novoStatus)
 
       if (userId) {
-        // Update do status e plano
-        const patch: Record<string, string> = {
-          status:        novoStatus,
-          atualizado_em: new Date().toISOString(),
+        const patch: Record<string, string | null> = {
+          status:           novoStatus,
+          atualizado_em:    new Date().toISOString(),
+          trial_expira_em:  novoStatus === 'active' ? null : undefined as unknown as null,
         }
         if (novoStatus === 'active' && plano) {
           patch.plano = plano
@@ -67,11 +67,6 @@ export async function POST(req: NextRequest) {
           .select()
 
         console.log('[asaas-webhook] update resultado:', JSON.stringify({ data, error }))
-
-        // Limpa trial_expira_em separadamente (null não funciona no patch tipado)
-        if (novoStatus === 'active') {
-          await supabase.rpc('limpar_trial', { p_usuario_id: userId })
-        }
 
         // Se não atualizou, tenta upsert
         if (error) {
