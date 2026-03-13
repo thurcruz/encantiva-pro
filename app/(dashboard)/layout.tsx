@@ -8,7 +8,7 @@ import Link from 'next/link'
 import {
   Package, LayoutDashboard, Upload, Calculator, ShoppingBag,
   FileText, Settings, Users, LayoutTemplate, Home, TrendingUp,
-  CalendarDays, Crown,
+  CalendarDays, Crown, Archive,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 
@@ -24,24 +24,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
 
-  // Busca assinatura existente
   let { data: assinatura } = await supabase
     .from('assinaturas')
     .select('status, trial_expira_em, plano, is_beta')
     .eq('usuario_id', user.id)
     .single()
 
-  // Se não tem assinatura, cria o trial agora (primeira vez no dashboard)
   if (!assinatura) {
     const trialExpira = new Date()
     trialExpira.setDate(trialExpira.getDate() + 7)
-
     await supabase.from('assinaturas').insert({
       usuario_id:      user.id,
       status:          'trial',
       trial_expira_em: trialExpira.toISOString(),
     })
-
     assinatura = {
       status:          'trial',
       trial_expira_em: trialExpira.toISOString(),
@@ -65,6 +61,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : 0
 
   const assinaturaAtiva = isAdmin || assinatura?.status === 'active' || isTrial
+
+  // Acervo só aparece para plano elite, beta ou admin
+  const temAcervo = isAdmin || isBeta || assinatura?.plano === 'elite'
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -95,9 +94,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Badge trial */}
         {isTrial && !isAdmin && (
           <div style={{ margin: '12px', padding: '10px 14px', background: 'rgba(255,51,204,0.1)', border: '1px solid rgba(255,51,204,0.25)', borderRadius: '10px' }}>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff33cc', margin: '0 0 2px 0' }}>
-              🧪 MODO TESTE
-            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff33cc', margin: '0 0 2px 0' }}>MODO TESTE</p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff55', margin: 0 }}>
               {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'}
             </p>
@@ -107,17 +104,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Badge trial expirado */}
         {trialExpirado && !isAdmin && (
           <div style={{ margin: '12px', padding: '10px 14px', background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.25)', borderRadius: '10px' }}>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff4444', margin: '0 0 2px 0' }}>
-              ⏰ TESTE EXPIRADO
-            </p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff55', margin: 0 }}>
-              Assine para continuar
-            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff4444', margin: '0 0 2px 0' }}>TESTE EXPIRADO</p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff55', margin: 0 }}>Assine para continuar</p>
           </div>
         )}
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
+
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '0 0 4px 0' }}>Geral</p>
           <NavItem href="/inicio" icon={<Home size={16} />} label="Início" />
 
@@ -128,6 +122,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Financeiro</p>
           <NavItem href="/financeiro" icon={<TrendingUp size={16} />} label="Financeiro" />
           <NavItem href="/calculadora" icon={<Calculator size={16} />} label="Calculadora" />
+          {temAcervo && (
+            <NavItem href="/acervo" icon={<Archive size={16} />} label="Acervo" />
+          )}
 
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Clientes</p>
           <NavItem href="/clientes" icon={<Users size={16} />} label="Clientes" />
@@ -159,31 +156,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* ── MAIN ── */}
       <main className="main-desktop">
 
-        {/* Banner trial ativo */}
         {isTrial && !isAdmin && (
-          <div style={{
-            background: '#ff33cc',
-            borderBottom: 'none',
-            padding: '10px 24px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          }}>
-            <span style={{ fontSize: '14px' }}>🧪</span>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#fff', margin: 0 }}>
-                Você está no <strong>modo de teste</strong> — {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'}.{' '}
-                <Link href="/planos" style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>Assinar agora →</Link>
-              </p>
+          <div style={{ background: '#ff33cc', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#fff', margin: 0 }}>
+              Você está no <strong>modo de teste</strong> — {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'}.{' '}
+              <Link href="/planos" style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>Assinar agora →</Link>
+            </p>
           </div>
         )}
 
-        {/* Banner trial expirado */}
         {trialExpirado && !isAdmin && (
-          <div style={{
-            background: 'rgba(255,0,0,0.1)',
-            borderBottom: '1px solid rgba(255,0,0,0.2)',
-            padding: '10px 24px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          }}>
-            <span style={{ fontSize: '14px' }}>⏰</span>
+          <div style={{ background: 'rgba(255,0,0,0.1)', borderBottom: '1px solid rgba(255,0,0,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff99', margin: 0 }}>
               Seu período de teste <strong style={{ color: '#ff4444' }}>expirou</strong>.{' '}
               <Link href="/planos" style={{ color: '#ff4444', fontWeight: 700 }}>Escolha um plano para continuar →</Link>
@@ -191,12 +174,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         )}
 
-        {/* Bloqueio quando trial expirado */}
         {trialExpirado && !isAdmin && !assinaturaAtiva ? (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            minHeight: '60vh', padding: '40px 24px', textAlign: 'center',
-          }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: '40px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '24px', color: '#140033', margin: '0 0 8px 0' }}>
               Seu teste gratuito expirou
@@ -204,12 +183,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '15px', color: '#00000055', margin: '0 0 24px 0', maxWidth: 400 }}>
               Escolha um plano para continuar usando a Encantiva Pro sem interrupções.
             </p>
-            <Link href="/planos" style={{
-              background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-              borderRadius: '12px', padding: '14px 32px',
-              color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
-              textDecoration: 'none', boxShadow: '0 8px 32px rgba(255,51,204,0.3)',
-            }}>
+            <Link href="/planos" style={{ background: '#ff33cc', borderRadius: '999px', padding: '14px 32px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', textDecoration: 'none' }}>
               Ver planos →
             </Link>
           </div>
@@ -220,7 +194,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
       {/* ── BOTTOM NAV ── */}
       <div className="bottom-nav-wrapper">
-        <BottomNav isAdmin={isAdmin} isBeta={isBeta} />
+        <BottomNav isAdmin={isAdmin} isBeta={isBeta} temAcervo={temAcervo} />
       </div>
 
     </div>
