@@ -30,51 +30,13 @@ export default async function PaginaCatalogo() {
     supabase.from('catalogo_temas').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
     supabase.from('catalogo_kits').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
     supabase.from('adicionais').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
-    supabase.from('gestorPedidos').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
+    supabase.from('pedidos').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }), // ✅ tabela correta
   ])
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <style>{`
-        .catalogo-wrapper {
-          max-width: 1000px;
-          margin: 0 auto;
-          padding: 24px 24px 100px 24px;
-        }
-        /* Grid 2 colunas no formulário (nome + categoria / nome + preço) */
-        .cat-grid-2 {
-          grid-template-columns: 1fr 1fr;
-        }
-        /* Grid de temas: 3 colunas no desktop, 2 no tablet, 1 no mobile */
-        .cat-temas-grid {
-          grid-template-columns: repeat(3, 1fr);
-        }
-        @media (max-width: 900px) {
-          .cat-temas-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (max-width: 600px) {
-          .catalogo-wrapper {
-            padding: 16px 16px 100px 16px;
-          }
-          .cat-grid-2 {
-            grid-template-columns: 1fr !important;
-          }
-          .cat-temas-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (max-width: 380px) {
-          .cat-temas-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-
-      <PageHeader titulo="Catálogo & Pedidos" subtitulo="Monte seu catálogo e receba pedidos pelo WhatsApp" />
-
-      <div className="catalogo-wrapper">
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
+      <PageHeader titulo="Catálogo & Pedidos" subtitulo="Monte seu catálogo e receba pedidos das clientes" />
+      <div style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 24px 100px' }}>
         <CatalogoManager
           usuarioId={user.id}
           temasIniciais={temas ?? []}

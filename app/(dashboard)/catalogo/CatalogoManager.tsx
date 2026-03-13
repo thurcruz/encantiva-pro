@@ -3,54 +3,25 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import NextImage from 'next/image'
-import { Plus, Trash2, ExternalLink, Package, Tag, Copy, Check } from 'lucide-react'
 
-const CATEGORIAS = [
-  'Mesversário', 'Aniversário', 'Batizado', '1ª Eucaristia',
-  'Noivado', '15 Anos', 'Casamento', 'Chá de Bebê',
-  'Chá de Panela', 'Chá de Lingerie', 'Chá Revelação', 'Bodas',
-]
+// ── Ícones SVG ───────────────────────────────────────────
+const IconPlus     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M7 2v10M2 7h10"/></svg>
+const IconTrash    = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h9M5 3V2h3v1M3.5 3l.5 8h5l.5-8"/></svg>
+const IconCopy     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M4 4V3A1 1 0 0 0 3 2H2A1 1 0 0 0 1 3v1a1 1 0 0 0 1 1h1"/></svg>
+const IconCheck    = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 7l3.5 3.5L11 3"/></svg>
+const IconExternal = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V8M8 1h5v5M13 1L7 7"/></svg>
+const IconImage    = () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="16" height="12" rx="2"/><circle cx="6" cy="8" r="1.5"/><path d="M1 13l4-4 3 3 2.5-2.5L17 14"/></svg>
+const IconPackage  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9.5V4.5L7 2 2 4.5v5L7 12l5-2.5z"/><path d="M2 4.5l5 2.5 5-2.5M7 7v5"/></svg>
+const IconTag      = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1h5.5l6 6a1.5 1.5 0 0 1 0 2L9 12.5a1.5 1.5 0 0 1-2 0L1 6.5V1z"/><circle cx="4" cy="4" r="1"/></svg>
+const IconPalette  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="7" cy="7" r="6"/><circle cx="4.5" cy="5.5" r="1"/><circle cx="7" cy="4" r="1"/><circle cx="9.5" cy="5.5" r="1"/><path d="M4 9.5c0-1 1.3-2 3-2s3 1 3 2"/></svg>
+const IconOrders   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="1" width="12" height="12" rx="2"/><path d="M4 5h6M4 7.5h4M4 10h5"/></svg>
 
-const ITENS_KIT = ['Decoração', 'Painel', 'Lembrançinhas']
 
-interface Tema {
-  id: string
-  nome: string
-  categoria: string
-  foto_url: string | null
-  ativo: boolean
-}
-
-interface Kit {
-  id: string
-  usuario_id: string
-  nome: string
-  descricao: string | null
-  preco: number
-  itens: string[]
-}
-
-interface Adicional {
-  id: string
-  usuario_id: string
-  nome: string
-  preco: number
-}
-
-interface Pedido {
-  id: string
-  tema_id: string
-  catalogo_kit_id: string
-  nome_cliente: string
-  telefone_cliente: string | null
-  data_evento: string
-  forma_pagamento: string | null
-  adicionais: string[]
-  valor_total: number
-  status: string
-  observacoes: string | null
-  criado_em: string
-}
+// ── Tipos ────────────────────────────────────────────────
+interface Tema { id: string; nome: string; categoria: string; foto_url: string | null; ativo: boolean }
+interface Kit  { id: string; usuario_id: string; nome: string; descricao: string | null; preco: number; itens: string[]; foto_url: string | null }
+interface Adicional { id: string; usuario_id: string; nome: string; preco: number; foto_url: string | null }
+interface Pedido { id: string; tema_id: string; catalogo_kit_id: string; nome_cliente: string; telefone_cliente: string | null; data_evento: string; forma_pagamento: string | null; adicionais: string[]; valor_total: number; status: string; observacoes: string | null; criado_em: string }
 
 interface Props {
   usuarioId: string
@@ -60,29 +31,120 @@ interface Props {
   pedidosIniciais: Pedido[]
 }
 
+const CATEGORIAS = ['Mesversário','Aniversário','Batizado','1ª Eucaristia','Noivado','15 Anos','Casamento','Chá de Bebê','Chá de Panela','Chá de Lingerie','Chá Revelação','Bodas']
+const ITENS_KIT  = ['Decoração','Painel','Lembrançinhas','Balões','Bolo','Mesa Posta','Iluminação','Cenografia']
+
+// ── Estilos base ─────────────────────────────────────────
+const input: React.CSSProperties = {
+  width: '100%', boxSizing: 'border-box',
+  fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#111827',
+  background: '#fafafa', border: '1px solid #e8e8ec', borderRadius: '10px',
+  padding: '10px 12px', outline: 'none',
+}
+const label: React.CSSProperties = {
+  display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px',
+  fontWeight: 600, color: '#9ca3af', letterSpacing: '0.6px',
+  textTransform: 'uppercase', marginBottom: '5px',
+}
+const btnPrimario: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+  background: '#ff33cc', color: '#fff', border: 'none',
+  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
+  borderRadius: '999px', cursor: 'pointer', padding: '10px 20px', whiteSpace: 'nowrap',
+}
+
+const card: React.CSSProperties = {
+  background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '20px', marginBottom: '16px',
+}
+const statusCor: Record<string, string> = {
+  pendente: '#f59e0b', confirmado: '#10b981', cancelado: '#ef4444', concluido: '#8b5cf6',
+}
+
+// ── Upload de foto helper ────────────────────────────────
+function FotoUpload({
+  valor, onChange, label: lbl,
+}: { valor: string; onChange: (url: string) => void; label?: string }) {
+  return (
+    <div>
+      {lbl && <span style={label}>{lbl}</span>}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <input
+          style={{ ...input, flex: 1 }}
+          placeholder="https://... (URL da imagem)"
+          value={valor}
+          onChange={e => onChange(e.target.value)}
+        />
+        {valor && (
+          <div style={{ width: 38, height: 38, borderRadius: '8px', overflow: 'hidden', flexShrink: 0, border: '1px solid #e8e8ec', position: 'relative' }}>
+            <NextImage src={valor} fill style={{ objectFit: 'cover' }} alt="preview" unoptimized />
+          </div>
+        )}
+      </div>
+      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '4px 0 0' }}>
+        Cole a URL de uma imagem. Sugestão: faça upload no Imgur ou Cloudinary.
+      </p>
+    </div>
+  )
+}
+
+// ── Componente principal ─────────────────────────────────
 export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais, adicionaisIniciais, pedidosIniciais }: Props) {
   const supabase = createClient()
 
-  const [temas, setTemas] = useState<Tema[]>(temasIniciais)
-  const [kits, setKits] = useState<Kit[]>(kitsIniciais)
+  const [temas, setTemas]         = useState<Tema[]>(temasIniciais)
+  const [kits, setKits]           = useState<Kit[]>(kitsIniciais)
   const [adicionais, setAdicionais] = useState<Adicional[]>(adicionaisIniciais)
-  const [pedidos, setPedidos] = useState<Pedido[]>(pedidosIniciais)
-  const [abaAtiva, setAbaAtiva] = useState<'temas' | 'kits' | 'adicionais' | 'gestorPedidos'>('temas')
-  const [salvando, setSalvando] = useState(false)
-  const [linkCopiado, setLinkCopiado] = useState(false)
+  const [pedidos, setPedidos]     = useState<Pedido[]>(pedidosIniciais)
+  const [aba, setAba]             = useState<'kits' | 'adicionais' | 'temas' | 'pedidos'>('kits')
+  const [salvando, setSalvando]   = useState(false)
+  const [copiado, setCopiado]     = useState(false)
 
-  const [novoTema, setNovoTema] = useState({ nome: '', categoria: CATEGORIAS[0], foto_url: '' })
-  const [novoKit, setNovoKit] = useState({ nome: '', descricao: '', preco: '', itens: [] as string[] })
-  const [novoAdicional, setNovoAdicional] = useState({ nome: '', preco: '' })
+  const [novoKit, setNovoKit]         = useState({ nome: '', descricao: '', preco: '', itens: [] as string[], foto_url: '' })
+  const [novoAdicional, setNovoAdicional] = useState({ nome: '', preco: '', foto_url: '' })
+  const [novoTema, setNovoTema]       = useState({ nome: '', categoria: CATEGORIAS[0], foto_url: '' })
 
-  const linkPublico = `${process.env.NEXT_PUBLIC_SITE_URL}/pedido/${usuarioId}`
+  const linkPublico = typeof window !== 'undefined'
+    ? `${window.location.origin}/pedido/${usuarioId}`
+    : `/pedido/${usuarioId}`
 
   async function copiarLink() {
     await navigator.clipboard.writeText(linkPublico)
-    setLinkCopiado(true)
-    setTimeout(() => setLinkCopiado(false), 2000)
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2000)
   }
 
+  // ── CRUD Kits ──
+  async function criarKit() {
+    if (!novoKit.nome.trim() || !novoKit.preco) return
+    setSalvando(true)
+    const { data, error } = await supabase.from('catalogo_kits').insert({
+      usuario_id: usuarioId, nome: novoKit.nome, descricao: novoKit.descricao || null,
+      preco: parseFloat(novoKit.preco), itens: novoKit.itens, foto_url: novoKit.foto_url || null,
+    }).select().single()
+    if (!error && data) { setKits(p => [data, ...p]); setNovoKit({ nome: '', descricao: '', preco: '', itens: [], foto_url: '' }) }
+    setSalvando(false)
+  }
+  async function deletarKit(id: string) {
+    await supabase.from('catalogo_kits').delete().eq('id', id)
+    setKits(p => p.filter(k => k.id !== id))
+  }
+
+  // ── CRUD Adicionais ──
+  async function criarAdicional() {
+    if (!novoAdicional.nome.trim() || !novoAdicional.preco) return
+    setSalvando(true)
+    const { data, error } = await supabase.from('adicionais').insert({
+      usuario_id: usuarioId, nome: novoAdicional.nome, preco: parseFloat(novoAdicional.preco), foto_url: novoAdicional.foto_url || null,
+    }).select().single()
+    if (!error && data) { setAdicionais(p => [data, ...p]); setNovoAdicional({ nome: '', preco: '', foto_url: '' }) }
+    setSalvando(false)
+  }
+  async function deletarAdicional(id: string) {
+    await supabase.from('adicionais').delete().eq('id', id)
+    setAdicionais(p => p.filter(a => a.id !== id))
+  }
+
+  // ── CRUD Temas ──
   async function criarTema() {
     if (!novoTema.nome.trim()) return
     setSalvando(true)
@@ -90,222 +152,153 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
       usuario_id: usuarioId, nome: novoTema.nome, categoria: novoTema.categoria,
       foto_url: novoTema.foto_url || null, ativo: true,
     }).select().single()
-    if (!error && data) { setTemas(prev => [data, ...prev]); setNovoTema({ nome: '', categoria: CATEGORIAS[0], foto_url: '' }) }
+    if (!error && data) { setTemas(p => [data, ...p]); setNovoTema({ nome: '', categoria: CATEGORIAS[0], foto_url: '' }) }
     setSalvando(false)
   }
-
   async function deletarTema(id: string) {
     await supabase.from('catalogo_temas').delete().eq('id', id)
-    setTemas(prev => prev.filter(t => t.id !== id))
-  }
-
-  async function criarKit() {
-    if (!novoKit.nome.trim() || !novoKit.preco) return
-    setSalvando(true)
-    const { data, error } = await supabase.from('catalogo_kits').insert({
-      usuario_id: usuarioId, nome: novoKit.nome, descricao: novoKit.descricao || null,
-      preco: parseFloat(novoKit.preco), itens: novoKit.itens,
-    }).select().single()
-    if (!error && data) { setKits(prev => [data, ...prev]); setNovoKit({ nome: '', descricao: '', preco: '', itens: [] }) }
-    setSalvando(false)
-  }
-
-  async function deletarKit(id: string) {
-    await supabase.from('catalogo_kits').delete().eq('id', id)
-    setKits(prev => prev.filter(k => k.id !== id))
-  }
-
-  async function criarAdicional() {
-    if (!novoAdicional.nome.trim() || !novoAdicional.preco) return
-    setSalvando(true)
-    const { data, error } = await supabase.from('adicionais').insert({
-      usuario_id: usuarioId, nome: novoAdicional.nome, preco: parseFloat(novoAdicional.preco),
-    }).select().single()
-    if (!error && data) { setAdicionais(prev => [data, ...prev]); setNovoAdicional({ nome: '', preco: '' }) }
-    setSalvando(false)
-  }
-
-  async function deletarAdicional(id: string) {
-    await supabase.from('adicionais').delete().eq('id', id)
-    setAdicionais(prev => prev.filter(a => a.id !== id))
+    setTemas(p => p.filter(t => t.id !== id))
   }
 
   async function atualizarStatusPedido(id: string, status: string) {
-    await supabase.from('gestorPedidos').update({ status }).eq('id', id)
-    setPedidos(prev => prev.map(p => p.id === id ? { ...p, status } : p))
+    await supabase.from('pedidos').update({ status }).eq('id', id)
+    setPedidos(p => p.map(x => x.id === id ? { ...x, status } : x))
   }
 
-  const cardStyle = { background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px', marginBottom: '20px' }
-  const inputStyle = { width: '100%', background: '#fff', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '12px 16px', color: '#140033', fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }
-  const labelStyle = { display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', marginBottom: '6px', letterSpacing: '1px', textTransform: 'uppercase' as const }
-
-  const statusCor: Record<string, string> = {
-    pendente: '#ff9900', confirmado: '#00aa55', cancelado: '#ff3333', concluido: '#9900ff',
-  }
+  const ABAS = [
+    { key: 'kits',      label: 'Kits',      icone: <IconPackage />, count: kits.length      },
+    { key: 'adicionais',label: 'Adicionais', icone: <IconTag />,     count: adicionais.length },
+    { key: 'temas',     label: 'Temas',      icone: <IconPalette />, count: temas.length     },
+    { key: 'pedidos',   label: 'Pedidos',    icone: <IconOrders />,  count: pedidos.length   },
+  ] as const
 
   return (
     <div>
 
-      {/* Link público */}
-      <div style={{ background: 'linear-gradient(135deg, #fff5fd, #f5f0ff)', border: '1px solid #ff33cc22', borderRadius: '16px', padding: '16px', marginBottom: '24px' }}>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 8px 0' }}>
-          🔗 Seu link de pedidos
+      {/* ── Link público ── */}
+      <div style={{ background: '#fff', border: '1px solid #ffd6f5', borderRadius: '16px', padding: '16px 18px', marginBottom: '24px' }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 6px' }}>
+          Seu link de pedidos
         </p>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9900ff', margin: '0 0 12px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {linkPublico}
         </p>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={copiarLink} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: linkCopiado ? '#00aa55' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '10px', padding: '10px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
-            {linkCopiado ? <Check size={14} /> : <Copy size={14} />}
-            {linkCopiado ? 'Copiado!' : 'Copiar link'}
+          <button onClick={copiarLink} style={{ ...btnPrimario, flex: 1, background: copiado ? '#059669' : '#ff33cc' }}>
+            {copiado ? <><IconCheck /> Copiado!</> : <><IconCopy /> Copiar link</>}
           </button>
-          <a href={linkPublico} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px', background: '#fff', border: '1px solid #e5e5e5', borderRadius: '10px', flexShrink: 0 }}>
-            <ExternalLink size={16} style={{ color: '#9900ff' }} />
+          <a href={linkPublico} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, background: '#fafafa', border: '1.5px solid #ff33cc', borderRadius: '999px', color: '#ff33cc', flexShrink: 0, textDecoration: 'none' }}>
+            <IconExternal />
           </a>
         </div>
       </div>
 
-      {/* Abas */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '2px' }}>
-        {[
-          { key: 'temas', label: '🎨 Temas', count: temas.length },
-          { key: 'kits', label: '📦 Kits', count: kits.length },
-          { key: 'adicionais', label: '✨ Adicionais', count: adicionais.length },
-          { key: 'gestorPedidos', label: '🛍️ Pedidos', count: pedidos.length },
-        ].map(aba => (
-          <button key={aba.key} onClick={() => setAbaAtiva(aba.key as typeof abaAtiva)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', whiteSpace: 'nowrap', background: abaAtiva === aba.key ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#fff', border: `1px solid ${abaAtiva === aba.key ? 'transparent' : '#e5e5e5'}`, borderRadius: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: abaAtiva === aba.key ? '#fff' : '#140033' }}>
-            {aba.label}
-            <span style={{ background: abaAtiva === aba.key ? 'rgba(255,255,255,0.25)' : '#f0f0f0', borderRadius: '20px', padding: '1px 7px', fontSize: '12px' }}>
-              {aba.count}
-            </span>
+      {/* ── Abas ── */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '2px' }}>
+        {ABAS.map(a => (
+          <button
+            key={a.key}
+            onClick={() => setAba(a.key)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '9px 14px', whiteSpace: 'nowrap',
+              background: aba === a.key ? '#ff33cc' : '#fff',
+              border: `1.5px solid ${aba === a.key ? 'transparent' : '#e8e8ec'}`,
+              borderRadius: '999px', cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px',
+              color: aba === a.key ? '#fff' : '#6b7280',
+              transition: 'all .15s',
+            }}
+          >
+            {a.icone}
+            {a.label}
+            <span style={{
+              background: aba === a.key ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
+              borderRadius: '999px', padding: '1px 7px', fontSize: '11px',
+              color: aba === a.key ? '#fff' : '#9ca3af',
+            }}>{a.count}</span>
           </button>
         ))}
       </div>
 
-      {/* ABA TEMAS */}
-      {abaAtiva === 'temas' && (
+      {/* ════ ABA KITS ════ */}
+      {aba === 'kits' && (
         <>
-          <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>➕ Novo tema</h2>
+          <div style={card}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#111827', margin: '0 0 16px' }}>Novo kit / pacote</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div className="cat-grid-2" style={{ display: 'grid', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={labelStyle}>Nome do tema</label>
-                  <input value={novoTema.nome} onChange={e => setNovoTema(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Urso Marinheiro" style={inputStyle} />
+                  <span style={label}>Nome do kit *</span>
+                  <input style={input} placeholder="Ex: Kit Básico" value={novoKit.nome} onChange={e => setNovoKit(p => ({ ...p, nome: e.target.value }))} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Categoria</label>
-                  <select value={novoTema.categoria} onChange={e => setNovoTema(p => ({ ...p, categoria: e.target.value }))} style={{ ...inputStyle, cursor: 'pointer' }}>
-                    {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <span style={label}>Preço (R$) *</span>
+                  <input style={input} placeholder="0,00" value={novoKit.preco} onChange={e => setNovoKit(p => ({ ...p, preco: e.target.value }))} />
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>URL da foto (opcional)</label>
-                <input value={novoTema.foto_url} onChange={e => setNovoTema(p => ({ ...p, foto_url: e.target.value }))} placeholder="https://..." style={inputStyle} />
+                <span style={label}>Descrição</span>
+                <input style={input} placeholder="O que está incluso neste kit..." value={novoKit.descricao} onChange={e => setNovoKit(p => ({ ...p, descricao: e.target.value }))} />
               </div>
-              <button onClick={criarTema} disabled={salvando || !novoTema.nome.trim()} style={{ background: salvando || !novoTema.nome.trim() ? '#e5e5e5' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '14px', color: salvando || !novoTema.nome.trim() ? '#00000033' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: salvando || !novoTema.nome.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <Plus size={16} />
-                {salvando ? 'Salvando...' : 'Adicionar tema'}
-              </button>
-            </div>
-          </div>
-
-          {temas.length === 0 ? (
-            <div style={{ ...cardStyle, textAlign: 'center', padding: '48px' }}>
-              <p style={{ fontSize: '32px', margin: '0 0 12px 0' }}>🎨</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>Nenhum tema cadastrado</p>
-            </div>
-          ) : (
-            <div className="cat-temas-grid" style={{ display: 'grid', gap: '12px' }}>
-              {temas.map(tema => (
-                <div key={tema.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', overflow: 'hidden' }}>
-                  <div style={{ height: '120px', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                    {tema.foto_url ? (
-                      <NextImage src={tema.foto_url} fill style={{ objectFit: 'cover' }} alt={tema.nome} unoptimized />
-                    ) : (
-                      <span style={{ fontSize: '32px' }}>🎨</span>
-                    )}
-                    <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', borderRadius: '6px', padding: '3px 8px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#fff' }}>
-                      {tema.categoria}
-                    </div>
-                  </div>
-                  <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#140033', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tema.nome}</p>
-                    <button onClick={() => deletarTema(tema.id)} style={{ width: '30px', height: '30px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ABA KITS */}
-      {abaAtiva === 'kits' && (
-        <>
-          <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>➕ Novo kit</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div className="cat-grid-2" style={{ display: 'grid', gap: '12px' }}>
-                <div>
-                  <label style={labelStyle}>Nome do kit</label>
-                  <input value={novoKit.nome} onChange={e => setNovoKit(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Kit Básico" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Preço (R$)</label>
-                  <input type="number" value={novoKit.preco} onChange={e => setNovoKit(p => ({ ...p, preco: e.target.value }))} placeholder="0,00" style={inputStyle} />
-                </div>
-              </div>
+              <FotoUpload label="Foto do kit (opcional)" valor={novoKit.foto_url} onChange={url => setNovoKit(p => ({ ...p, foto_url: url }))} />
               <div>
-                <label style={labelStyle}>Descrição</label>
-                <input value={novoKit.descricao} onChange={e => setNovoKit(p => ({ ...p, descricao: e.target.value }))} placeholder="O que está incluso..." style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Itens inclusos</label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {ITENS_KIT.map(item => (
-                    <button key={item} onClick={() => setNovoKit(p => ({ ...p, itens: p.itens.includes(item) ? p.itens.filter(i => i !== item) : [...p.itens, item] }))} style={{ padding: '8px 14px', borderRadius: '20px', border: `1px solid ${novoKit.itens.includes(item) ? '#9900ff' : '#e5e5e5'}`, background: novoKit.itens.includes(item) ? '#f5f0ff' : '#fff', color: novoKit.itens.includes(item) ? '#9900ff' : '#00000055', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                      {item}
-                    </button>
-                  ))}
+                <span style={label}>Itens inclusos</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {ITENS_KIT.map(item => {
+                    const sel = novoKit.itens.includes(item)
+                    return (
+                      <button
+                        key={item}
+                        onClick={() => setNovoKit(p => ({ ...p, itens: sel ? p.itens.filter(i => i !== item) : [...p.itens, item] }))}
+                        style={{ padding: '6px 12px', borderRadius: '999px', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, background: sel ? '#fff0fb' : '#fafafa', color: sel ? '#ff33cc' : '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                      >
+                        {item}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
-              <button onClick={criarKit} disabled={salvando || !novoKit.nome.trim() || !novoKit.preco} style={{ background: salvando || !novoKit.nome.trim() || !novoKit.preco ? '#e5e5e5' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '14px', color: salvando || !novoKit.nome.trim() || !novoKit.preco ? '#00000033' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <Plus size={16} />
-                {salvando ? 'Salvando...' : 'Adicionar kit'}
+              <button
+                onClick={criarKit}
+                disabled={salvando || !novoKit.nome.trim() || !novoKit.preco}
+                style={{ ...btnPrimario, width: '100%', padding: '12px', borderRadius: '999px', opacity: salvando || !novoKit.nome.trim() || !novoKit.preco ? 0.5 : 1, cursor: salvando || !novoKit.nome.trim() || !novoKit.preco ? 'not-allowed' : 'pointer' }}
+              >
+                <IconPlus /> {salvando ? 'Salvando...' : 'Adicionar kit'}
               </button>
             </div>
           </div>
 
           {kits.length === 0 ? (
-            <div style={{ ...cardStyle, textAlign: 'center', padding: '48px' }}>
-              <p style={{ fontSize: '32px', margin: '0 0 12px 0' }}>📦</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>Nenhum kit cadastrado</p>
+            <div style={{ ...card, textAlign: 'center', padding: '48px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', color: '#e8e8ec', marginBottom: '10px' }}><IconPackage /></div>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum kit cadastrado</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Crie seu primeiro kit acima</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {kits.map(kit => (
-                <div key={kit.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Package size={16} style={{ color: '#9900ff' }} />
-                    </div>
+                <div key={kit.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', display: 'flex' }}>
+                  {/* Foto */}
+                  <div style={{ width: 80, flexShrink: 0, background: '#f5f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {kit.foto_url ? (
+                      <NextImage src={kit.foto_url} fill style={{ objectFit: 'cover' }} alt={kit.nome} unoptimized />
+                    ) : (
+                      <span style={{ color: '#d8b4fe' }}><IconImage /></span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kit.nome}</p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000044', margin: 0 }}>
-                        {Array.isArray(kit.itens) ? kit.itens.join(', ') : 'Sem itens'}
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kit.nome}</p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {Array.isArray(kit.itens) && kit.itens.length > 0 ? kit.itens.join(' · ') : 'Sem itens definidos'}
+                      </p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#ff33cc', margin: 0 }}>
+                        R$ {Number(kit.preco).toFixed(2).replace('.', ',')}
                       </p>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0 }}>
-                      R$ {Number(kit.preco).toFixed(2).replace('.', ',')}
-                    </p>
-                    <button onClick={() => deletarKit(kit.id)} style={{ width: '30px', height: '30px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Trash2 size={12} />
+                    <button onClick={() => deletarKit(kit.id)} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <IconTrash />
                     </button>
                   </div>
                 </div>
@@ -315,48 +308,58 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
         </>
       )}
 
-      {/* ABA ADICIONAIS */}
-      {abaAtiva === 'adicionais' && (
+      {/* ════ ABA ADICIONAIS ════ */}
+      {aba === 'adicionais' && (
         <>
-          <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 16px 0' }}>➕ Novo adicional</h2>
+          <div style={card}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#111827', margin: '0 0 16px' }}>Novo adicional</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div className="cat-grid-2" style={{ display: 'grid', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={labelStyle}>Nome</label>
-                  <input value={novoAdicional.nome} onChange={e => setNovoAdicional(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Fotografia" style={inputStyle} />
+                  <span style={label}>Nome *</span>
+                  <input style={input} placeholder="Ex: Mesa Cavalete" value={novoAdicional.nome} onChange={e => setNovoAdicional(p => ({ ...p, nome: e.target.value }))} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Preço (R$)</label>
-                  <input type="number" value={novoAdicional.preco} onChange={e => setNovoAdicional(p => ({ ...p, preco: e.target.value }))} placeholder="0,00" style={inputStyle} />
+                  <span style={label}>Preço (R$) *</span>
+                  <input style={input} placeholder="0,00" value={novoAdicional.preco} onChange={e => setNovoAdicional(p => ({ ...p, preco: e.target.value }))} />
                 </div>
               </div>
-              <button onClick={criarAdicional} disabled={salvando || !novoAdicional.nome.trim() || !novoAdicional.preco} style={{ background: 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <Plus size={16} />
-                Adicionar
+              <FotoUpload label="Foto do adicional (opcional)" valor={novoAdicional.foto_url} onChange={url => setNovoAdicional(p => ({ ...p, foto_url: url }))} />
+              <button
+                onClick={criarAdicional}
+                disabled={salvando || !novoAdicional.nome.trim() || !novoAdicional.preco}
+                style={{ ...btnPrimario, width: '100%', padding: '12px', borderRadius: '999px', opacity: salvando || !novoAdicional.nome.trim() || !novoAdicional.preco ? 0.5 : 1, cursor: 'pointer' }}
+              >
+                <IconPlus /> {salvando ? 'Salvando...' : 'Adicionar'}
               </button>
             </div>
           </div>
 
           {adicionais.length === 0 ? (
-            <div style={{ ...cardStyle, textAlign: 'center', padding: '48px' }}>
-              <p style={{ fontSize: '32px', margin: '0 0 12px 0' }}>✨</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>Nenhum adicional cadastrado</p>
+            <div style={{ ...card, textAlign: 'center', padding: '48px' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum adicional cadastrado</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Adicione itens extras que sua cliente pode incluir no pedido</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {adicionais.map(adicional => (
-                <div key={adicional.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                    <Tag size={15} style={{ color: '#9900ff', flexShrink: 0 }} />
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{adicional.nome}</p>
+              {adicionais.map(a => (
+                <div key={a.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', display: 'flex' }}>
+                  <div style={{ width: 64, flexShrink: 0, background: '#fff0fb', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {a.foto_url ? (
+                      <NextImage src={a.foto_url} fill style={{ objectFit: 'cover' }} alt={a.nome} unoptimized />
+                    ) : (
+                      <span style={{ color: '#f9a8d4' }}><IconImage /></span>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0 }}>
-                      R$ {Number(adicional.preco).toFixed(2).replace('.', ',')}
-                    </p>
-                    <button onClick={() => deletarAdicional(adicional.id)} style={{ width: '30px', height: '30px', background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '8px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Trash2 size={12} />
+                  <div style={{ flex: 1, minWidth: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>{a.nome}</p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '13px', color: '#ff33cc', margin: 0 }}>
+                        R$ {Number(a.preco).toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+                    <button onClick={() => deletarAdicional(a.id)} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <IconTrash />
                     </button>
                   </div>
                 </div>
@@ -366,44 +369,122 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
         </>
       )}
 
-      {/* ABA PEDIDOS */}
-      {abaAtiva === 'gestorPedidos' && (
+      {/* ════ ABA TEMAS ════ */}
+      {aba === 'temas' && (
+        <>
+          {/* Aviso sobre "Não encontrei meu tema" */}
+          <div style={{ background: '#fffbf0', border: '1px solid #fde68a', borderRadius: '14px', padding: '14px 16px', marginBottom: '16px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#92400e', margin: '0 0 4px' }}>
+              Opção &ldquo;Não encontrei meu tema&rdquo;
+            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#b45309', margin: 0 }}>
+              No formulário de pedido do cliente, sempre aparece o botão <strong>&ldquo;Não encontrei meu tema&rdquo;</strong> — a cliente pode digitar o tema desejado livremente. Você não precisa cadastrar todos os temas possíveis.
+            </p>
+          </div>
+
+          <div style={card}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#111827', margin: '0 0 16px' }}>Novo tema</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <span style={label}>Nome do tema *</span>
+                  <input style={input} placeholder="Ex: Urso Marinheiro" value={novoTema.nome} onChange={e => setNovoTema(p => ({ ...p, nome: e.target.value }))} />
+                </div>
+                <div>
+                  <span style={label}>Categoria</span>
+                  <select style={input} value={novoTema.categoria} onChange={e => setNovoTema(p => ({ ...p, categoria: e.target.value }))}>
+                    {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <FotoUpload label="Foto do tema (opcional)" valor={novoTema.foto_url} onChange={url => setNovoTema(p => ({ ...p, foto_url: url }))} />
+              <button
+                onClick={criarTema}
+                disabled={salvando || !novoTema.nome.trim()}
+                style={{ ...btnPrimario, width: '100%', padding: '12px', borderRadius: '999px', opacity: salvando || !novoTema.nome.trim() ? 0.5 : 1, cursor: 'pointer' }}
+              >
+                <IconPlus /> {salvando ? 'Salvando...' : 'Adicionar tema'}
+              </button>
+            </div>
+          </div>
+
+          {temas.length === 0 ? (
+            <div style={{ ...card, textAlign: 'center', padding: '48px' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum tema cadastrado</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Cadastre os temas que você trabalha com frequência</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
+              {temas.map(tema => (
+                <div key={tema.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden' }}>
+                  <div style={{ height: 100, background: '#f5f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {tema.foto_url ? (
+                      <NextImage src={tema.foto_url} fill style={{ objectFit: 'cover' }} alt={tema.nome} unoptimized />
+                    ) : (
+                      <span style={{ color: '#c4b5fd', fontFamily: 'Inter, sans-serif', fontSize: '28px' }}>🎨</span>
+                    )}
+                    <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(0,0,0,0.55)', borderRadius: '999px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 700, color: '#fff', letterSpacing: '0.3px' }}>
+                      {tema.categoria}
+                    </div>
+                  </div>
+                  <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tema.nome}</p>
+                    <button onClick={() => deletarTema(tema.id)} style={{ width: 26, height: 26, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <IconTrash />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ════ ABA PEDIDOS ════ */}
+      {aba === 'pedidos' && (
         <>
           {pedidos.length === 0 ? (
-            <div style={{ ...cardStyle, textAlign: 'center', padding: '48px' }}>
-              <p style={{ fontSize: '32px', margin: '0 0 12px 0' }}>🛍️</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>Nenhum pedido ainda</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000055', margin: 0 }}>Compartilhe seu link para receber pedidos</p>
+            <div style={{ ...card, textAlign: 'center', padding: '56px 24px' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum pedido ainda</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 20px' }}>Compartilhe seu link para receber pedidos das clientes</p>
+              <button onClick={copiarLink} style={btnPrimario}>
+                <IconCopy /> Copiar link
+              </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {pedidos.map(pedido => {
                 const tema = temas.find(t => t.id === pedido.tema_id)
-                const kit = kits.find(k => k.id === pedido.catalogo_kit_id)
+                const kit  = kits.find(k => k.id === pedido.catalogo_kit_id)
+                const cor  = statusCor[pedido.status] ?? '#9ca3af'
                 return (
-                  <div key={pedido.id} style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '14px', padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px', gap: '10px' }}>
+                  <div key={pedido.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '10px' }}>
                       <div style={{ minWidth: 0 }}>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {pedido.nome_cliente}
                         </p>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: 0 }}>
-                          {tema?.nome ?? '—'} • {kit?.nome ?? '—'} • {new Date(pedido.data_evento + 'T00:00:00').toLocaleDateString('pt-BR')}
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                          {[tema?.nome, kit?.nome, new Date(pedido.data_evento + 'T00:00:00').toLocaleDateString('pt-BR')].filter(Boolean).join(' · ')}
                         </p>
                       </div>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#9900ff', margin: 0, flexShrink: 0 }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#ff33cc', margin: 0, flexShrink: 0 }}>
                         R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}
                       </p>
                     </div>
-                    <select value={pedido.status} onChange={e => atualizarStatusPedido(pedido.id, e.target.value)} style={{ background: `${statusCor[pedido.status]}15`, border: `1px solid ${statusCor[pedido.status]}33`, borderRadius: '8px', padding: '7px 10px', color: statusCor[pedido.status], fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', outline: 'none', width: '100%' }}>
-                      <option value="pendente">⏳ Pendente</option>
-                      <option value="confirmado">✅ Confirmado</option>
-                      <option value="concluido">🎉 Concluído</option>
-                      <option value="cancelado">❌ Cancelado</option>
+                    <select
+                      value={pedido.status}
+                      onChange={e => atualizarStatusPedido(pedido.id, e.target.value)}
+                      style={{ background: `${cor}15`, border: `1.5px solid ${cor}40`, borderRadius: '999px', padding: '6px 12px', color: cor, fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', outline: 'none', width: '100%' }}
+                    >
+                      <option value="pendente">Pendente</option>
+                      <option value="confirmado">Confirmado</option>
+                      <option value="concluido">Concluído</option>
+                      <option value="cancelado">Cancelado</option>
                     </select>
                     {pedido.observacoes && (
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '10px 0 0 0', background: '#f9f9f9', borderRadius: '8px', padding: '8px 12px' }}>
-                        💬 {pedido.observacoes}
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280', margin: '10px 0 0', background: '#f9fafb', borderRadius: '8px', padding: '8px 12px' }}>
+                        {pedido.observacoes}
                       </p>
                     )}
                   </div>
