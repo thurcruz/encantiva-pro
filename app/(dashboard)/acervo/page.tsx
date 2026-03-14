@@ -8,23 +8,19 @@ export default async function PaginaAcervo() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Busca acervo com variantes
-  const { data: acervoRaw } = await supabase
+  const { data: acervo, error } = await supabase
     .from('acervo')
-    .select('*, acervo_variantes(*)')
+    .select('id, usuario_id, nome, custo, unidade, foto_url')
     .eq('usuario_id', user.id)
     .order('nome', { ascending: true })
 
-  const acervo = (acervoRaw ?? []).map(item => ({
-    ...item,
-    variantes: item.acervo_variantes ?? [],
-  }))
+  if (error) console.error('[Acervo] erro ao buscar:', error.message)
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
-      <PageHeader titulo="Acervo" subtitulo="Itens que você possui, com variantes e quantidades" />
+      <PageHeader titulo="Acervo" subtitulo="Itens que você possui para montar seus kits e orçamentos" />
       <div style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 24px 100px' }}>
-        <AcervoCliente usuarioId={user.id} acervoInicial={acervo} />
+        <AcervoCliente usuarioId={user.id} acervoInicial={acervo ?? []} />
       </div>
     </div>
   )
