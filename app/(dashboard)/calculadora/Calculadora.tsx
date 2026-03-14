@@ -33,6 +33,7 @@ interface Kit {
   frete: number
   custo_vida: number
   festas_kit_mes: number
+  festas_este_kit: number
   criado_em: string
 }
 
@@ -84,8 +85,9 @@ export default function Calculadora({ acervo }: Props) {
   const [lucro, setLucro] = useState(30)
   const [frete, setFrete] = useState(0)
   const [custoVida, setCustoVida] = useState(0)
-  const [festasKitMes, setFestasKitMes] = useState(4)
-  const [precoAlvo, setPrecoAlvo] = useState(0) // campo de preço alvo
+  const [festasKitMes, setFestasKitMes] = useState(20) // total de festas/mês de todos os kits
+  const [festasEsteKit, setFestasEsteKit] = useState(4) // festas/mês só deste kit (para receita)
+  const [precoAlvo, setPrecoAlvo] = useState(0)
 
   const [kits, setKits] = useState<Kit[]>([])
   const [modalSalvar, setModalSalvar] = useState(false)
@@ -127,6 +129,7 @@ export default function Calculadora({ acervo }: Props) {
         nome: nomeKit, itens, lucro, frete,
         custo_vida: custoVida,
         festas_kit_mes: festasKitMes,
+        festas_este_kit: festasEsteKit,
         atualizado_em: new Date().toISOString(),
       }).eq('id', editandoId)
     } else {
@@ -145,7 +148,8 @@ export default function Calculadora({ acervo }: Props) {
     setLucro(kit.lucro)
     setFrete(kit.frete)
     setCustoVida(kit.custo_vida)
-    setFestasKitMes(kit.festas_kit_mes ?? 4)
+    setFestasKitMes(kit.festas_kit_mes ?? 20)
+    setFestasEsteKit(kit.festas_este_kit ?? 4)
     setEditandoId(kit.id)
     setNomeKit(kit.nome)
     setModalKits(false)
@@ -191,7 +195,7 @@ export default function Calculadora({ acervo }: Props) {
 
   function novaCalculadora() {
     setItens([{ id: 1, nome: '', custo: 0, meses: 6, festasporMes: 4 }])
-    setLucro(30); setFrete(0); setCustoVida(0); setFestasKitMes(4)
+    setLucro(30); setFrete(0); setCustoVida(0); setFestasKitMes(20); setFestasEsteKit(4)
     setEditandoId(null); setNomeKit('')
   }
 
@@ -249,8 +253,8 @@ export default function Calculadora({ acervo }: Props) {
       })()
     : null
 
-  // Receita mensal estimada com o preço atual
-  const receitaMensalEstimada = precoFinal * festasKitMes
+  // Receita mensal estimada com o preço atual (usando festas deste kit)
+  const receitaMensalEstimada = precoFinal * festasEsteKit
   const cobriuCustoVida = custoVida > 0 ? receitaMensalEstimada >= custoVida : null
 
   const temAcervo = acervo.length > 0
@@ -412,18 +416,23 @@ export default function Calculadora({ acervo }: Props) {
         <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '15px', color: '#111827', margin: '0 0 4px' }}>Custos adicionais</p>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 18px' }}>Outros custos que entram no preço final por festa</p>
 
-        <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '20px' }}>
+        <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '20px' }}>
           <div>
             <label style={labelStyle}>Custo de vida mensal (R$)</label>
             <input type="number" value={custoVida || ''} onChange={e => setCustoVida(parseFloat(e.target.value) || 0)} placeholder="Ex: 3000,00" min="0" step="0.01" style={inputStyle} />
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '4px 0 0' }}>Dividido pelas festas/mês deste kit</p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '4px 0 0' }}>Seus gastos mensais totais</p>
           </div>
           <div>
-            <label style={labelStyle}>Festas/mês deste kit</label>
-            <input type="number" value={festasKitMes || ''} onChange={e => setFestasKitMes(parseFloat(e.target.value) || 1)} placeholder="4" min="1" style={inputStyle} />
+            <label style={labelStyle}>Total festas/mês</label>
+            <input type="number" value={festasKitMes || ''} onChange={e => setFestasKitMes(parseFloat(e.target.value) || 1)} placeholder="20" min="1" style={inputStyle} />
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: custoVida > 0 ? '#ff33cc' : '#9ca3af', margin: '4px 0 0', fontWeight: custoVida > 0 ? 700 : 400 }}>
-              {custoVida > 0 ? `R$ ${custoVidaPorFesta.toFixed(2).replace('.', ',')} por festa` : 'Quantos deste kit por mês?'}
+              {custoVida > 0 ? `R$ ${custoVidaPorFesta.toFixed(2).replace('.', ',')} por festa` : 'Soma de todos os kits'}
             </p>
+          </div>
+          <div>
+            <label style={labelStyle}>Festas deste kit/mês</label>
+            <input type="number" value={festasEsteKit || ''} onChange={e => setFestasEsteKit(parseFloat(e.target.value) || 1)} placeholder="4" min="1" style={inputStyle} />
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '4px 0 0' }}>Para estimar receita mensal</p>
           </div>
           <div>
             <label style={labelStyle}>Frete por festa (R$)</label>
@@ -494,7 +503,7 @@ export default function Calculadora({ acervo }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
           {[
             { label: 'Custo dos itens por festa', valor: custoPorFestaTotal },
-            { label: `Custo de vida por festa (${festasKitMes}x/mês)`, valor: custoVidaPorFesta },
+            { label: `Custo de vida por festa (${festasKitMes} festas/mês total)`, valor: custoVidaPorFesta },
             { label: 'Frete', valor: frete },
             { label: `Lucro (${lucro}%)`, valor: valorLucro },
           ].map(linha => (
@@ -521,7 +530,7 @@ export default function Calculadora({ acervo }: Props) {
           {custoVida > 0 && (
             <div style={{ background: cobriuCustoVida ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff66', margin: 0 }}>
-                Receita mensal com {festasKitMes} festa(s) deste kit
+                Receita mensal com {festasEsteKit} festa(s) deste kit
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: cobriuCustoVida ? '#10b981' : '#ef4444' }}>
