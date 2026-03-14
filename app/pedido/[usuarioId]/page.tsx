@@ -13,7 +13,7 @@ export default async function PaginaPedido({ params }: { params: Promise<{ usuar
     supabase.from('catalogo_temas').select('*').eq('usuario_id', usuarioId).eq('ativo', true).order('nome'),
     supabase.from('catalogo_kits').select('*').eq('usuario_id', usuarioId).order('nome'),
     supabase.from('adicionais').select('*').eq('usuario_id', usuarioId).order('nome'),
-    supabase.from('perfis').select('nome_loja, telefone').eq('id', usuarioId).single(),
+    supabase.from('perfis').select('nome_loja, telefone, vagas_padrao').eq('id', usuarioId).single(),
   ])
 
   return (
@@ -24,6 +24,7 @@ export default async function PaginaPedido({ params }: { params: Promise<{ usuar
       adicionais={adicionais ?? []}
       nomeLoja={perfil?.nome_loja ?? null}
       telefone={perfil?.telefone ?? null}
+      vagasPadrao={perfil?.vagas_padrao ?? 3}
     />
   )
 }

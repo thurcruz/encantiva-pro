@@ -18,59 +18,50 @@ interface Tema {
   nome: string
 }
 
-// ── SVG Icons ──────────────────────────────────────────────
+// ── Ícones SVG inline ──────────────────────────────────────
 const IconBag = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M6 7V5a3 3 0 0 1 6 0v2"/>
     <rect x="2" y="7" width="14" height="10" rx="2"/>
-    <path d="M9 12v-2m0 0v-1m0 1h1m-1 0H8" strokeLinecap="round"/>
+    <path d="M9 11v2"/>
   </svg>
 )
 const IconMoney = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <circle cx="9" cy="9" r="7"/>
-    <path d="M9 5v1.5m0 5V13m2.5-6.5C11 6 10.1 5.5 9 5.5S6.5 6.2 6.5 7.5C6.5 9.5 11.5 8.5 11.5 10.5c0 1.3-1.1 2-2.5 2s-2.5-.7-2.5-2" strokeLinecap="round"/>
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="16" height="11" rx="2"/>
+    <circle cx="9" cy="9.5" r="2.5"/>
+    <path d="M5 4V3M13 4V3"/>
   </svg>
 )
 const IconTrend = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="M2 13l4-5 3.5 3.5 3-4L16 5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M13 5h3v3" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 13l4-5 3.5 3 3-4L17 5"/>
+    <path d="M13 5h4v4"/>
   </svg>
 )
 const IconCalendar = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="3" width="14" height="13" rx="2"/>
-    <path d="M2 7h14" strokeLinecap="round"/>
-    <path d="M6 2v2M12 2v2" strokeLinecap="round"/>
-    <circle cx="9" cy="11.5" r="1.2" fill="currentColor" stroke="none"/>
-  </svg>
-)
-const IconChart = () => (
-  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4">
-    <rect x="1" y="8" width="3" height="6" rx="1"/>
-    <rect x="6" y="5" width="3" height="9" rx="1"/>
-    <rect x="11" y="2" width="3" height="12" rx="1"/>
-  </svg>
-)
-const IconPalette = () => (
-  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4">
-    <path d="M7.5 1.5a6 6 0 1 0 4.5 10c.8-1 .3-2-1-2H10a1.5 1.5 0 0 1 0-3h.5a6 6 0 0 0-3-5z"/>
-    <circle cx="4" cy="7.5" r=".8" fill="currentColor" stroke="none"/>
-    <circle cx="5.5" cy="4.5" r=".8" fill="currentColor" stroke="none"/>
-    <circle cx="9" cy="3.5" r=".8" fill="currentColor" stroke="none"/>
-  </svg>
-)
-const IconClock = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4">
-    <circle cx="7" cy="7" r="5.5"/>
-    <path d="M7 4v3.5l2 1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 7h14"/>
+    <path d="M6 2v2M12 2v2"/>
+    <circle cx="9" cy="11" r="1" fill="currentColor" stroke="none"/>
   </svg>
 )
 const IconAlert = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4">
-    <path d="M7 1L1 12h12L7 1z" strokeLinejoin="round"/>
-    <path d="M7 5.5v3M7 10v.5" strokeLinecap="round"/>
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+    <path d="M7 1l6 11H1L7 1z"/>
+    <path d="M7 6v3M7 10.5v.5"/>
+  </svg>
+)
+const IconCheck = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2.5 7l3 3 6-6"/>
+  </svg>
+)
+const IconEmpty = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#d0d0d0" strokeWidth="1.5" strokeLinecap="round">
+    <rect x="4" y="4" width="24" height="24" rx="4"/>
+    <path d="M10 16h12M16 10v12"/>
   </svg>
 )
 
@@ -81,6 +72,8 @@ export default async function PaginaInicio() {
 
   const agora = new Date()
   const hoje = agora.toISOString().split('T')[0]
+  const inicioMes = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-01`
+  const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).toISOString().split('T')[0]
 
   const [
     { data: pedidosMes },
@@ -88,19 +81,22 @@ export default async function PaginaInicio() {
     { data: proximosEventos },
     { data: temas },
   ] = await Promise.all([
-    supabase.from('gestorPedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
-    supabase.from('gestorPedidos').select('*').eq('usuario_id', user.id),
-    supabase.from('gestorPedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
+    // pedidos do mês atual
+    supabase.from('pedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id').eq('usuario_id', user.id).gte('data_evento', inicioMes).lte('data_evento', fimMes),
+    // todos os pedidos
+    supabase.from('pedidos').select('id, nome_cliente, valor_total, status, data_evento, criado_em, tema_id').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
+    // próximos 5 eventos a partir de hoje
+    supabase.from('pedidos').select('id, nome_cliente, valor_total, status, data_evento, tema_id, catalogo_temas(nome)').eq('usuario_id', user.id).gte('data_evento', hoje).order('data_evento', { ascending: true }).limit(5),
     supabase.from('catalogo_temas').select('id, nome').eq('usuario_id', user.id),
   ])
 
-  const pedidosMesArr  = (pedidosMes      ?? []) as unknown as Pedido[]
-  const pedidosTodosArr = (pedidosTodos   ?? []) as unknown as Pedido[]
-  const proximosArr    = (proximosEventos ?? []) as unknown as Pedido[]
-  const temasArr       = (temas           ?? []) as Tema[]
+  const pedidosMesArr = (pedidosMes ?? []) as unknown as Pedido[]
+  const pedidosTodosArr = (pedidosTodos ?? []) as unknown as Pedido[]
+  const proximosArr = (proximosEventos ?? []) as unknown as Pedido[]
+  const temasArr = (temas ?? []) as Tema[]
 
-  const receitaMes      = pedidosMesArr.filter(p => p.status !== 'cancelado').reduce((s, p) => s + Number(p.valor_total), 0)
-  const receitaTotal    = pedidosTodosArr.filter(p => p.status !== 'cancelado').reduce((s, p) => s + Number(p.valor_total), 0)
+  const receitaMes = pedidosMesArr.filter(p => p.status !== 'cancelado').reduce((s, p) => s + Number(p.valor_total), 0)
+  const receitaTotal = pedidosTodosArr.filter(p => p.status !== 'cancelado').reduce((s, p) => s + Number(p.valor_total), 0)
   const receitaPrevista = pedidosTodosArr.filter(p => p.status === 'pendente' || p.status === 'confirmado').reduce((s, p) => s + Number(p.valor_total), 0)
 
   const statusCount = pedidosTodosArr.reduce((acc, p) => {
@@ -119,157 +115,167 @@ export default async function PaginaInicio() {
     .map(([id, count]) => ({ nome: temasArr.find(t => t.id === id)?.nome ?? 'Desconhecido', count }))
 
   const statusConfig: Record<string, { bar: string; label: string; dot: string }> = {
-    pendente:   { bar: '#f59e0b', dot: '#fef3c7', label: 'Pendente'   },
+    pendente:   { bar: '#f59e0b', dot: '#fef3c7', label: 'Pendente' },
     confirmado: { bar: '#10b981', dot: '#d1fae5', label: 'Confirmado' },
-    concluido:  { bar: '#8b5cf6', dot: '#ede9fe', label: 'Concluído'  },
-    cancelado:  { bar: '#ef4444', dot: '#fee2e2', label: 'Cancelado'  },
+    concluido:  { bar: '#8b5cf6', dot: '#ede9fe', label: 'Concluído' },
+    cancelado:  { bar: '#ef4444', dot: '#fee2e2', label: 'Cancelado' },
   }
 
   const metricCards = [
-    { label: 'Pedidos este mês',  value: String(pedidosMesArr.length),   sub: `${pedidosTodosArr.length} no total`,                     Icon: IconBag,      accent: '#7c3aed' },
-    { label: 'Receita este mês',  value: `R$ ${receitaMes.toFixed(2).replace('.', ',')}`,    sub: `R$ ${receitaTotal.toFixed(2).replace('.', ',')} no total`, Icon: IconMoney,    accent: '#059669' },
-    { label: 'Receita prevista',  value: `R$ ${receitaPrevista.toFixed(2).replace('.', ',')}`, sub: 'Pendentes + confirmados',               Icon: IconTrend,    accent: '#d97706' },
-    { label: 'Próximos eventos',  value: String(proximosArr.length),      sub: 'A partir de hoje',                                        Icon: IconCalendar, accent: '#2563eb' },
+    { label: 'Pedidos este mês', value: pedidosMesArr.length, sub: `${pedidosTodosArr.length} no total`, icon: <IconBag />, accent: '#7700ff' },
+    { label: 'Receita este mês', value: `R$ ${receitaMes.toFixed(2).replace('.', ',')}`, sub: `R$ ${receitaTotal.toFixed(2).replace('.', ',')} no total`, icon: <IconMoney />, accent: '#10b981' },
+    { label: 'Receita prevista', value: `R$ ${receitaPrevista.toFixed(2).replace('.', ',')}`, sub: 'Pendentes + confirmados', icon: <IconTrend />, accent: '#f59e0b' },
+    { label: 'Próximos eventos', value: proximosArr.length, sub: 'A partir de hoje', icon: <IconCalendar />, accent: '#ff33cc' },
   ]
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
       <PageHeader titulo="Início" subtitulo="Visão geral do seu negócio" />
 
-      <div className="page-content inicio-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '32px 40px' }}>
+      <div className="page-content inicio-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '28px 24px 60px' }}>
 
         {/* ── Métricas ── */}
-        <div className="cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '24px' }}>
-          {metricCards.map((card) => (
-            <div key={card.label} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '20px 22px', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${card.accent}10`, border: `1px solid ${card.accent}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.accent, flexShrink: 0 }}>
-                <card.Icon />
+        <div className="cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
+          {metricCards.map((card, i) => (
+            <div key={i} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '20px', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${card.accent}12`, color: card.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {card.icon}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 500, color: '#9ca3af', margin: '0 0 5px 0', letterSpacing: '0.4px', textTransform: 'uppercase' }}>{card.label}</p>
-                <p className="card-value" style={{ fontFamily: 'Inter, sans-serif', fontSize: '22px', fontWeight: 800, color: '#111827', margin: '0 0 3px 0', letterSpacing: '-0.8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.value}</p>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#d1d5db', margin: 0 }}>{card.sub}</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#9ca3af', margin: '0 0 5px 0', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{card.label}</p>
+                <p className="card-value" style={{ fontFamily: 'Inter, sans-serif', fontSize: '21px', fontWeight: 800, color: '#111827', margin: '0 0 3px 0', letterSpacing: '-0.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.value}</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#d1d5db', margin: 0 }}>{card.sub}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* ── Status + Temas ── */}
-        <div className="graficos-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
+        <div className="graficos-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
 
           {/* Status */}
-          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '22px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-              <div style={{ color: '#6b7280' }}><IconChart /></div>
-              <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>Pedidos por status</h2>
-            </div>
-            {pedidosTodosArr.length === 0 ? (
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', textAlign: 'center', margin: '20px 0' }}>Nenhum pedido ainda</p>
-            ) : (
-              Object.keys(statusConfig).map(status => {
-                const cfg = statusConfig[status]
+          <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '22px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 18px 0', letterSpacing: '-0.2px' }}>Pedidos por status</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '13px' }}>
+              {Object.keys(statusConfig).map(status => {
+                const s = statusConfig[status]
                 const count = statusCount[status] ?? 0
                 const total = pedidosTodosArr.length
                 const pct = total > 0 ? Math.round((count / total) * 100) : 0
                 return (
-                  <div key={status} style={{ marginBottom: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <div key={status}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: cfg.bar, display: 'inline-block', flexShrink: 0 }} />
-                        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 500, color: '#374151' }}>{cfg.label}</span>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.bar, display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 500, color: '#374151' }}>{s.label}</span>
                       </div>
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#111827' }}>{count}</span>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#111827' }}>{count}</span>
                     </div>
                     <div style={{ height: '4px', background: '#f3f4f6', borderRadius: '99px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: cfg.bar, borderRadius: '99px', transition: 'width .4s ease' }} />
+                      <div style={{ height: '100%', width: `${pct}%`, background: s.bar, borderRadius: '99px', transition: 'width .4s ease' }} />
                     </div>
                   </div>
                 )
-              })
-            )}
+              })}
+              {pedidosTodosArr.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <IconEmpty />
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#d1d5db', margin: '8px 0 0' }}>Nenhum pedido ainda</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Temas */}
-          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '22px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-              <div style={{ color: '#6b7280' }}><IconPalette /></div>
-              <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>Temas mais pedidos</h2>
-            </div>
-            {temasMaisPedidos.length === 0 ? (
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', textAlign: 'center', margin: '20px 0' }}>Nenhum pedido ainda</p>
-            ) : (
-              temasMaisPedidos.map((tema, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < temasMaisPedidos.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-                    <span style={{ width: '20px', height: '20px', borderRadius: '6px', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#6b7280', flexShrink: 0 }}>{i + 1}</span>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '13px', color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tema.nome}</p>
+          <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '22px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 18px 0', letterSpacing: '-0.2px' }}>Temas mais pedidos</p>
+            {temasMaisPedidos.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                {temasMaisPedidos.map((tema, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < temasMaisPedidos.length - 1 ? '1px solid #f3f4f6' : 'none', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                      <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: '#f5f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 800, color: '#7700ff', flexShrink: 0 }}>{i + 1}</div>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '13px', color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tema.nome}</p>
+                    </div>
+                    <span style={{ background: '#f5f0ff', borderRadius: '6px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#7700ff', flexShrink: 0 }}>{tema.count}x</span>
                   </div>
-                  <span style={{ background: '#f5f3ff', borderRadius: '6px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#7c3aed', flexShrink: 0, marginLeft: '8px' }}>{tema.count}×</span>
-                </div>
-              ))
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <IconEmpty />
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#d1d5db', margin: '8px 0 0' }}>Nenhum pedido ainda</p>
+              </div>
             )}
           </div>
         </div>
 
         {/* ── Próximos eventos ── */}
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '22px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-            <div style={{ color: '#6b7280' }}><IconCalendar /></div>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>Próximos eventos</h2>
-          </div>
+        <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '22px' }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 16px 0', letterSpacing: '-0.2px' }}>Próximos eventos</p>
 
-          {proximosArr.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '28px 0' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', color: '#9ca3af' }}><IconCalendar /></div>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0 }}>Nenhum evento nos próximos dias</p>
-            </div>
-          ) : (
+          {proximosArr.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {proximosArr.map(pedido => {
                 const dataEvento = new Date(pedido.data_evento + 'T00:00:00')
                 const diasRestantes = Math.ceil((dataEvento.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
                 const urgente = diasRestantes <= 7
                 const temaNome = (pedido.catalogo_temas as { nome: string } | null)?.nome ?? '—'
-
-                const diasLabel =
-                  diasRestantes === 0 ? 'Hoje'
+                const diaStr = urgente
+                  ? diasRestantes === 0 ? 'Hoje'
                   : diasRestantes === 1 ? 'Amanhã'
+                  : `${diasRestantes}d`
                   : `${diasRestantes} dias`
 
                 return (
-                  <div key={pedido.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: urgente ? '#fffbeb' : '#fafafa', borderRadius: '10px', border: `1px solid ${urgente ? '#fde68a' : '#e5e7eb'}`, gap: '12px' }}>
-
-                    {/* Data box */}
-                    <div style={{ width: '42px', flexShrink: 0, textAlign: 'center' }}>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '18px', fontWeight: 900, color: urgente ? '#d97706' : '#111827', margin: 0, lineHeight: 1 }}>{dataEvento.getDate()}</p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#9ca3af', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{dataEvento.toLocaleString('pt-BR', { month: 'short' })}</p>
+                  <div key={pedido.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '13px 14px',
+                    background: urgente ? '#fffbf0' : '#fafafa',
+                    borderRadius: '10px',
+                    border: `1px solid ${urgente ? '#fde68a' : '#efefef'}`,
+                    gap: '12px',
+                  }}>
+                    {/* Data */}
+                    <div style={{ width: '38px', textAlign: 'center', flexShrink: 0 }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '16px', fontWeight: 900, color: urgente ? '#d97706' : '#7700ff', margin: 0, lineHeight: 1 }}>{dataEvento.getDate()}</p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 600, color: urgente ? '#d97706' : '#9ca3af', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {dataEvento.toLocaleString('pt-BR', { month: 'short' })}
+                      </p>
                     </div>
 
-                    <div style={{ width: '1px', height: '32px', background: '#e5e7eb', flexShrink: 0 }} />
+                    {/* Separador */}
+                    <div style={{ width: '1px', height: '28px', background: '#e5e7eb', flexShrink: 0 }} />
 
                     {/* Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: '0 0 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pedido.nome_cliente}</p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>{temaNome}</p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: '0 0 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pedido.nome_cliente}</p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>{temaNome}</p>
                     </div>
 
-                    {/* Urgência */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-                      <span style={{ color: urgente ? '#d97706' : '#9ca3af' }}>
-                        {urgente ? <IconAlert /> : <IconClock />}
-                      </span>
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, color: urgente ? '#d97706' : '#6b7280', whiteSpace: 'nowrap' }}>{diasLabel}</span>
-                    </div>
+                    {/* Prazo */}
+                    {urgente && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fef3c7', borderRadius: '6px', padding: '3px 8px', color: '#d97706', flexShrink: 0 }}>
+                        <IconAlert />
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700 }}>{diaStr}</span>
+                      </div>
+                    )}
+                    {!urgente && (
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#d1d5db', flexShrink: 0 }}>{diaStr}</span>
+                    )}
 
                     {/* Valor */}
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#111827', margin: 0, letterSpacing: '-0.3px' }}>
-                        R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}
-                      </p>
-                    </div>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: 0, flexShrink: 0, letterSpacing: '-0.2px' }}>
+                      R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}
+                    </p>
                   </div>
                 )
               })}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <IconEmpty />
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#d1d5db', margin: '10px 0 0' }}>Nenhum evento nos próximos dias</p>
             </div>
           )}
         </div>
