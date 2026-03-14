@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Tema, TipoPeca, Formato, Categoria } from '@/types/database'
-import { Upload, FileText, Image } from 'lucide-react'
+import { Upload, ImageIcon } from 'lucide-react'
 
 interface Props {
   temas: Tema[]
@@ -24,10 +24,10 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
   const [tipoId, setTipoId] = useState('')
   const [formatoId, setFormatoId] = useState('')
   const [arquivo, setArquivo] = useState<File | null>(null)
-  const [arquivoCortado, setArquivoCortado] = useState<File | null>(null)
   const [preview, setPreview] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
+  const [progresso, setProgresso] = useState('')
   const [erro, setErro] = useState<string | null>(null)
 
   function handlePreviewChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -38,45 +38,30 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!arquivo) {
-      setErro('Selecione o arquivo inteiro para download.')
-      return
-    }
-    setSalvando(true)
-    setErro(null)
+    if (!arquivo) { setErro('Selecione o arquivo do painel.'); return }
+    setSalvando(true); setErro(null)
 
     try {
-      // Upload arquivo inteiro
+      // Upload arquivo original
+      setProgresso('Enviando arquivo...')
       const nomeArquivo = `${Date.now()}-${arquivo.name.replace(/\s/g, '_')}`
-      const { error: errArquivo } = await supabase.storage
-        .from('materials')
-        .upload(nomeArquivo, arquivo)
+      const { error: errArquivo } = await supabase.storage.from('materials').upload(nomeArquivo, arquivo)
       if (errArquivo) throw new Error('Erro ao enviar arquivo.')
-
-      // Upload arquivo cortado
-      let nomeArquivoCortado = null
-      if (arquivoCortado) {
-        nomeArquivoCortado = `${Date.now()}-cortado-${arquivoCortado.name.replace(/\s/g, '_')}`
-        const { error: errCortado } = await supabase.storage
-          .from('materials')
-          .upload(nomeArquivoCortado, arquivoCortado)
-        if (errCortado) throw new Error('Erro ao enviar arquivo cortado.')
-      }
 
       // Upload preview
       let urlPreview = null
       if (preview) {
+        setProgresso('Enviando preview...')
         const nomePreview = `${Date.now()}-${preview.name.replace(/\s/g, '_')}`
-        const { error: errPreview } = await supabase.storage
-          .from('previews')
-          .upload(nomePreview, preview)
+        const { error: errPreview } = await supabase.storage.from('previews').upload(nomePreview, preview)
         if (!errPreview) {
           const { data: publicUrl } = supabase.storage.from('previews').getPublicUrl(nomePreview)
           urlPreview = publicUrl.publicUrl
         }
       }
 
-      // Salva no banco
+      // Salva no banco — sem url_arquivo_cortado
+      setProgresso('Salvando no banco...')
       const { error: errDB } = await supabase.from('materiais').insert({
         titulo,
         descricao: descricao || null,
@@ -85,7 +70,7 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
         tipo_peca_id: tipoId || null,
         formato_id: formatoId || null,
         url_arquivo: nomeArquivo,
-        url_arquivo_cortado: nomeArquivoCortado,
+        url_arquivo_cortado: null,  // nunca mais usado — cortador é client-side
         url_imagem_preview: urlPreview,
       })
       if (errDB) throw new Error(`Erro banco: ${errDB.message}`)
@@ -93,76 +78,27 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
       router.push('/admin/materiais')
       router.refresh()
     } catch (err: unknown) {
-      const mensagem = err instanceof Error ? err.message : 'Erro inesperado.'
-      setErro(mensagem)
+      setErro(err instanceof Error ? err.message : 'Erro inesperado.')
     } finally {
       setSalvando(false)
+      setProgresso('')
     }
   }
 
   const inputStyle = {
-    width: '100%',
-    background: '#ffffff0d',
-    border: '1px solid #ffffff18',
-    borderRadius: '12px',
-    padding: '14px 18px',
-    color: '#fff',
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '15px',
-    outline: 'none',
+    width: '100%', background: '#ffffff0d', border: '1px solid #ffffff18',
+    borderRadius: '12px', padding: '14px 18px', color: '#fff',
+    fontFamily: 'Inter, sans-serif', fontSize: '15px', outline: 'none',
     boxSizing: 'border-box' as const,
   }
-
   const labelStyle = {
-    display: 'block',
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: '#ffffff55',
-    marginBottom: '8px',
-    letterSpacing: '1px',
-    textTransform: 'uppercase' as const,
+    display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px',
+    fontWeight: 600, color: '#ffffff55', marginBottom: '8px',
+    letterSpacing: '1px', textTransform: 'uppercase' as const,
   }
-
   const cardStyle = {
-    background: '#ffffff08',
-    border: '1px solid #ffffff12',
-    borderRadius: '16px',
-    padding: '24px',
-  }
-
-  function AreaUpload({ arquivo, onChange, accept, label, sublabel }: {
-    arquivo: File | null
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-    accept: string
-    label: string
-    sublabel: string
-  }) {
-    return (
-      <div style={{
-        background: arquivo ? '#ff33cc08' : '#ffffff05',
-        border: `2px dashed ${arquivo ? '#ff33cc55' : '#ffffff18'}`,
-        borderRadius: '12px',
-        padding: '24px',
-        textAlign: 'center',
-        cursor: 'pointer',
-        position: 'relative',
-      }}>
-        <input
-          type="file"
-          onChange={onChange}
-          accept={accept}
-          style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
-        />
-        <FileText size={24} style={{ color: arquivo ? '#ff33cc' : '#ffffff33', marginBottom: '8px' }} />
-        <p style={{ fontFamily: 'Inter, sans-serif', color: arquivo ? '#ff33cc' : '#ffffff55', fontSize: '14px', margin: '0 0 4px 0', fontWeight: 600 }}>
-          {arquivo ? arquivo.name : label}
-        </p>
-        <p style={{ fontFamily: 'Inter, sans-serif', color: '#ffffff33', fontSize: '12px', margin: 0 }}>
-          {arquivo ? `${(arquivo.size / 1024 / 1024).toFixed(2)} MB` : sublabel}
-        </p>
-      </div>
-    )
+    background: '#ffffff08', border: '1px solid #ffffff12',
+    borderRadius: '16px', padding: '24px',
   }
 
   return (
@@ -174,41 +110,30 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
 
           {/* Informações básicas */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 20px 0' }}>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 20px' }}>
               Informações básicas
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={labelStyle}>Título *</label>
-                <input
-                  type="text"
-                  value={titulo}
-                  onChange={e => setTitulo(e.target.value)}
-                  required
-                  placeholder="Ex: Painel Dinossáuro Verde A4"
-                  style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = '#ff33cc66'}
-                  onBlur={e => e.target.style.borderColor = '#ffffff18'}
-                />
+                <input type="text" value={titulo} onChange={e => setTitulo(e.target.value)} required
+                  placeholder="Ex: Painel Dinossauro Verde" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = '#ff33cc66')}
+                  onBlur={e => (e.target.style.borderColor = '#ffffff18')} />
               </div>
               <div>
                 <label style={labelStyle}>Descrição</label>
-                <textarea
-                  value={descricao}
-                  onChange={e => setDescricao(e.target.value)}
-                  rows={3}
-                  placeholder="Descrição opcional do material..."
-                  style={{ ...inputStyle, resize: 'vertical' }}
-                  onFocus={e => e.target.style.borderColor = '#ff33cc66'}
-                  onBlur={e => e.target.style.borderColor = '#ffffff18'}
-                />
+                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={3}
+                  placeholder="Descrição opcional..." style={{ ...inputStyle, resize: 'vertical' }}
+                  onFocus={e => (e.target.style.borderColor = '#ff33cc66')}
+                  onBlur={e => (e.target.style.borderColor = '#ffffff18')} />
               </div>
             </div>
           </div>
 
           {/* Categorização */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 20px 0' }}>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 20px' }}>
               Categorização
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
@@ -235,48 +160,38 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
               </div>
               <div>
                 <label style={labelStyle}>Tema</label>
-                <input
-                  type="text"
-                  value={temaId}
-                  onChange={e => setTemaId(e.target.value)}
-                  placeholder="Ex: Dinossáuro Verde"
-                  style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = '#ff33cc66'}
-                  onBlur={e => e.target.style.borderColor = '#ffffff18'}
-                />
+                <input type="text" value={temaId} onChange={e => setTemaId(e.target.value)}
+                  placeholder="Ex: Dinossauro Verde" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = '#ff33cc66')}
+                  onBlur={e => (e.target.style.borderColor = '#ffffff18')} />
               </div>
             </div>
           </div>
 
-          {/* Arquivos */}
+          {/* Arquivo */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 8px 0' }}>
-              Arquivos para download
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 8px' }}>
+              Arquivo do painel
             </h2>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff44', margin: '0 0 20px 0' }}>
-              O arquivo inteiro é para gráfica. O cortado é para impressão caseira.
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff44', margin: '0 0 20px' }}>
+              Envie o painel original (PNG ou JPG de alta resolução). As usuárias poderão baixar direto ou cortar pelo cortador.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={labelStyle}>Arquivo inteiro (para gráfica) *</label>
-                <AreaUpload
-                  arquivo={arquivo}
-                  onChange={e => setArquivo(e.target.files?.[0] ?? null)}
-                  accept=".pdf,.zip,.png,.jpg,.jpeg"
-                  label="Clique ou arraste o arquivo aqui"
-                  sublabel="PDF, ZIP, PNG, JPG"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Arquivo cortado (para impressão caseira)</label>
-                <AreaUpload
-                  arquivo={arquivoCortado}
-                  onChange={e => setArquivoCortado(e.target.files?.[0] ?? null)}
-                  accept=".pdf,.zip,.png,.jpg,.jpeg"
-                  label="Clique ou arraste o arquivo cortado aqui"
-                  sublabel="PDF, ZIP, PNG, JPG — opcional"
-                />
-              </div>
+            <div style={{
+              background: arquivo ? '#ff33cc08' : '#ffffff05',
+              border: `2px dashed ${arquivo ? '#ff33cc55' : '#ffffff18'}`,
+              borderRadius: '12px', padding: '32px', textAlign: 'center',
+              cursor: 'pointer', position: 'relative',
+            }}>
+              <input type="file" onChange={e => setArquivo(e.target.files?.[0] ?? null)}
+                accept=".pdf,.png,.jpg,.jpeg,.zip"
+                style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
+              <Upload size={28} style={{ color: arquivo ? '#ff33cc' : '#ffffff33', marginBottom: '10px' }} />
+              <p style={{ fontFamily: 'Inter, sans-serif', color: arquivo ? '#ff33cc' : '#ffffff55', fontSize: '14px', margin: '0 0 4px', fontWeight: 600 }}>
+                {arquivo ? arquivo.name : 'Clique ou arraste o arquivo aqui'}
+              </p>
+              <p style={{ fontFamily: 'Inter, sans-serif', color: '#ffffff33', fontSize: '12px', margin: 0 }}>
+                {arquivo ? `${(arquivo.size / 1024 / 1024).toFixed(2)} MB` : 'PDF, PNG, JPG — recomendado mínimo 3000×3000px'}
+              </p>
             </div>
           </div>
         </div>
@@ -286,49 +201,25 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
 
           {/* Preview */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 16px 0' }}>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 16px' }}>
               Imagem de preview
             </h2>
-
-            <div style={{
-              aspectRatio: '1',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              marginBottom: '16px',
-              background: 'linear-gradient(135deg, #9900ff22, #ff33cc11)',
-              border: '1px solid #ffffff12',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
+            <div style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', background: 'linear-gradient(135deg, #9900ff22, #ff33cc11)', border: '1px solid #ffffff12', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {previewUrl ? (
                 <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <div style={{ textAlign: 'center' }}>
-                  <Image size={32} style={{ color: '#ffffff22', marginBottom: '8px' }} />
+                  <ImageIcon size={32} style={{ color: '#ffffff22', marginBottom: '8px' }} />
                   <p style={{ fontFamily: 'Inter, sans-serif', color: '#ffffff33', fontSize: '12px', margin: 0 }}>Sem preview</p>
                 </div>
               )}
             </div>
-
-            <div style={{
-              background: preview ? '#ff33cc08' : '#ffffff05',
-              border: `2px dashed ${preview ? '#ff33cc55' : '#ffffff18'}`,
-              borderRadius: '12px',
-              padding: '16px',
-              textAlign: 'center',
-              cursor: 'pointer',
-              position: 'relative',
-            }}>
-              <input
-                type="file"
-                onChange={handlePreviewChange}
-                accept=".png,.jpg,.jpeg,.webp"
-                style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
-              />
+            <div style={{ background: preview ? '#ff33cc08' : '#ffffff05', border: `2px dashed ${preview ? '#ff33cc55' : '#ffffff18'}`, borderRadius: '12px', padding: '16px', textAlign: 'center', cursor: 'pointer', position: 'relative' }}>
+              <input type="file" onChange={handlePreviewChange} accept=".png,.jpg,.jpeg,.webp"
+                style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
               <Upload size={18} style={{ color: preview ? '#ff33cc' : '#ffffff44', marginBottom: '6px' }} />
               <p style={{ fontFamily: 'Inter, sans-serif', color: preview ? '#ff33cc' : '#ffffff55', fontSize: '13px', margin: 0, fontWeight: 600 }}>
-                {preview ? 'Trocar imagem' : 'Selecionar imagem'}
+                {preview ? 'Trocar imagem' : 'Selecionar preview'}
               </p>
             </div>
           </div>
@@ -336,40 +227,17 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
           {/* Botão salvar */}
           <div style={cardStyle}>
             {erro && (
-              <div style={{
-                background: '#ff33cc11',
-                border: '1px solid #ff33cc44',
-                borderRadius: '10px',
-                padding: '12px 16px',
-                color: '#ff33cc',
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '14px',
-                marginBottom: '16px',
-              }}>
+              <div style={{ background: '#ff33cc11', border: '1px solid #ff33cc44', borderRadius: '10px', padding: '12px 16px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontSize: '13px', marginBottom: '16px' }}>
                 {erro}
               </div>
             )}
-
-            <button
-              type="submit"
-              disabled={salvando}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                background: salvando ? '#ffffff22' : 'linear-gradient(135deg, #ff33cc, #9900ff)',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '16px',
-                color: '#fff',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 700,
-                fontSize: '15px',
-                cursor: salvando ? 'not-allowed' : 'pointer',
-                width: '100%',
-              }}
-            >
+            {progresso && (
+              <div style={{ background: '#ffffff08', borderRadius: '10px', padding: '10px 14px', color: '#ffffff66', fontFamily: 'Inter, sans-serif', fontSize: '12px', marginBottom: '12px', textAlign: 'center' }}>
+                {progresso}
+              </div>
+            )}
+            <button type="submit" disabled={salvando}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: salvando ? '#ffffff22' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', cursor: salvando ? 'not-allowed' : 'pointer', width: '100%' }}>
               <Upload size={16} />
               {salvando ? 'Enviando...' : 'Salvar material'}
             </button>
