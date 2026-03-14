@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Save, FolderOpen, X, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import type { ItemAcervo } from '../acervo/AcervoCliente'
 
 interface Item {
   id: number
@@ -10,6 +11,7 @@ interface Item {
   custo: number
   meses: number
   festasporMes: number
+  acervoId?: string
 }
 
 interface Kit {
@@ -23,7 +25,11 @@ interface Kit {
   criado_em: string
 }
 
-export default function Calculadora() {
+interface Props {
+  acervo: ItemAcervo[]
+}
+
+export default function Calculadora({ acervo }: Props) {
   const [itens, setItens] = useState<Item[]>([
     { id: 1, nome: '', custo: 0, meses: 6, festasporMes: 4 },
   ])
@@ -143,6 +149,16 @@ export default function Calculadora() {
     ))
   }
 
+  function preencherDoAcervo(itemId: number, acervoId: string) {
+    const a = acervo.find(x => x.id === acervoId)
+    if (!a) return
+    setItens(prev => prev.map(i =>
+      i.id === itemId ? { ...i, nome: a.nome, custo: Number(a.custo), acervoId: a.id } : i
+    ))
+  }
+
+  const temAcervo = acervo.length > 0
+
   // ── Cálculos — idêntico ao original ──────────────────
   const itensCusto = itens.map(item => {
     const totalFestas = item.meses * item.festasporMes
@@ -157,6 +173,7 @@ export default function Calculadora() {
   const precoFinal = subtotal + valorLucro
 
   // ── Custo de vida — apenas informativo ───────────────
+  const custoVidaPorFesta = totalFestasGeral > 0 ? custoVida / totalFestasGeral : 0
   const receitaMensalEstimada = precoFinal * festasKitMes
   const percentualVidaCoberto = custoVida > 0
     ? Math.min(Math.round((receitaMensalEstimada / custoVida) * 100), 100)
@@ -219,7 +236,8 @@ export default function Calculadora() {
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 20px 0' }}>Cada item tem seu próprio período de uso e número de festas</p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
-          <div className="calc-header-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 36px', gap: '10px', alignItems: 'end' }}>
+          <div className="calc-header-desktop" style={{ display: 'grid', gridTemplateColumns: temAcervo ? '160px 2fr 120px 100px 100px 36px' : '2fr 120px 100px 100px 36px', gap: '10px', alignItems: 'end' }}>
+            {temAcervo && <span style={labelStyle}>Acervo</span>}
             <span style={labelStyle}>Item</span>
             <span style={labelStyle}>Custo (R$)</span>
             <span style={labelStyle}>Meses</span>
@@ -230,8 +248,21 @@ export default function Calculadora() {
           {itens.map((item) => (
             <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {/* Desktop */}
-              <div className="calc-item-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 36px', gap: '10px', alignItems: 'center' }}>
-                <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="Ex: Painel, Totem..." style={inputStyle} />
+              <div className="calc-item-desktop" style={{ display: 'grid', gridTemplateColumns: temAcervo ? '160px 2fr 120px 100px 100px 36px' : '2fr 120px 100px 100px 36px', gap: '10px', alignItems: 'center' }}>
+                {temAcervo && (
+                  <div style={{ display: 'flex', border: '1px solid #e5e5e5', borderRadius: '10px', overflow: 'hidden', background: '#fff' }}>
+                    <select value={item.acervoId ?? ''} onChange={e => preencherDoAcervo(item.id, e.target.value)}
+                      style={{ border: 'none', borderRight: '1px solid #e5e5e5', background: 'transparent', padding: '10px 8px', fontFamily: 'Inter, sans-serif', fontSize: '12px', color: item.acervoId ? '#ff33cc' : '#9ca3af', outline: 'none', cursor: 'pointer', maxWidth: '110px', flexShrink: 0 }}>
+                      <option value="">Acervo...</option>
+                      {acervo.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                    </select>
+                    <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="ou digite..."
+                      style={{ flex: 1, border: 'none', background: 'transparent', padding: '10px 10px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#140033', outline: 'none', minWidth: 0 }} />
+                  </div>
+                )}
+                {!temAcervo && (
+                  <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="Ex: Painel, Totem..." style={inputStyle} />
+                )}
                 <input type="number" value={item.custo || ''} onChange={e => atualizarItem(item.id, 'custo', e.target.value)} placeholder="0,00" min="0" step="0.01" style={inputStyle} />
                 <input type="number" value={item.meses || ''} onChange={e => atualizarItem(item.id, 'meses', e.target.value)} placeholder="6" min="1" style={inputStyle} />
                 <input type="number" value={item.festasporMes || ''} onChange={e => atualizarItem(item.id, 'festasporMes', e.target.value)} placeholder="4" min="1" style={inputStyle} />
@@ -248,6 +279,13 @@ export default function Calculadora() {
                     <Trash2 size={12} /> Remover
                   </button>
                 </div>
+                {temAcervo && (
+                  <select value={item.acervoId ?? ''} onChange={e => preencherDoAcervo(item.id, e.target.value)}
+                    style={{ ...inputStyle, color: item.acervoId ? '#ff33cc' : '#9ca3af' }}>
+                    <option value="">Selecionar do acervo...</option>
+                    {acervo.map(a => <option key={a.id} value={a.id}>{a.nome} — R$ {Number(a.custo).toFixed(2).replace('.', ',')}</option>)}
+                  </select>
+                )}
                 <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="Ex: Painel, Totem..." style={inputStyle} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                   <div><span style={labelStyle}>Custo (R$)</span><input type="number" value={item.custo || ''} onChange={e => atualizarItem(item.id, 'custo', e.target.value)} placeholder="0,00" min="0" step="0.01" style={inputStyle} /></div>
