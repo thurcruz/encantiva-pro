@@ -14,7 +14,6 @@ const IconEdit    = () => <svg width="12" height="12" viewBox="0 0 12 12" fill="
 const IconNew     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 1v12M1 7h12"/></svg>
 const IconExport  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9v2h9V9M6.5 1v8M4 5l2.5-2.5L9 5"/></svg>
 const IconCheck   = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 7l3.5 3.5L11 3"/></svg>
-const IconBox     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M11 8.5V4.5L6.5 2 2 4.5v4L6.5 11l4.5-2.5z"/><path d="M2 4.5l4.5 2.5 4.5-2.5M6.5 7v4"/></svg>
 
 // ── Tipos ────────────────────────────────────────────────
 interface Item {
@@ -85,7 +84,8 @@ export default function Calculadora({ acervo }: Props) {
   const [lucro, setLucro] = useState(30)
   const [frete, setFrete] = useState(0)
   const [custoVida, setCustoVida] = useState(0)
-  const [festasKitMes, setFestasKitMes] = useState(4) // festas/mês deste kit específico
+  const [festasKitMes, setFestasKitMes] = useState(4)
+  const [precoAlvo, setPrecoAlvo] = useState(0) // campo de preço alvo
 
   const [kits, setKits] = useState<Kit[]>([])
   const [modalSalvar, setModalSalvar] = useState(false)
@@ -179,7 +179,7 @@ export default function Calculadora({ acervo }: Props) {
       usuario_id: user.id,
       nome: kit.nome,
       descricao: `Kit com ${kit.itens.length} item(ns) — exportado da calculadora`,
-      preco: Math.round(preco * 100) / 100,
+      preco: Math.ceil(preco / 5) * 5, // arredonda para múltiplo de 5 acima (ex: 87 → 90)
       itens: kit.itens.map(i => i.nome).filter(Boolean),
       foto_url: null,
     })
@@ -225,12 +225,33 @@ export default function Calculadora({ acervo }: Props) {
     return { ...item, totalFestas, custoPorFesta }
   })
 
-  // Custo de vida dividido pelo número de festas/mês deste kit
   const custoVidaPorFesta = festasKitMes > 0 ? custoVida / festasKitMes : 0
   const custoPorFestaTotal = itensCusto.reduce((acc, i) => acc + i.custoPorFesta, 0)
   const subtotal = custoPorFestaTotal + custoVidaPorFesta + frete
   const valorLucro = subtotal * (lucro / 100)
   const precoFinal = subtotal + valorLucro
+
+  // ── Cálculos do preço alvo ────────────────────────────
+  // Margem implícita para atingir o preço alvo
+  const margemParaAlvo = precoAlvo > 0 && subtotal > 0
+    ? Math.round(((precoAlvo - subtotal) / subtotal) * 100)
+    : null
+
+  // Festas/mês necessárias para cobrir custo de vida com o preço alvo
+  // precoAlvo = (custoItens + custoVida/festasNec + frete) * (1 + lucro/100)
+  // festasNec = custoVida / (precoAlvo/(1+lucro/100) - custoItens - frete)
+  const festasNecessarias = precoAlvo > 0 && custoVida > 0
+    ? (() => {
+        const subtotalSemVida = custoPorFestaTotal + frete
+        const precoSemLucro = precoAlvo / (1 + lucro / 100)
+        const sobra = precoSemLucro - subtotalSemVida
+        return sobra > 0 ? Math.ceil(custoVida / sobra) : null
+      })()
+    : null
+
+  // Receita mensal estimada com o preço atual
+  const receitaMensalEstimada = precoFinal * festasKitMes
+  const cobriuCustoVida = custoVida > 0 ? receitaMensalEstimada >= custoVida : null
 
   const temAcervo = acervo.length > 0
 
@@ -269,9 +290,8 @@ export default function Calculadora({ acervo }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '14px' }}>
 
           {/* Cabeçalho desktop */}
-          <div className="calc-header-desktop" style={{ display: 'grid', gridTemplateColumns: temAcervo ? '180px 2fr 110px 90px 90px 36px' : '2fr 110px 90px 90px 36px', gap: '8px', alignItems: 'end' }}>
-            {temAcervo && <span style={labelStyle}>Acervo</span>}
-            <span style={labelStyle}>Item</span>
+          <div className="calc-header-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 110px 90px 90px 36px', gap: '8px', alignItems: 'end' }}>
+            <span style={labelStyle}>Item {temAcervo && <span style={{ color: '#ff33cc', fontWeight: 400 }}>· selecione do acervo ou digite</span>}</span>
             <span style={labelStyle}>Custo (R$)</span>
             <span style={labelStyle}>Meses</span>
             <span style={labelStyle}>Festas/mês</span>
@@ -282,18 +302,29 @@ export default function Calculadora({ acervo }: Props) {
             <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
 
               {/* Desktop */}
-              <div className="calc-item-desktop" style={{ display: 'grid', gridTemplateColumns: temAcervo ? '180px 2fr 110px 90px 90px 36px' : '2fr 110px 90px 90px 36px', gap: '8px', alignItems: 'center' }}>
-                {temAcervo && (
-                  <select
-                    style={{ ...inputStyle, color: item.acervoId ? '#111827' : '#9ca3af' }}
-                    value={item.acervoId ?? ''}
-                    onChange={e => preencherDoAcervo(item.id, e.target.value)}
-                  >
-                    <option value="">Acervo...</option>
-                    {acervo.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
-                  </select>
+              <div className="calc-item-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 110px 90px 90px 36px', gap: '8px', alignItems: 'center' }}>
+                {/* Input unificado: select do acervo + texto editável */}
+                {temAcervo ? (
+                  <div style={{ display: 'flex', border: '1px solid #e8e8ec', borderRadius: '10px', overflow: 'hidden', background: '#fafafa' }}>
+                    <select
+                      value={item.acervoId ?? ''}
+                      onChange={e => preencherDoAcervo(item.id, e.target.value)}
+                      style={{ border: 'none', borderRight: '1px solid #e8e8ec', background: 'transparent', padding: '10px 8px', fontFamily: 'Inter, sans-serif', fontSize: '12px', color: item.acervoId ? '#ff33cc' : '#9ca3af', outline: 'none', cursor: 'pointer', flexShrink: 0, maxWidth: '130px' }}
+                    >
+                      <option value="">Acervo...</option>
+                      {acervo.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                    </select>
+                    <input
+                      type="text"
+                      value={item.nome}
+                      onChange={e => atualizarItem(item.id, 'nome', e.target.value)}
+                      placeholder="ou digite o nome..."
+                      style={{ flex: 1, border: 'none', background: 'transparent', padding: '10px 12px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#111827', outline: 'none', minWidth: 0 }}
+                    />
+                  </div>
+                ) : (
+                  <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="Ex: Painel, Totem..." style={inputStyle} />
                 )}
-                <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="Ex: Painel, Totem..." style={inputStyle} />
                 <input type="number" value={item.custo || ''} onChange={e => atualizarItem(item.id, 'custo', e.target.value)} placeholder="0,00" min="0" step="0.01" style={inputStyle} />
                 <input type="number" value={item.meses || ''} onChange={e => atualizarItem(item.id, 'meses', e.target.value)} placeholder="6" min="1" style={inputStyle} />
                 <input type="number" value={item.festasporMes || ''} onChange={e => atualizarItem(item.id, 'festasporMes', e.target.value)} placeholder="4" min="1" style={inputStyle} />
@@ -310,16 +341,30 @@ export default function Calculadora({ acervo }: Props) {
                     <IconTrash /> Remover
                   </button>
                 </div>
-                {temAcervo && (
+                {temAcervo ? (
                   <div>
-                    <span style={labelStyle}>Puxar do acervo</span>
-                    <select style={{ ...inputStyle, color: item.acervoId ? '#111827' : '#9ca3af' }} value={item.acervoId ?? ''} onChange={e => preencherDoAcervo(item.id, e.target.value)}>
-                      <option value="">Selecione um item do acervo...</option>
-                      {acervo.map(a => <option key={a.id} value={a.id}>{a.nome} — R$ {Number(a.custo).toFixed(2).replace('.', ',')}</option>)}
-                    </select>
+                    <span style={labelStyle}>Item</span>
+                    <div style={{ display: 'flex', border: '1px solid #e8e8ec', borderRadius: '10px', overflow: 'hidden', background: '#fff' }}>
+                      <select
+                        value={item.acervoId ?? ''}
+                        onChange={e => preencherDoAcervo(item.id, e.target.value)}
+                        style={{ border: 'none', borderRight: '1px solid #e8e8ec', background: 'transparent', padding: '10px 8px', fontFamily: 'Inter, sans-serif', fontSize: '12px', color: item.acervoId ? '#ff33cc' : '#9ca3af', outline: 'none', cursor: 'pointer', maxWidth: '120px', flexShrink: 0 }}
+                      >
+                        <option value="">Acervo...</option>
+                        {acervo.map(a => <option key={a.id} value={a.id}>{a.nome} — R$ {Number(a.custo).toFixed(2).replace('.', ',')}</option>)}
+                      </select>
+                      <input
+                        type="text"
+                        value={item.nome}
+                        onChange={e => atualizarItem(item.id, 'nome', e.target.value)}
+                        placeholder="ou digite..."
+                        style={{ flex: 1, border: 'none', background: 'transparent', padding: '10px 12px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#111827', outline: 'none', minWidth: 0 }}
+                      />
+                    </div>
                   </div>
+                ) : (
+                  <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="Ex: Painel, Totem..." style={inputStyle} />
                 )}
-                <input type="text" value={item.nome} onChange={e => atualizarItem(item.id, 'nome', e.target.value)} placeholder="Ex: Painel, Totem..." style={inputStyle} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                   <div>
                     <span style={labelStyle}>Custo (R$)</span>
@@ -386,6 +431,38 @@ export default function Calculadora({ acervo }: Props) {
           </div>
         </div>
 
+        {/* Campo preço alvo */}
+        <div style={{ background: '#f9fafb', borderRadius: '12px', padding: '14px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 160px' }}>
+            <label style={{ ...labelStyle, margin: 0 }}>Preço alvo (R$)</label>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '2px 0 0' }}>Quanto você quer cobrar?</p>
+          </div>
+          <input
+            type="number" value={precoAlvo || ''} onChange={e => setPrecoAlvo(parseFloat(e.target.value) || 0)}
+            placeholder="Ex: 90,00" min="0" step="0.01"
+            style={{ ...inputStyle, width: '120px', flexShrink: 0 }}
+          />
+          {precoAlvo > 0 && subtotal > 0 && (
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {margemParaAlvo !== null && (
+                <span style={{ background: margemParaAlvo >= 100 ? '#f0fdf9' : '#fffbf0', color: margemParaAlvo >= 100 ? '#059669' : '#d97706', borderRadius: '999px', padding: '4px 12px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700 }}>
+                  {margemParaAlvo >= 0 ? `${margemParaAlvo}% de lucro` : `abaixo do custo`}
+                </span>
+              )}
+              {festasNecessarias !== null && (
+                <span style={{ background: festasNecessarias <= festasKitMes ? '#f0fdf9' : '#fef2f2', color: festasNecessarias <= festasKitMes ? '#059669' : '#dc2626', borderRadius: '999px', padding: '4px 12px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700 }}>
+                  {festasNecessarias}x/mês para cobrir vida
+                </span>
+              )}
+              {precoAlvo < subtotal && (
+                <span style={{ background: '#fef2f2', color: '#dc2626', borderRadius: '999px', padding: '4px 12px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700 }}>
+                  Abaixo do custo — mínimo R$ {subtotal.toFixed(2).replace('.', ',')}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Slider de lucro */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -429,21 +506,49 @@ export default function Calculadora({ acervo }: Props) {
             </div>
           ))}
         </div>
-        <div style={{ borderTop: '1px solid #ffffff18', paddingTop: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+        <div style={{ borderTop: '1px solid #ffffff18', paddingTop: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#fff' }}>Preço por festa</span>
           <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '36px', color: '#ff33cc', letterSpacing: '-1px' }}>
             R$ {precoFinal.toFixed(2).replace('.', ',')}
           </span>
         </div>
-        {custoVida > 0 && (
-          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ffffff10' }}>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff44', margin: 0 }}>
-              Com {festasKitMes} festa(s)/mês deste kit → receita mensal estimada:{' '}
-              <span style={{ color: '#ff33cc', fontWeight: 700 }}>R$ {(precoFinal * festasKitMes).toFixed(2).replace('.', ',')}</span>
-              {' '}— custo de vida: <span style={{ color: custoVida <= precoFinal * festasKitMes ? '#10b981' : '#ef4444', fontWeight: 700 }}>R$ {custoVida.toFixed(2).replace('.', ',')}</span>
-            </p>
-          </div>
-        )}
+
+        {/* Indicadores */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #ffffff10', paddingTop: '14px' }}>
+
+          {/* Receita mensal estimada vs custo de vida */}
+          {custoVida > 0 && (
+            <div style={{ background: cobriuCustoVida ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff66', margin: 0 }}>
+                Receita mensal com {festasKitMes} festa(s) deste kit
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: cobriuCustoVida ? '#10b981' : '#ef4444' }}>
+                  R$ {receitaMensalEstimada.toFixed(2).replace('.', ',')}
+                </span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#ffffff33' }}>
+                  {cobriuCustoVida ? '✓ cobre o custo de vida' : `faltam R$ ${(custoVida - receitaMensalEstimada).toFixed(2).replace('.', ',')} para cobrir vida`}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Comparação com preço alvo */}
+          {precoAlvo > 0 && (
+            <div style={{ background: precoFinal >= precoAlvo ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff66', margin: 0 }}>
+                Preço alvo: R$ {precoAlvo.toFixed(2).replace('.', ',')}
+              </p>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: precoFinal >= precoAlvo ? '#10b981' : '#f59e0b' }}>
+                {precoFinal >= precoAlvo
+                  ? `✓ R$ ${(precoFinal - precoAlvo).toFixed(2).replace('.', ',')} acima`
+                  : `R$ ${(precoAlvo - precoFinal).toFixed(2).replace('.', ',')} abaixo`
+                }
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ════ MODAL SALVAR ════ */}
