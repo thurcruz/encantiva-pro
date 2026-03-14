@@ -14,18 +14,19 @@ export default async function PaginaClientes({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, expira_em, trial_expira_em')
+    .select('status, plano, trial_expira_em, is_beta')
     .eq('usuario_id', user.id)
     .single()
 
-  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
   const agora = new Date()
-  const trialAtivo = assinatura?.trial_expira_em
-    ? new Date(assinatura.trial_expira_em) > agora : false
-  const assinaturaAtiva = isAdmin || trialAtivo ||
-    (assinatura?.status === 'ativo' && (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
+  const isBeta = assinatura?.is_beta === true
+  const trialAtivo = assinatura?.status === 'trial' &&
+    !!(assinatura?.trial_expira_em && new Date(assinatura.trial_expira_em) > agora)
+  const assinaturaAtiva = isAdmin || isBeta || trialAtivo || assinatura?.status === 'active'
 
   if (!assinaturaAtiva) redirect('/materiais')
 
@@ -40,43 +41,40 @@ export default async function PaginaClientes({
   const { data: clientes } = await query
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
 
       {/* Header */}
-      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
+      <div className="page-header" style={{ borderBottom: '1px solid #e8e8ec', padding: '32px 40px', backgroundColor: '#fff' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
+            <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: '#ff33cc' }} />
             <div>
-              <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
+              <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '24px', color: '#111827', letterSpacing: '-0.5px', margin: 0 }}>
                 Clientes
               </h1>
-              <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '14px', margin: 0 }}>
+              <p style={{ color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontSize: '13px', margin: 0 }}>
                 {clientes?.length ?? 0} clientes cadastrados
               </p>
             </div>
           </div>
           <Link href="/clientes/novo" style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-            borderRadius: '12px', padding: '12px 20px',
+            display: 'inline-flex', alignItems: 'center', gap: '7px',
+            background: '#ff33cc', borderRadius: '999px', padding: '10px 18px',
             color: '#fff', fontFamily: 'Inter, sans-serif',
-            fontWeight: 700, fontSize: '14px', textDecoration: 'none',
+            fontWeight: 700, fontSize: '13px', textDecoration: 'none',
           }}>
-            <Plus size={16} />
+            <Plus size={14} />
             Novo Cliente
           </Link>
         </div>
       </div>
 
-      <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 40px' }}>
+      <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 40px 80px' }}>
 
-        {/* Busca */}
         <BuscaClientes buscaInicial={busca ?? ''} />
 
-        {/* Lista */}
         {clientes && clientes.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
             {clientes.map(cliente => {
               const aniversarioHoje = cliente.data_aniversario
                 ? new Date(cliente.data_aniversario + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) ===
@@ -84,60 +82,52 @@ export default async function PaginaClientes({
                 : false
 
               return (
-               <div key={cliente.id} style={{
-  background: aniversarioHoje ? 'linear-gradient(135deg, #fff5fd, #fff)' : '#fff',
-  border: `1px solid ${aniversarioHoje ? '#ff33cc33' : '#eeeeee'}`,
-  borderRadius: '16px', padding: '20px 24px',
-  display: 'flex', alignItems: 'center',
-  justifyContent: 'space-between', gap: '16px',
-}}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                    {/* Avatar */}
+                <div key={cliente.id} style={{
+                  background: aniversarioHoje ? '#fff5fd' : '#fff',
+                  border: `1px solid ${aniversarioHoje ? '#ffd6f5' : '#e8e8ec'}`,
+                  borderRadius: '14px', padding: '16px 20px',
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between', gap: '16px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
                     <div style={{
-                      width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-                      background: 'linear-gradient(135deg, #ff33cc22, #9900ff22)',
-                      border: '1px solid #ff33cc22',
+                      width: '42px', height: '42px', borderRadius: '999px', flexShrink: 0,
+                      background: '#fff0fb', border: '1px solid #ffd6f5',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'Inter, sans-serif', fontWeight: 700,
-                      fontSize: '18px', color: '#9900ff',
+                      fontFamily: 'Inter, sans-serif', fontWeight: 800,
+                      fontSize: '16px', color: '#ff33cc',
                     }}>
                       {cliente.nome[0].toUpperCase()}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <h3 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: 0 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {cliente.nome}
-                        </h3>
-                        {aniversarioHoje && (
-                          <span style={{ fontSize: '16px' }}>🎂</span>
-                        )}
+                        </p>
+                        {aniversarioHoje && <span style={{ fontSize: '14px' }}>🎂</span>}
                       </div>
-                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                         {cliente.telefone && (
-                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055' }}>
-                            📱 {cliente.telefone}
-                          </span>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af' }}>{cliente.telefone}</span>
                         )}
                         {cliente.email && (
-                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055' }}>
-                            ✉️ {cliente.email}
-                          </span>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af' }}>{cliente.email}</span>
                         )}
                         {cliente.data_aniversario && (
-                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055' }}>
-                            🎂 {new Date(cliente.data_aniversario + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af' }}>
+                            {new Date(cliente.data_aniversario + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
                   <Link href={`/clientes/${cliente.id}`} style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-                    borderRadius: '10px', padding: '10px 16px',
-                    color: '#fff', fontFamily: 'Inter, sans-serif',
-                    fontWeight: 600, fontSize: '13px', textDecoration: 'none',
-                    whiteSpace: 'nowrap',
+                    display: 'inline-flex', alignItems: 'center',
+                    background: 'transparent', border: '1.5px solid #ff33cc',
+                    borderRadius: '999px', padding: '7px 14px',
+                    color: '#ff33cc', fontFamily: 'Inter, sans-serif',
+                    fontWeight: 700, fontSize: '12px', textDecoration: 'none',
+                    whiteSpace: 'nowrap', flexShrink: 0,
                   }}>
                     Ver perfil
                   </Link>
@@ -147,13 +137,12 @@ export default async function PaginaClientes({
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
-            <p style={{ fontSize: '48px', marginBottom: '16px' }}>👥</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '18px', color: '#00000044', marginBottom: '8px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#374151', margin: '0 0 8px' }}>
               {busca ? 'Nenhum cliente encontrado' : 'Nenhum cliente ainda'}
             </p>
             {!busca && (
-              <Link href="/clientes/novo" style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ff33cc', textDecoration: 'none' }}>
-                Cadastrar o primeiro cliente
+              <Link href="/clientes/novo" style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ff33cc', textDecoration: 'none', fontWeight: 600 }}>
+                Cadastrar o primeiro cliente →
               </Link>
             )}
           </div>
