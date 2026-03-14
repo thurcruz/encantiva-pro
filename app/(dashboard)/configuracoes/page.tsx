@@ -1,51 +1,138 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import FormularioPerfil from './FormularioPerfil'
-import GerenciarPlanoClient from '../../gerenciar-plano/GerenciarPlanoClient'
+import PageHeader from '../componentes/PageHeader'
 
 export default async function PaginaConfiguracoes() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: perfil }, { data: assinatura }] = await Promise.all([
-    supabase.from('perfis').select('*').eq('id', user.id).single(),
-    supabase.from('assinaturas').select('status, plano, asaas_subscription_id').eq('usuario_id', user.id).single(),
-  ])
+  const { data: perfil } = await supabase
+    .from('perfis').select('*').eq('id', user.id).single()
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <div style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)', flexShrink: 0 }} />
-          <div>
-            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
-              Configurações
-            </h1>
-            <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '14px', margin: 0 }}>
-              Dados da sua loja e assinatura
-            </p>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
+      <PageHeader titulo="Configurações" subtitulo="Dados da sua loja, suporte e comunidade" />
+
+      <div style={{ maxWidth: '700px', margin: '0 auto', padding: '24px 24px 80px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+        {/* ── Perfil da loja ── */}
+        <section>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1.2px', margin: '0 0 10px 2px' }}>
+            Perfil da loja
+          </p>
+          <FormularioPerfil usuarioId={user.id} perfil={perfil} />
+        </section>
+
+        {/* ── Suporte ── */}
+        <section>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1.2px', margin: '0 0 10px 2px' }}>
+            Suporte
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+
+            {/* Suporte humanizado */}
+            <a
+              href="https://wa.me/5511999999999"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+            >
+              <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', transition: 'border-color .15s, box-shadow .15s', cursor: 'pointer' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#25D366'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(37,211,102,0.12)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#e8e8ec'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </div>
+                <div>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>Suporte humanizado</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 8px' }}>Tire dúvidas pelo WhatsApp</p>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#f0fdf4', color: '#16a34a', borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700 }}>
+                    Contato →
+                  </span>
+                </div>
+              </div>
+            </a>
+
+            {/* Email suporte */}
+            <a
+              href="mailto:suporte@encantivapro.com.br"
+              style={{ textDecoration: 'none' }}
+            >
+              <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', cursor: 'pointer', transition: 'border-color .15s, box-shadow .15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#ff33cc'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(255,51,204,0.1)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#e8e8ec'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: '10px', background: '#fff0fb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#ff33cc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="16" height="12" rx="2"/><path d="M1 6l8 5 8-5"/></svg>
+                </div>
+                <div>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>E-mail</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 8px' }}>suporte@encantivapro.com.br</p>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fff0fb', color: '#ff33cc', borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700 }}>
+                    Enviar →
+                  </span>
+                </div>
+              </div>
+            </a>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        {/* ── Comunidade ── */}
+        <section>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1.2px', margin: '0 0 10px 2px' }}>
+            Comunidade
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
 
-        <FormularioPerfil usuarioId={user.id} perfil={perfil} />
+            {/* Grupo WhatsApp */}
+            <a href="https://chat.whatsapp.com/LRqQ4Gnlw0740Zup1aPLQh" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+              <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '16px', height: '100%', cursor: 'pointer', transition: 'border-color .15s, box-shadow .15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#25D366'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(37,211,102,0.1)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#e8e8ec'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}
+              >
+                <div style={{ width: 32, height: 32, borderRadius: '9px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </div>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#111827', margin: '0 0 2px' }}>Grupo</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '0 0 8px' }}>Comunidade Encantiva</p>
+                <span style={{ display: 'inline-block', background: '#f0fdf4', color: '#16a34a', borderRadius: '999px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700 }}>Entrar →</span>
+              </div>
+            </a>
 
-        <div style={{ borderTop: '1px solid #eeeeee', paddingTop: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ width: '4px', height: '24px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#140033', margin: 0 }}>
-              Meu Plano
-            </h2>
+            {/* Instagram */}
+            <a href="https://instagram.com/encantivapro" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+              <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '16px', height: '100%', cursor: 'pointer', transition: 'border-color .15s, box-shadow .15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#E1306C'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(225,48,108,0.1)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#e8e8ec'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}
+              >
+                <div style={{ width: 32, height: 32, borderRadius: '9px', background: '#fff0f5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="#E1306C" stroke="none"/></svg>
+                </div>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#111827', margin: '0 0 2px' }}>Instagram</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '0 0 8px' }}>@encantivapro</p>
+                <span style={{ display: 'inline-block', background: '#fff0f5', color: '#E1306C', borderRadius: '999px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700 }}>Seguir →</span>
+              </div>
+            </a>
+
+            {/* Instagram Gisa */}
+            <a href="https://instagram.com/gisasbarbs" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+              <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '16px', height: '100%', cursor: 'pointer', transition: 'border-color .15s, box-shadow .15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#E1306C'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(225,48,108,0.1)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#e8e8ec'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}
+              >
+                <div style={{ width: 32, height: 32, borderRadius: '9px', background: '#fff0f5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="#E1306C" stroke="none"/></svg>
+                </div>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#111827', margin: '0 0 2px' }}>Criadora</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '0 0 8px' }}>@gisasbarbs</p>
+                <span style={{ display: 'inline-block', background: '#fff0f5', color: '#E1306C', borderRadius: '999px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700 }}>Seguir →</span>
+              </div>
+            </a>
           </div>
-          <GerenciarPlanoClient
-            status={assinatura?.status ?? null}
-            planoAtual={assinatura?.plano ?? ''}
-            asaasSubscriptionId={assinatura?.asaas_subscription_id ?? null}
-          />
-        </div>
+        </section>
 
       </div>
     </div>
