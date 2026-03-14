@@ -13,13 +13,12 @@ interface Props {
   categorias: Categoria[]
 }
 
-export default function FormularioMaterial({ temas, tipos, formatos, categorias }: Props) {
+export default function FormularioMaterial({ tipos, formatos, categorias }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
   const [titulo, setTitulo] = useState('')
   const [descricao, setDescricao] = useState('')
-  const [temaId, setTemaId] = useState('')
   const [categoriaId, setCategoriaId] = useState('')
   const [tipoId, setTipoId] = useState('')
   const [formatoId, setFormatoId] = useState('')
@@ -65,7 +64,7 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
       const { error: errDB } = await supabase.from('materiais').insert({
         titulo,
         descricao: descricao || null,
-        tema_id: temaId || null,
+        tema_id: null,
         categoria_id: categoriaId || null,
         tipo_peca_id: tipoId || null,
         formato_id: formatoId || null,
@@ -136,7 +135,7 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 20px' }}>
               Categorização
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={labelStyle}>Categoria</label>
                 <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
@@ -158,13 +157,7 @@ export default function FormularioMaterial({ temas, tipos, formatos, categorias 
                   {formatos.map(f => <option key={f.id} value={f.id} style={{ background: '#1a0044' }}>{f.nome}</option>)}
                 </select>
               </div>
-              <div>
-                <label style={labelStyle}>Tema</label>
-                <input type="text" value={temaId} onChange={e => setTemaId(e.target.value)}
-                  placeholder="Ex: Dinossauro Verde" style={inputStyle}
-                  onFocus={e => (e.target.style.borderColor = '#ff33cc66')}
-                  onBlur={e => (e.target.style.borderColor = '#ffffff18')} />
-              </div>
+
             </div>
           </div>
 
