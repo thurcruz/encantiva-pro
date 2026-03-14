@@ -53,10 +53,27 @@ export default async function PaginaMateriais({
 
   const { data: materiais } = await query
 
+  const vazio = !materiais || materiais.length === 0
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
       <PageHeader titulo="Materiais para Download" subtitulo="Painéis, totens e muito mais prontos para imprimir" maxWidth="1200px" />
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 24px 80px' }}>
+
+        {/* ── Banner de novidades ── */}
+        <div style={{ background: 'linear-gradient(135deg, #fff0fb, #f5f0ff)', border: '1px solid #ffd6f5', borderRadius: '16px', padding: '20px 24px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: 44, height: 44, borderRadius: '12px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '22px' }}>
+            🎨
+          </div>
+          <div>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#111827', margin: '0 0 4px' }}>
+              Novos painéis chegando!
+            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
+              Estamos adicionando os painéis à plataforma. Em breve você poderá baixar o original ou usar o cortador automático para gerar as folhas A4 prontas para impressão caseira.
+            </p>
+          </div>
+        </div>
 
         <FiltrosMateriais
           categorias={categorias ?? []}
@@ -68,32 +85,30 @@ export default async function PaginaMateriais({
           buscaInicial={busca ?? ''}
         />
 
-        {/* Contagem */}
-        {materiais && (
+        {materiais && !vazio && (
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '14px 0 0 2px' }}>
             {materiais.length} {materiais.length === 1 ? 'material encontrado' : 'materiais encontrados'}
           </p>
         )}
 
-        {/* Grid */}
-        {materiais && materiais.length > 0 ? (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: '16px',
-            marginTop: '14px',
-          }}>
+        {vazio ? (
+          <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '16px', textAlign: 'center', padding: '72px 24px', marginTop: '16px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎪</div>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#374151', margin: '0 0 8px' }}>
+              Em breve aqui!
+            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0, maxWidth: '360px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+              Os painéis estão sendo preparados com carinho. Fique de olho — novos materiais serão adicionados em breve.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginTop: '14px' }}>
             {materiais.map(material => (
               <CardMaterial key={material.id} material={material as Material} podeDownload={true} />
             ))}
           </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '80px 0', background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', marginTop: '16px' }}>
-            <p style={{ fontSize: '40px', marginBottom: '12px' }}>🎪</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#374151', margin: '0 0 6px' }}>Nenhum material encontrado</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Tente mudar os filtros ou a busca</p>
-          </div>
         )}
+
       </div>
     </div>
   )
