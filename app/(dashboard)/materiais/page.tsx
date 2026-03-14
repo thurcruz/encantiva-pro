@@ -54,9 +54,10 @@ export default async function PaginaMateriais({
   const { data: materiais } = await query
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
       <PageHeader titulo="Materiais para Download" subtitulo="Painéis, totens e muito mais prontos para imprimir" maxWidth="1200px" />
-      <div className="page-content" style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 24px 80px' }}>
+
         <FiltrosMateriais
           categorias={categorias ?? []}
           tipos={tipos ?? []}
@@ -66,22 +67,31 @@ export default async function PaginaMateriais({
           formatoSelecionado={formato}
           buscaInicial={busca ?? ''}
         />
+
+        {/* Contagem */}
         {materiais && (
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000044', margin: '20px 0 0 0' }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '14px 0 0 2px' }}>
             {materiais.length} {materiais.length === 1 ? 'material encontrado' : 'materiais encontrados'}
           </p>
         )}
+
+        {/* Grid */}
         {materiais && materiais.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', marginTop: '16px' }}>
-            {materiais.map((material) => (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: '16px',
+            marginTop: '14px',
+          }}>
+            {materiais.map(material => (
               <CardMaterial key={material.id} material={material as Material} podeDownload={true} />
             ))}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '80px 0' }}>
-            <p style={{ fontSize: '48px', marginBottom: '16px' }}>🎪</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '18px', color: '#00000044', marginBottom: '8px' }}>Nenhum material encontrado</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#00000033' }}>Tente mudar os filtros ou a busca</p>
+          <div style={{ textAlign: 'center', padding: '80px 0', background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', marginTop: '16px' }}>
+            <p style={{ fontSize: '40px', marginBottom: '12px' }}>🎪</p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#374151', margin: '0 0 6px' }}>Nenhum material encontrado</p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Tente mudar os filtros ou a busca</p>
           </div>
         )}
       </div>
