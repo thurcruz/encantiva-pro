@@ -1,49 +1,32 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getPlanoId, getLimites, temAcesso } from '@/lib/planos'
 import FormularioContrato from './FormularioContrato'
+import PageHeader from '../../componentes/PageHeader'
 
 export default async function PaginaNovoContrato() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
   const { data: assinatura } = await supabase
     .from('assinaturas')
-    .select('status, expira_em, trial_expira_em')
+    .select('status, plano, trial_expira_em, is_beta')
     .eq('usuario_id', user.id)
     .single()
 
-  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+  const isBeta = assinatura?.is_beta === true
+  const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
+  const limites = getLimites(planoId)
 
-  const agora = new Date()
-  const trialAtivo = assinatura?.trial_expira_em
-    ? new Date(assinatura.trial_expira_em) > agora
-    : false
-
-  const assinaturaAtiva =
-    isAdmin ||
-    trialAtivo ||
-    (assinatura?.status === 'ativo' &&
-    (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
-
-  if (!assinaturaAtiva) redirect('/materiais')
+  if (!temAcesso('contratosPoMes', limites, isBeta, isAdmin)) redirect('/contratos')
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)', flexShrink: 0 }} />
-          <div>
-            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
-              Novo Contrato
-            </h1>
-            <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '14px', margin: 0 }}>
-              Preencha os dados para gerar o contrato
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="page-content" style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 40px' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
+      <PageHeader titulo="Novo contrato" subtitulo="Preencha os dados para gerar o contrato" />
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px 24px 80px' }}>
         <FormularioContrato usuarioId={user.id} />
       </div>
     </div>
