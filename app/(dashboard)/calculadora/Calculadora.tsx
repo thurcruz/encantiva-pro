@@ -327,11 +327,22 @@ export default function Calculadora({ acervo }: Props) {
             <input type="number" value={frete || ''} onChange={e => setFrete(parseFloat(e.target.value) || 0)} placeholder="Ex: 50,00" min="0" step="0.01" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Lucro desejado (%)</label>
-            <input type="number" value={lucro || ''} onChange={e => setLucro(parseFloat(e.target.value) || 0)} placeholder="Ex: 30" min="0" style={inputStyle} />
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: lucro < 100 ? '#ff33cc' : '#00aa55', margin: '4px 0 0', fontWeight: 600 }}>
-              {lucro < 100 ? '⚠️ Recomendado: 100% a 150%' : '✅ Dentro do recomendado'}
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ ...labelStyle, margin: 0 }}>Lucro desejado</label>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#ff33cc', letterSpacing: '-0.5px', lineHeight: 1 }}>{lucro}%</span>
+            </div>
+            <input
+              type="range" min={0} max={300} value={lucro}
+              onChange={e => setLucro(Number(e.target.value))}
+              style={{ width: '100%', accentColor: '#ff33cc', height: '4px', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>0%</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: lucro < 100 ? '#ff33cc' : '#00aa55', fontWeight: 600 }}>
+                {lucro < 100 ? '⚠️ Recomendado: 100–150%' : '✅ Dentro do recomendado'}
+              </span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>300%</span>
+            </div>
           </div>
           <div>
             <label style={labelStyle}>Preço alvo (R$)</label>
