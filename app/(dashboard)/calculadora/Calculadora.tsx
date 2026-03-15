@@ -161,11 +161,11 @@ export default function Calculadora({ acervo }: Props) {
 
   const temAcervo = acervo.length > 0
 
-  // ── FÓRMULA CORRETA DE PRECIFICAÇÃO ──────────────────
-  // Preço = (custo itens/festa + custo de vida/festa + frete) × (1 + lucro%)
+  // ── FÓRMULA DE PRECIFICAÇÃO DE LOCAÇÃO ───────────────
+  // Preço = (custo itens/festa + frete) × (1 + lucro%)
   //
-  // Custo de vida/festa = custo_vida_mensal ÷ festas_deste_kit_por_mês
-  // Custo item/festa    = custo_total_item ÷ (meses_de_uso × festas_por_mês)
+  // Custo item/festa = custo_total_item ÷ (meses_de_uso × festas_por_mês)
+  // Custo de vida é INFORMATIVO — não entra no preço
 
   const itensCusto = itens.map(item => {
     const totalFestas = item.meses * item.festasporMes
@@ -174,12 +174,11 @@ export default function Calculadora({ acervo }: Props) {
   })
 
   const custoPorFestaItens = itensCusto.reduce((acc, i) => acc + i.custoPorFesta, 0)
-  const custoVidaPorFesta = festasKitMes > 0 ? custoVida / festasKitMes : 0
-  const subtotal = custoPorFestaItens + custoVidaPorFesta + frete
+  const subtotal = custoPorFestaItens + frete
   const valorLucro = subtotal * (lucro / 100)
   const precoFinal = subtotal + valorLucro
 
-  // ── Receita mensal estimada ───────────────────────────
+  // ── Custo de vida — só informativo ───────────────────
   const receitaMensalEstimada = precoFinal * festasKitMes
   const cobriuCustoVida = custoVida > 0 ? receitaMensalEstimada >= custoVida : null
   const percentualVidaCoberto = custoVida > 0
@@ -323,48 +322,12 @@ export default function Calculadora({ acervo }: Props) {
       {/* Custos adicionais */}
       <div style={cardStyle}>
         <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 4px 0' }}>Custos adicionais</h2>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 20px 0' }}>Todos esses valores entram no cálculo do preço final</p>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 20px 0' }}>Frete e lucro entram no preço final</p>
 
-        <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
-          <div>
-            <label style={labelStyle}>Custo de vida mensal (R$)</label>
-            <input type="number" value={custoVida || ''} onChange={e => setCustoVida(parseFloat(e.target.value) || 0)} placeholder="Ex: 3000,00" min="0" step="0.01" style={inputStyle} />
-            {custoVida > 0 && festasKitMes > 0 && (
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ff33cc', margin: '4px 0 0', fontWeight: 600 }}>
-                R$ {custoVidaPorFesta.toFixed(2).replace('.', ',')} por festa
-              </p>
-            )}
-          </div>
-          <div>
-            <label style={labelStyle}>Festas deste kit por mês</label>
-            <input type="number" value={festasKitMes || ''} onChange={e => setFestasKitMes(parseFloat(e.target.value) || 1)} placeholder="4" min="1" style={inputStyle} />
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#00000044', margin: '4px 0 0' }}>Quantas festas deste kit você faz por mês?</p>
-          </div>
+        <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
           <div>
             <label style={labelStyle}>Frete por festa (R$)</label>
             <input type="number" value={frete || ''} onChange={e => setFrete(parseFloat(e.target.value) || 0)} placeholder="Ex: 50,00" min="0" step="0.01" style={inputStyle} />
-          </div>
-        </div>
-
-        {/* Lucro + Preço alvo */}
-        <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <label style={{ ...labelStyle, margin: 0 }}>Lucro desejado</label>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#ff33cc', letterSpacing: '-0.5px', lineHeight: 1 }}>{lucro}%</span>
-            </div>
-            <input
-              type="range" min={0} max={300} value={lucro}
-              onChange={e => setLucro(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#ff33cc', height: '4px', cursor: 'pointer' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>0%</span>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: lucro < 100 ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
-                {lucro < 100 ? '⚠️ Recomendado: 100–150%' : '✅ Dentro do recomendado'}
-              </span>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>300%</span>
-            </div>
           </div>
           <div>
             <label style={labelStyle}>Preço alvo (R$)</label>
@@ -376,6 +339,65 @@ export default function Calculadora({ acervo }: Props) {
             )}
           </div>
         </div>
+
+        {/* Slider de lucro */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label style={{ ...labelStyle, margin: 0 }}>Lucro desejado</label>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#ff33cc', letterSpacing: '-0.5px', lineHeight: 1 }}>{lucro}%</span>
+          </div>
+          <input
+            type="range" min={0} max={300} value={lucro}
+            onChange={e => setLucro(Number(e.target.value))}
+            style={{ width: '100%', accentColor: '#ff33cc', height: '4px', cursor: 'pointer' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>0%</span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: lucro < 100 ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
+              {lucro < 100 ? '⚠️ Recomendado: 100–150%' : '✅ Dentro do recomendado'}
+            </span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>300%</span>
+          </div>
+        </div>
+
+        {/* Custo de vida — só informativo */}
+        <div style={{ background: '#f9f9f9', border: '1px solid #eeeeee', borderRadius: '12px', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#140033', margin: 0 }}>Análise de custo de vida</p>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#fff', background: '#ff33cc88', borderRadius: '999px', padding: '2px 8px', fontWeight: 600 }}>só informativo</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: custoVida > 0 ? '14px' : 0 }}>
+            <div>
+              <label style={labelStyle}>Custo de vida mensal (R$)</label>
+              <input type="number" value={custoVida || ''} onChange={e => setCustoVida(parseFloat(e.target.value) || 0)} placeholder="Ex: 3000,00" min="0" step="0.01" style={inputStyle} />
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#00000044', margin: '4px 0 0' }}>Não entra no cálculo do preço</p>
+            </div>
+            <div>
+              <label style={labelStyle}>Festas deste kit por mês</label>
+              <input type="number" value={festasKitMes || ''} onChange={e => setFestasKitMes(parseFloat(e.target.value) || 1)} placeholder="4" min="1" style={inputStyle} />
+            </div>
+          </div>
+          {custoVida > 0 && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000066' }}>
+                  {festasKitMes} festa(s) × R$ {precoFinal.toFixed(2).replace('.', ',')} = R$ {receitaMensalEstimada.toFixed(2).replace('.', ',')} / mês
+                </span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: percentualVidaCoberto === 100 ? '#10b981' : '#f59e0b' }}>
+                  {percentualVidaCoberto}%
+                </span>
+              </div>
+              <div style={{ height: '6px', background: '#e5e5e5', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${percentualVidaCoberto}%`, background: percentualVidaCoberto === 100 ? '#10b981' : '#ff33cc', borderRadius: '999px', transition: 'width .3s' }} />
+              </div>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044', margin: '6px 0 0' }}>
+                {cobriuCustoVida
+                  ? `✓ Cobre seu custo de vida de R$ ${custoVida.toLocaleString('pt-BR')}`
+                  : `Precisa de ${Math.ceil(custoVida / precoFinal)} festas/mês para cobrir R$ ${custoVida.toLocaleString('pt-BR')}`}
+              </p>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Resultado */}
@@ -385,7 +407,6 @@ export default function Calculadora({ acervo }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
           {[
             { label: 'Custo dos itens por festa', valor: custoPorFestaItens },
-            ...(custoVida > 0 ? [{ label: `Custo de vida (÷ ${festasKitMes} festas/mês)`, valor: custoVidaPorFesta }] : []),
             ...(frete > 0 ? [{ label: 'Frete', valor: frete }] : []),
             { label: `Lucro (${lucro}%)`, valor: valorLucro },
           ].map(linha => (
@@ -405,33 +426,9 @@ export default function Calculadora({ acervo }: Props) {
           </span>
         </div>
 
-        {/* Indicadores */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #ffffff10' }}>
-
-          {/* Receita mensal vs custo de vida */}
-          {custoVida > 0 && (
-            <div style={{ background: cobriuCustoVida ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '10px', padding: '10px 14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff66' }}>
-                  {festasKitMes} festa(s) × R$ {precoFinal.toFixed(2).replace('.', ',')} = R$ {receitaMensalEstimada.toFixed(2).replace('.', ',')} / mês
-                </span>
-                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: cobriuCustoVida ? '#10b981' : '#ef4444' }}>
-                  {percentualVidaCoberto}%
-                </span>
-              </div>
-              <div style={{ height: '4px', background: '#ffffff15', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${percentualVidaCoberto}%`, background: cobriuCustoVida ? '#10b981' : '#ff33cc', borderRadius: '999px', transition: 'width .3s' }} />
-              </div>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff44', margin: '6px 0 0' }}>
-                {cobriuCustoVida
-                  ? `✓ Cobre seu custo de vida de R$ ${custoVida.toLocaleString('pt-BR')}`
-                  : `Faltam R$ ${(custoVida - receitaMensalEstimada).toFixed(2).replace('.', ',')} para cobrir seu custo de vida`}
-              </p>
-            </div>
-          )}
-
-          {/* Comparação com preço alvo */}
-          {precoAlvo > 0 && (
+        {/* Comparação com preço alvo */}
+        {precoAlvo > 0 && (
+          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #ffffff10' }}>
             <div style={{ background: precoFinal >= precoAlvo ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff66' }}>
                 Preço alvo: R$ {precoAlvo.toFixed(2).replace('.', ',')}
@@ -442,8 +439,8 @@ export default function Calculadora({ acervo }: Props) {
                   : `R$ ${(precoAlvo - precoFinal).toFixed(2).replace('.', ',')} abaixo`}
               </span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Modal — Salvar kit */}
