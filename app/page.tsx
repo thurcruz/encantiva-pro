@@ -195,7 +195,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background: '#140033', padding: '24px', textAlign: 'center' }}>
+      <footer style={{ background: '#0b001b', padding: '24px', textAlign: 'center' }}>
         <p style={{ fontSize: '12px', color: '#ffffff83', margin: 0 }}>
           © 2026 Encantiva Pro · Todos os direitos reservados
         </p>

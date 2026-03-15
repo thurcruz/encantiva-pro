@@ -15,13 +15,14 @@ const playfair = Playfair_Display({
   weight: ["700", "900"],
 });
 
-export const metadata: Metadata = {
-  title: "Encantiva Pro — Plataforma para Decoradoras e Buffeteiras",
-  description: "Organize sua empresa de festas com catálogo, contratos, financeiro e muito mais. Teste grátis por 7 dias.",
+export const metadata = {
+  title: 'Encantiva Pro',
+  description: 'Plataforma para decoradoras de festas an mesa e pegue e monte',
   icons: {
-    icon: "/enc_favicon.png",
-    apple: "/enc_favicon.png",
+    icon: '/enc_pro_avatar.png',        // ← favicon
+    apple: '/enc_pro_avatar.png',       // ← ícone no iPhone
   },
+
 };
 
 export default function RootLayout({
