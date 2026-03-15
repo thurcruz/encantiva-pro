@@ -58,7 +58,7 @@ export default function CardsSuporteEComunidade() {
         <p style={secaoLabel}>Suporte</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <CardLink
-            href="https://wa.me/5511999999999"
+            href="https://wa.me/21979758341"
             icone={<IcoWA />}
             iconeBg="#f0fdf4"
             titulo="Suporte humanizado"
@@ -89,7 +89,7 @@ export default function CardsSuporteEComunidade() {
         <p style={secaoLabel}>Comunidade</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
           <CardLink
-            href="https://chat.whatsapp.com/LRqQ4Gnlw0740Zup1aPLQh"
+            href="https://chat.whatsapp.com/JlAmZ4ix3B5K42fJi2c6Vo"
             icone={<IcoWA />}
             iconeBg="#f0fdf4"
             titulo="Grupo"
