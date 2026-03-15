@@ -89,7 +89,7 @@ export default function CardsSuporteEComunidade() {
         <p style={secaoLabel}>Comunidade</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
           <CardLink
-            href="https://chat.whatsapp.com/JlAmZ4ix3B5K42fJi2c6Vo"
+            href="https://chat.whatsapp.com/HnMPm0YHTXELKpOGQCYrT7"
             icone={<IcoWA />}
             iconeBg="#f0fdf4"
             titulo="Grupo"
