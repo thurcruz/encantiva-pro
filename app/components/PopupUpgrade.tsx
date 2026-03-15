@@ -9,6 +9,7 @@ interface Props {
   onFechar: () => void
   recurso?: string
   descricao?: string
+  isFree?: boolean
 }
 
 const BENEFICIOS = [
@@ -18,7 +19,7 @@ const BENEFICIOS = [
   'Suporte prioritário',
 ]
 
-export default function PopupUpgrade({ aberto, onFechar, recurso, descricao }: Props) {
+export default function PopupUpgrade({ aberto, onFechar, recurso, descricao, isFree }: Props) {
   useEffect(() => {
     if (!aberto) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onFechar() }
@@ -50,15 +51,15 @@ export default function PopupUpgrade({ aberto, onFechar, recurso, descricao }: P
           <Zap size={24} style={{ color: '#ff33cc' }} />
         </div>
 
-        <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '26px', color: '#fff', margin: '0 0 10px 0', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
+        <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '26px', color: '#fff', margin: '0 0 10px', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
           {recurso ? `${recurso} é premium` : 'Faça upgrade para continuar'}
         </h2>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff66', margin: '0 0 28px 0', lineHeight: 1.6 }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff66', margin: '0 0 28px', lineHeight: 1.6 }}>
           {descricao ?? 'Essa funcionalidade está disponível nos planos pagos. Faça upgrade e tenha acesso completo.'}
         </p>
 
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '20px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase' as const, margin: '0 0 4px 0' }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase' as const, margin: '0 0 4px' }}>
             No plano Avançado você tem
           </p>
           {BENEFICIOS.map((b, i) => (
@@ -82,7 +83,7 @@ export default function PopupUpgrade({ aberto, onFechar, recurso, descricao }: P
             Ver todos os planos →
           </Link>
           <button onClick={onFechar} style={{ background: 'transparent', border: 'none', padding: '10px', color: '#ffffff33', fontFamily: 'Inter, sans-serif', fontSize: '13px', cursor: 'pointer' }}>
-            Continuar no trial
+            {isFree ? 'Continuar no plano grátis' : 'Continuar no trial'}
           </button>
         </div>
       </div>

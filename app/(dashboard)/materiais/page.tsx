@@ -31,7 +31,7 @@ export default async function PaginaMateriais({
   const limites = getLimites(planoId)
 
   if (!temAcesso('downloadMateriais', limites, isBeta, isAdmin)) {
-    return <ModuloBloqueado titulo="Materiais para Download" descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas." planoMinimo="iniciante" icone="🎨" />
+    return <ModuloBloqueado titulo="Materiais para Download" descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas." planoMinimo="iniciante" icone="🎨" planoAtual={planoId} />
   }
 
   const [{ data: categorias }, { data: tipos }, { data: formatos }] = await Promise.all([
