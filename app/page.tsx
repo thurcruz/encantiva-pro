@@ -40,7 +40,7 @@ export default function LandingPage() {
 
       {/* ── NAVBAR ── */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(246,246,248,0.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #e8e8ec', padding: '0 24px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Image src="/enc_logo_mono.png" width={150} height={25} alt="Encantiva Pro" />
+        <Image src="/enc_logo_mono.png" width={200} height={24} alt="Encantiva Pro" />
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link href="/login" style={{ fontSize: '13px', fontWeight: 600, color: '#6b7280', textDecoration: 'none', padding: '8px 14px' }}>
             Entrar
@@ -175,20 +175,20 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA FINAL ── */}
-      <section style={{ background: '#111827', padding: '72px 24px', textAlign: 'center' }}>
+      <section style={{ background: '#140033', padding: '72px 24px', textAlign: 'center' }}>
         <div style={{ maxWidth: '560px', margin: '0 auto' }}>
           <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#fff', margin: '0 0 12px', letterSpacing: '-1px' }}>
             Pronta para organizar
             <br />
             <span style={{ color: '#ff33cc' }}>seu negócio?</span>
           </h2>
-          <p style={{ fontSize: '15px', color: '#ffffff66', margin: '0 0 32px', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '15px', color: '#ffffff9a', margin: '0 0 32px', lineHeight: 1.6 }}>
             Comece grátis agora. Sem cartão, sem compromisso. 7 dias com acesso completo ao plano Elite.
           </p>
           <Link href="/cadastro" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#ff33cc', color: '#fff', borderRadius: '999px', padding: '16px 36px', fontSize: '16px', fontWeight: 700, textDecoration: 'none' }}>
             Criar conta grátis →
           </Link>
-          <p style={{ fontSize: '12px', color: '#ffffff33', margin: '16px 0 0' }}>
+          <p style={{ fontSize: '12px', color: '#ffffff86', margin: '16px 0 0' }}>
             Cancele quando quiser · Sem fidelidade · Suporte incluso
           </p>
         </div>
@@ -196,7 +196,7 @@ export default function LandingPage() {
 
       {/* ── FOOTER ── */}
       <footer style={{ background: '#140033', padding: '24px', textAlign: 'center' }}>
-        <p style={{ fontSize: '12px', color: '#ffffff33', margin: 0 }}>
+        <p style={{ fontSize: '12px', color: '#ffffff83', margin: 0 }}>
           © 2026 Encantiva Pro · Todos os direitos reservados
         </p>
       </footer>
