@@ -26,20 +26,37 @@ export async function proxy(request: NextRequest) {
     }
   )
 
+  // ── Atualiza sessão em TODAS as requests (mantém login persistente) ──
   const { data: { user } } = await supabase.auth.getUser()
 
-  const rotasProtegidas = ['/materiais', '/admin']
-  const acessandoRotaProtegida = rotasProtegidas.some(rota =>
-    request.nextUrl.pathname.startsWith(rota)
+  const pathname = request.nextUrl.pathname
+
+  // ── Rotas do dashboard — redireciona para login se não autenticado ──
+  const rotasDashboard = [
+    '/inicio', '/agenda', '/calculadora', '/catalogo', '/clientes',
+    '/configuracoes', '/contratos', '/financeiro', '/gerenciar-plano',
+    '/materiais', '/paineis', '/acervo', '/planos', '/admin',
+    '/cortador-de-paineis',
+  ]
+
+  const acessandoDashboard = rotasDashboard.some(rota =>
+    pathname.startsWith(rota)
   )
 
-  if (acessandoRotaProtegida && !user) {
+  if (acessandoDashboard && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (request.nextUrl.pathname.startsWith('/admin')) {
+  // ── Se já está logado e tenta acessar login/cadastro → vai pro início ──
+  const rotasAuth = ['/login', '/cadastro']
+  if (rotasAuth.includes(pathname) && user) {
+    return NextResponse.redirect(new URL('/inicio', request.url))
+  }
+
+  // ── Admin ──
+  if (pathname.startsWith('/admin')) {
     if (user?.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-      return NextResponse.redirect(new URL('/materiais', request.url))
+      return NextResponse.redirect(new URL('/inicio', request.url))
     }
   }
 
@@ -47,5 +64,23 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/materiais/:path*', '/admin/:path*', '/login'],
+  matcher: [
+    '/inicio/:path*',
+    '/agenda/:path*',
+    '/calculadora/:path*',
+    '/catalogo/:path*',
+    '/clientes/:path*',
+    '/configuracoes/:path*',
+    '/contratos/:path*',
+    '/financeiro/:path*',
+    '/gerenciar-plano/:path*',
+    '/materiais/:path*',
+    '/paineis/:path*',
+    '/acervo/:path*',
+    '/planos/:path*',
+    '/admin/:path*',
+    '/cortador-de-paineis/:path*',
+    '/login',
+    '/cadastro',
+  ],
 }
