@@ -50,6 +50,7 @@ export default function Calculadora({ acervo }: Props) {
   const [lucro, setLucro] = useState(150)
   const [custoVida, setCustoVida] = useState(0)
   const [festasKitMes, setFestasKitMes] = useState(16)
+  const [frete, setFrete] = useState(0)
   const [precoAlvo, setPrecoAlvo] = useState(0)
 
   const [kits, setKits] = useState<Kit[]>([])
@@ -80,7 +81,7 @@ export default function Calculadora({ acervo }: Props) {
     setSalvando(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const payload = { nome: nomeKit, itens, consumiveis, locacoes, multiplicador, lucro, custo_vida: custoVida, festas_kit_mes: festasKitMes }
+    const payload = { nome: nomeKit, itens, consumiveis, locacoes, multiplicador, lucro, frete, custo_vida: custoVida, festas_kit_mes: festasKitMes }
     if (editandoId) {
       await supabase.from('kits').update({ ...payload, atualizado_em: new Date().toISOString() }).eq('id', editandoId)
     } else {
@@ -108,6 +109,7 @@ export default function Calculadora({ acervo }: Props) {
     setMultiplicador(kit.multiplicador ?? 100)
     setLucro(kit.lucro)
     setCustoVida(kit.custo_vida ?? 0)
+    setFrete(kit.frete ?? 0)
     setFestasKitMes(kit.festas_kit_mes ?? 16)
     setEditandoId(kit.id)
     setNomeKit(kit.nome)
@@ -144,7 +146,7 @@ export default function Calculadora({ acervo }: Props) {
   function novaCalculadora() {
     setItens([{ id: 1, nome: '', custo: 0 }])
     setConsumiveis([{ id: 1, nome: '', custo: 0, rende: 1 }])
-    setLocacoes(20); setMultiplicador(100); setLucro(150)
+    setLocacoes(20); setMultiplicador(100); setLucro(150); setFrete(0)
     setCustoVida(0); setFestasKitMes(16); setPrecoAlvo(0)
     setEditandoId(null); setNomeKit('')
   }
@@ -161,7 +163,7 @@ export default function Calculadora({ acervo }: Props) {
   const custoAcervo = itens.reduce((acc, i) => acc + (locacoes > 0 ? i.custo / locacoes : 0), 0)
   const custoConsumiveis = consumiveis.reduce((acc, i) => acc + (i.rende > 0 ? i.custo / i.rende : 0), 0)
   const custoBase = custoAcervo + custoConsumiveis
-  const custoComExtras = custoBase * (1 + multiplicador / 100)
+  const custoComExtras = custoBase * (1 + multiplicador / 100) + frete
   const valorLucro = custoComExtras * (lucro / 100)
   const precoFinal = custoComExtras + valorLucro
 
@@ -357,42 +359,46 @@ export default function Calculadora({ acervo }: Props) {
       {/* ── PRECIFICAÇÃO ── */}
       <div style={cardStyle}>
         <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 4px 0' }}>Precificação</h2>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: '0 0 20px 0' }}>Fluxo de caixa e margem de lucro</p>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: '0 0 20px 0' }}>Configure como o preço do seu kit é calculado</p>
 
-        {/* Locações esperadas */}
+        {/* Linha 1: Locações + Frete */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
           <div>
             <label style={labelStyle}>Locações esperadas do kit</label>
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
               {[16, 20, 24].map(n => (
-                <button key={n} onClick={() => setLocacoes(n)} style={{ padding: '9px 10px', borderRadius: '10px', border: `1.5px solid ${locacoes === n ? '#ff33cc' : '#e5e5e5'}`, background: locacoes === n ? '#fff0fb' : '#fafafa', color: locacoes === n ? '#ff33cc' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                <button key={n} onClick={() => setLocacoes(n)} style={{ padding: '9px 10px', borderRadius: '10px', border: `1.5px solid ${locacoes === n ? '#ff33cc' : '#e5e5e5'}`, background: locacoes === n ? '#fff0fb' : '#fafafa', color: locacoes === n ? '#ff33cc' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
                   {n}x
                 </button>
               ))}
               <input type="number" value={locacoes || ''} onChange={e => setLocacoes(parseFloat(e.target.value) || 1)} placeholder="20" min="1"
-                style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
+                style={{ ...inputStyle, textAlign: 'center' }} />
             </div>
             {custoAcervo > 0 && (
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ff33cc', margin: '5px 0 0', fontWeight: 600 }}>
-                Acervo: R$ {custoAcervo.toFixed(2).replace('.', ',')} por festa
+                R$ {custoAcervo.toFixed(2).replace('.', ',')} de acervo por festa
               </p>
             )}
           </div>
+          <div>
+            <label style={labelStyle}>Frete por festa (R$) <span style={{ color: '#00000033', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>— opcional</span></label>
+            <input type="number" value={frete || ''} onChange={e => setFrete(parseFloat(e.target.value) || 0)} placeholder="0,00" min="0" step="0.01" style={inputStyle} />
+          </div>
         </div>
 
-        {/* % Fluxo de caixa */}
+        {/* Linha 2: Fluxo de caixa */}
         <div style={{ marginBottom: '20px' }}>
           <label style={labelStyle}>% Fluxo de caixa da empresa</label>
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044', margin: '0 0 10px 0' }}>
-            Cobre manutenção, limpeza, reposição, atendimento e custos do negócio
+            Cobre manutenção, limpeza, reposição e custos do negócio
           </p>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             {[
-              { valor: 50, label: '50%', desc: 'Em casa, poucos custos' },
-              { valor: 100, label: '100%', desc: 'Padrão recomendado' },
-              { valor: 150, label: '150%', desc: 'Loja física ou equipe' },
+              { valor: 50, label: '50%', desc: 'Em casa' },
+              { valor: 100, label: '100%', desc: 'Recomendado' },
+              { valor: 150, label: '150%', desc: 'Loja / equipe' },
             ].map(op => (
-              <button key={op.valor} onClick={() => setMultiplicador(op.valor)} style={{ flex: 1, minWidth: '90px', padding: '10px 8px', borderRadius: '12px', border: `1.5px solid ${multiplicador === op.valor ? '#ff33cc' : '#e5e5e5'}`, background: multiplicador === op.valor ? '#fff0fb' : '#fafafa', cursor: 'pointer', textAlign: 'center' }}>
+              <button key={op.valor} onClick={() => setMultiplicador(op.valor)} style={{ flex: 1, padding: '10px 8px', borderRadius: '12px', border: `1.5px solid ${multiplicador === op.valor ? '#ff33cc' : '#e5e5e5'}`, background: multiplicador === op.valor ? '#fff0fb' : '#fafafa', cursor: 'pointer', textAlign: 'center' }}>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: multiplicador === op.valor ? '#ff33cc' : '#140033', margin: '0 0 2px 0' }}>{op.label}</p>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#00000055', margin: 0 }}>{op.desc}</p>
               </button>
@@ -405,31 +411,31 @@ export default function Calculadora({ acervo }: Props) {
           )}
         </div>
 
-        {/* Preço desejado */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={labelStyle}>Preço desejado (R$)</label>
-          <input type="number" value={precoAlvo || ''} onChange={e => setPrecoAlvo(parseFloat(e.target.value) || 0)} placeholder="Ex: 100,00" min="0" step="0.01" style={{ ...inputStyle, maxWidth: '200px' }} />
-          {margemParaAlvo !== null && (
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', margin: '4px 0 0', fontWeight: 600, color: margemParaAlvo < 0 ? '#cc0000' : '#10b981' }}>
-              {margemParaAlvo < 0 ? '❌ Abaixo do custo mínimo' : `→ Equivale a ${margemParaAlvo}% de margem de lucro`}
-            </p>
-          )}
-        </div>
-
-        {/* Slider de lucro */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <label style={{ ...labelStyle, margin: 0 }}>Margem de lucro</label>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '24px', color: '#ff33cc', letterSpacing: '-0.5px', lineHeight: 1 }}>{lucro}%</span>
+        {/* Linha 3: Preço desejado + Margem lado a lado */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' }}>
+          <div>
+            <label style={labelStyle}>Preço desejado (R$)</label>
+            <input type="number" value={precoAlvo || ''} onChange={e => setPrecoAlvo(parseFloat(e.target.value) || 0)} placeholder="Ex: 100,00" min="0" step="0.01" style={inputStyle} />
+            {margemParaAlvo !== null && (
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', margin: '4px 0 0', fontWeight: 600, color: margemParaAlvo < 0 ? '#cc0000' : '#10b981' }}>
+                {margemParaAlvo < 0 ? '❌ Abaixo do custo mínimo' : `→ Equivale a ${margemParaAlvo}% de lucro`}
+              </p>
+            )}
           </div>
-          <input type="range" min={0} max={300} value={lucro} onChange={e => setLucro(Number(e.target.value))}
-            style={{ width: '100%', accentColor: '#ff33cc', height: '4px', cursor: 'pointer' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>0%</span>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: lucro < 150 ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
-              {lucro < 150 ? '⚠️ Encantiva recomenda: mínimo 150%' : '✅ Dentro do recomendado'}
-            </span>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>300%</span>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ ...labelStyle, margin: 0 }}>Margem de lucro</label>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#ff33cc', letterSpacing: '-0.5px', lineHeight: 1 }}>{lucro}%</span>
+            </div>
+            <input type="range" min={0} max={300} value={lucro} onChange={e => setLucro(Number(e.target.value))}
+              style={{ width: '100%', accentColor: '#ff33cc', height: '4px', cursor: 'pointer' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>0%</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: lucro < 150 ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
+                {lucro < 150 ? '⚠️ Mínimo recomendado: 150%' : '✅ Boa margem'}
+              </span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>300%</span>
+            </div>
           </div>
         </div>
       </div>
@@ -451,6 +457,12 @@ export default function Calculadora({ acervo }: Props) {
             <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff55' }}>Fluxo de caixa ({multiplicador}%)</span>
             <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffffcc', fontWeight: 600 }}>R$ {(custoBase * multiplicador / 100).toFixed(2).replace('.', ',')}</span>
           </div>
+          {frete > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff55' }}>Frete por festa</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffffcc', fontWeight: 600 }}>R$ {frete.toFixed(2).replace('.', ',')}</span>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #ffffff15' }}>
             <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff55' }}>Custo total por festa</span>
             <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffffcc', fontWeight: 700 }}>R$ {custoComExtras.toFixed(2).replace('.', ',')}</span>
