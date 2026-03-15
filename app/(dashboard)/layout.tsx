@@ -111,35 +111,35 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Nav */}
         <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '0 0 4px 0' }}>Geral</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '0 0 4px 0' }}>Geral</p>
           <NavItem href="/inicio" icon={<Home size={16} />} label="Início" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Pedidos</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Pedidos</p>
           <NavItem href="/agenda" icon={<CalendarDays size={16} />} label="Agenda" />
           <NavItem href="/catalogo" icon={<ShoppingBag size={16} />} label="Catálogo" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Financeiro</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Financeiro</p>
           <NavItem href="/financeiro" icon={<TrendingUp size={16} />} label="Financeiro" />
           <NavItem href="/calculadora" icon={<Calculator size={16} />} label="Calculadora" />
           {temAcervo && (
             <NavItem href="/acervo" icon={<Archive size={16} />} label="Acervo" />
           )}
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Clientes</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Clientes</p>
           <NavItem href="/clientes" icon={<Users size={16} />} label="Clientes" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Biblioteca</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Biblioteca</p>
           <NavItem href="/paineis" icon={<LayoutTemplate size={16} />} label="Painéis" />
           <NavItem href="/materiais" icon={<Package size={16} />} label="Materiais" />
           <NavItem href="/contratos" icon={<FileText size={16} />} label="Contratos" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Conta</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Conta</p>
           <NavItem href="/configuracoes" icon={<Settings size={16} />} label="Configurações" />
           <NavItem href="/gerenciar-plano" icon={<Crown size={16} />} label="Meu Plano" />
 
           {isAdmin && (
             <>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Admin</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Admin</p>
               <NavItem href="/admin" icon={<LayoutDashboard size={16} />} label="Painel Admin" />
               <NavItem href="/admin/materiais/novo" icon={<Upload size={16} />} label="Novo Material" />
               <NavItem href="/admin/materiais" icon={<Package size={16} />} label="Ver Materiais" />
@@ -147,7 +147,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           )}
         </nav>
 
-        <div style={{ padding: '16px', borderTop: '1px solid #ffffff' }}>
+        <div style={{ padding: '16px', borderTop: '1px solid #ffffff08' }}>
           <BotaoLogout />
         </div>
       </aside>
