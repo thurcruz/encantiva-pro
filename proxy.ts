@@ -47,8 +47,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // ── Se já está logado e tenta acessar login/cadastro → vai pro início ──
-  const rotasAuth = ['/login', '/cadastro']
+  // ── Se já está logado e tenta acessar login/cadastro/raiz → vai pro início ──
+  const rotasAuth = ['/login', '/cadastro', '/']
   if (rotasAuth.includes(pathname) && user) {
     return NextResponse.redirect(new URL('/inicio', request.url))
   }
@@ -65,6 +65,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
     '/inicio/:path*',
     '/agenda/:path*',
     '/calculadora/:path*',
