@@ -80,7 +80,7 @@ export default function PaginaCadastro() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <Image src="/enc_logotipo_dark.svg" width={180} height={30} alt="Encantiva Pro" style={{ marginBottom: '8px' }} />
+          <Image src="/enc_logo_mono.png" width={180} height={30} alt="Encantiva Pro" style={{ marginBottom: '8px' }} />
           <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>Plataforma para decoradoras</p>
         </div>
 

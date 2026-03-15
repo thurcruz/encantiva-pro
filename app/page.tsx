@@ -40,7 +40,7 @@ export default function LandingPage() {
 
       {/* ── NAVBAR ── */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(246,246,248,0.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #e8e8ec', padding: '0 24px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Image src="/enc_logotipo_dark.svg" width={150} height={25} alt="Encantiva Pro" />
+        <Image src="/enc_logo_mono.png" width={150} height={25} alt="Encantiva Pro" />
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link href="/login" style={{ fontSize: '13px', fontWeight: 600, color: '#6b7280', textDecoration: 'none', padding: '8px 14px' }}>
             Entrar
@@ -76,17 +76,6 @@ export default function LandingPage() {
           </Link>
         </div>
 
-        {/* Prova social */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '32px' }}>
-          <div style={{ display: 'flex' }}>
-            {['#ffb3e6','#ff80d5','#ff4dc4','#ff33cc'].map((c, i) => (
-              <div key={i} style={{ width: 28, height: 28, borderRadius: '50%', background: c, border: '2px solid #f6f6f8', marginLeft: i === 0 ? 0 : -8 }} />
-            ))}
-          </div>
-          <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>
-            <strong style={{ color: '#374151' }}>+500 decoradoras</strong> já usam
-          </p>
-        </div>
       </section>
 
       {/* ── FUNCIONALIDADES ── */}
@@ -118,7 +107,7 @@ export default function LandingPage() {
       <section style={{ background: '#fff', borderTop: '1px solid #e8e8ec', borderBottom: '1px solid #e8e8ec', padding: '72px 24px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#111827', margin: '0 0 8px', letterSpacing: '-0.5px' }}>
+            <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#140033', margin: '0 0 8px', letterSpacing: '-0.5px' }}>
               Planos simples e justos
             </h2>
             <p style={{ fontSize: '15px', color: '#9ca3af', margin: 0 }}>Cancele quando quiser. Sem fidelidade.</p>
@@ -126,7 +115,7 @@ export default function LandingPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
             {planos.map(p => (
-              <div key={p.id} style={{ background: p.destaque ? '#111827' : '#fafafa', border: `1.5px solid ${p.destaque ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '20px', padding: '28px', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <div key={p.id} style={{ background: p.destaque ? '#140033' : '#fafafa', border: `1.5px solid ${p.destaque ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '20px', padding: '28px', position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 {p.destaque && (
                   <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#ff33cc', borderRadius: '999px', padding: '4px 16px', fontSize: '11px', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap' }}>
                     Mais popular
@@ -135,7 +124,7 @@ export default function LandingPage() {
 
                 <p style={{ fontSize: '14px', fontWeight: 700, color: p.destaque ? '#fff' : '#374151', margin: '0 0 4px' }}>{p.nome}</p>
                 <div style={{ marginBottom: '20px' }}>
-                  <span style={{ fontSize: '32px', fontWeight: 900, color: p.destaque ? '#fff' : '#111827', letterSpacing: '-1px' }}>R$ {p.preco}</span>
+                  <span style={{ fontSize: '32px', fontWeight: 900, color: p.destaque ? '#fff' : '#140033', letterSpacing: '-1px' }}>R$ {p.preco}</span>
                   <span style={{ fontSize: '13px', color: p.destaque ? '#ffffff66' : '#9ca3af' }}>/mês</span>
                 </div>
 
@@ -164,7 +153,7 @@ export default function LandingPage() {
       {/* ── DEPOIMENTOS ── */}
       <section style={{ maxWidth: '960px', margin: '0 auto', padding: '72px 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#111827', margin: '0 0 8px', letterSpacing: '-0.5px' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#140033', margin: '0 0 8px', letterSpacing: '-0.5px' }}>
             O que as decoradoras dizem
           </h2>
         </div>
@@ -177,7 +166,7 @@ export default function LandingPage() {
               </div>
               <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.6, margin: '0 0 14px' }}>&ldquo;{d.texto}&rdquo;</p>
               <div>
-                <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', margin: '0 0 1px' }}>{d.nome}</p>
+                <p style={{ fontSize: '13px', fontWeight: 700, color: '#140033', margin: '0 0 1px' }}>{d.nome}</p>
                 <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>{d.cidade}</p>
               </div>
             </div>
@@ -206,7 +195,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background: '#0d0d0d', padding: '24px', textAlign: 'center' }}>
+      <footer style={{ background: '#140033', padding: '24px', textAlign: 'center' }}>
         <p style={{ fontSize: '12px', color: '#ffffff33', margin: 0 }}>
           © 2026 Encantiva Pro · Todos os direitos reservados
         </p>
