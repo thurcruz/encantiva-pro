@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import NextImage from 'next/image'
-import { Download, ImageIcon, Check, Sparkles, BookOpen, Calendar, DollarSign, Users, ArrowRight } from 'lucide-react'
+import { Download, ImageIcon, Check, BookOpen, Calendar, DollarSign, Users, ArrowRight, Lock } from 'lucide-react'
 import ModalLogin from './ModalLogin'
 import OrientacaoToggle from '../(dashboard)/componentes/OrientacaoToggle'
+
 export interface Props {
   usuarioLogado: boolean
   usuarioId: string | null
@@ -13,77 +14,120 @@ export interface Props {
 
 type Orientacao = 'paisagem' | 'retrato'
 
+interface PainelComunidade {
+  id: string
+  usuario_id: string
+  nome: string
+  descricao: string | null
+  imagem_url: string
+  pdf_url: string
+  downloads: number
+  criado_em: string
+}
+
 const FUNCIONALIDADES = [
-  { icon: BookOpen, label: 'Catálogo Digital', desc: 'Monte e compartilhe seu catálogo de produtos', cor: '#ff33cc' },
-  { icon: Calendar, label: 'Agenda de Pedidos', desc: 'Organize suas entregas e encomendas', cor: '#9900ff' },
-  { icon: DollarSign, label: 'Controle Financeiro', desc: 'Acompanhe receitas e despesas', cor: '#ff33cc' },
-  { icon: Users, label: 'Comunidade', desc: 'Painéis prontos feitos por outras artesãs', cor: '#9900ff' },
+  { icon: BookOpen,   label: 'Catálogo Digital',  desc: 'Monte e compartilhe seu catálogo',   cor: '#ff33cc' },
+  { icon: Calendar,   label: 'Agenda de Pedidos', desc: 'Organize entregas e encomendas',      cor: '#9900ff' },
+  { icon: DollarSign, label: 'Financeiro',         desc: 'Acompanhe receitas e despesas',      cor: '#ff33cc' },
+  { icon: Users,      label: 'Comunidade',         desc: 'Painéis prontos de artesãs',         cor: '#9900ff' },
 ]
+
+const card: React.CSSProperties = {
+  background: '#fff', border: '1px solid #e8e8ec',
+  borderRadius: '14px', padding: '18px', marginBottom: '12px',
+}
+const labelStyle: React.CSSProperties = {
+  display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px',
+  fontWeight: 600, color: '#9ca3af', marginBottom: '5px',
+  letterSpacing: '0.6px', textTransform: 'uppercase',
+}
+const inputStyle: React.CSSProperties = {
+  width: '100%', background: '#fafafa', border: '1px solid #e8e8ec',
+  borderRadius: '10px', padding: '10px 12px', color: '#111827',
+  fontFamily: 'Inter, sans-serif', fontSize: '13px', outline: 'none',
+  boxSizing: 'border-box',
+}
 
 export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
   const supabase = createClient()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const [imagem, setImagem] = useState<HTMLImageElement | null>(null)
-  const [imagemFile, setImagemFile] = useState<File | null>(null)
-  const [nome, setNome] = useState('')
-  const [gerando, setGerando] = useState(false)
+  const [imagem, setImagem]           = useState<HTMLImageElement | null>(null)
+  const [imagemFile, setImagemFile]   = useState<File | null>(null)
+  const [nome, setNome]               = useState('')
+  const [gerando, setGerando]         = useState(false)
   const [previewAtivo, setPreviewAtivo] = useState<number | null>(null)
-  const [fatias, setFatias] = useState<string[]>([])
-  const [modalLogin, setModalLogin] = useState(false)
-  const [logado, setLogado] = useState(usuarioLogado)
-  const [uid, setUid] = useState<string | null>(usuarioId)
-  const [pdfBaixado, setPdfBaixado] = useState(false)
-  const [orientacao, setOrientacao] = useState<Orientacao>('paisagem')
+  const [fatias, setFatias]           = useState<string[]>([])
+  const [modalLogin, setModalLogin]   = useState(false)
+  const [logado, setLogado]           = useState(usuarioLogado)
+  const [uid, setUid]                 = useState<string | null>(usuarioId)
+  const [pdfBaixado, setPdfBaixado]   = useState(false)
+  const [orientacao, setOrientacao]   = useState<Orientacao>('paisagem')
+  const [dragOver, setDragOver]       = useState(false)
+
+  // Comunidade
+  const [abaAtiva, setAbaAtiva]       = useState<'cortador' | 'comunidade'>('cortador')
+  const [paineisComunidade, setPaineisComunidade] = useState<PainelComunidade[]>([])
+  const [carregandoComunidade, setCarregandoComunidade] = useState(false)
 
   const COLS = orientacao === 'paisagem' ? 2 : 3
   const ROWS = orientacao === 'paisagem' ? 3 : 2
 
   const cortarImagem = useCallback(async (img: HTMLImageElement) => {
-    if (img.decode) {
-     try { await img.decode() } catch { }
-    }
+    if (img.decode) { try { await img.decode() } catch { } }
     const novasFatias: string[] = []
     for (let row = 0; row < ROWS; row++) {
       for (let col = 0; col < COLS; col++) {
         const canvas = document.createElement('canvas')
-        const larguraFatia = img.naturalWidth / COLS
-        const alturaFatia = img.naturalHeight / ROWS
-        canvas.width = larguraFatia
-        canvas.height = alturaFatia
+        const lf = img.naturalWidth / COLS
+        const af = img.naturalHeight / ROWS
+        canvas.width = lf; canvas.height = af
         const ctx = canvas.getContext('2d')!
-        ctx.imageSmoothingEnabled = true
-        ctx.imageSmoothingQuality = 'high'
-        ctx.drawImage(img, col * larguraFatia, row * alturaFatia, larguraFatia, alturaFatia, 0, 0, larguraFatia, alturaFatia)
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
+        ctx.drawImage(img, col * lf, row * af, lf, af, 0, 0, lf, af)
         novasFatias.push(canvas.toDataURL('image/jpeg', 0.95))
       }
     }
     setFatias(novasFatias)
   }, [COLS, ROWS])
 
-  useEffect(() => {
-    if (!imagem) return
-    cortarImagem(imagem)
-  }, [imagem, orientacao, cortarImagem])
+  useEffect(() => { if (imagem) void cortarImagem(imagem) }, [imagem, orientacao, cortarImagem])
 
-  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const carregarComunidade = useCallback(async () => {
+    setCarregandoComunidade(true)
+    const { data } = await supabase
+      .from('paineis_comunidade')
+      .select('*')
+      .order('downloads', { ascending: false })
+    if (data) setPaineisComunidade(data)
+    setCarregandoComunidade(false)
+  }, [supabase])
+
+  useEffect(() => {
+    if (abaAtiva === 'comunidade') void carregarComunidade()
+  }, [abaAtiva, carregarComunidade])
+
+  function processarArquivo(file: File) {
     setImagemFile(file)
     const reader = new FileReader()
     reader.onload = (ev) => {
       const src = ev.target?.result as string
       const img = new window.Image()
-      img.onload = () => {
-        setImagem(img)
-        setFatias([])
-        setPreviewAtivo(null)
-        setPdfBaixado(false)
-      }
-      img.onerror = () => alert('Erro ao carregar imagem. Tente outro arquivo.')
+      img.onload  = () => { setImagem(img); setFatias([]); setPreviewAtivo(null); setPdfBaixado(false) }
+      img.onerror = () => alert('Erro ao carregar imagem.')
       img.src = src
     }
     reader.readAsDataURL(file)
+  }
+
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; if (file) processarArquivo(file)
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault(); setDragOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file && file.type.startsWith('image/')) processarArquivo(file)
   }
 
   async function comprimirFatia(fatia: string): Promise<string> {
@@ -91,14 +135,11 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
       const img = new window.Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
-        const largura = orientacao === 'paisagem' ? 1240 : 827
-        const altura  = orientacao === 'paisagem' ? 825  : 1169
-        canvas.width = largura
-        canvas.height = altura
+        canvas.width  = orientacao === 'paisagem' ? 1240 : 827
+        canvas.height = orientacao === 'paisagem' ? 825  : 1169
         const ctx = canvas.getContext('2d')
         if (!ctx) { reject(new Error('Canvas não suportado')); return }
-        ctx.imageSmoothingEnabled = true
-        ctx.imageSmoothingQuality = 'high'
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
       }
@@ -110,11 +151,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
   async function aoFazerLogin() {
     setModalLogin(false)
     const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      setLogado(true)
-      setUid(user.id)
-      await gerarPDF(user.id)
-    }
+    if (user) { setLogado(true); setUid(user.id); await gerarPDF(user.id) }
   }
 
   async function handleBotaoDownload() {
@@ -128,43 +165,25 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
     setGerando(true)
     try {
       const fatiasPequenas = await Promise.all(fatias.map(comprimirFatia))
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/gerar-painel-pdf`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ fatias: fatiasPequenas, nome, orientacao }),
-        }
+        { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` }, body: JSON.stringify({ fatias: fatiasPequenas, nome, orientacao }) }
       )
-
-      if (!response.ok) throw new Error(`Erro ${response.status}: ${await response.text()}`)
+      if (!response.ok) throw new Error(`Erro ${response.status}`)
       const result = await response.json()
       if (result.error) throw new Error(result.error)
 
       const base64Limpo = result.pdf.replace(/[^A-Za-z0-9+/=]/g, '')
-      const pdfBytes = Uint8Array.from(atob(base64Limpo), c => c.charCodeAt(0))
-      const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' })
+      const pdfBlob = new Blob([Uint8Array.from(atob(base64Limpo), c => c.charCodeAt(0))], { type: 'application/pdf' })
 
       let imagemUrl = null
       if (imagemFile) {
         const { data: imgData } = await supabase.storage.from('paineis').upload(`${userId}/${Date.now()}_original.jpg`, imagemFile, { upsert: true })
-        if (imgData) {
-          const { data: urlData } = supabase.storage.from('paineis').getPublicUrl(imgData.path)
-          imagemUrl = urlData.publicUrl
-        }
+        if (imgData) { const { data: u } = supabase.storage.from('paineis').getPublicUrl(imgData.path); imagemUrl = u.publicUrl }
       }
-
-      const pdfPath = `${userId}/${Date.now()}_${nome}.pdf`
-      const { data: pdfData } = await supabase.storage.from('paineis').upload(pdfPath, pdfBlob, { upsert: true })
+      const { data: pdfData } = await supabase.storage.from('paineis').upload(`${userId}/${Date.now()}_${nome}.pdf`, pdfBlob, { upsert: true })
       let pdfUrl = null
-      if (pdfData) {
-        const { data: urlData } = supabase.storage.from('paineis').getPublicUrl(pdfData.path)
-        pdfUrl = urlData.publicUrl
-      }
+      if (pdfData) { const { data: u } = supabase.storage.from('paineis').getPublicUrl(pdfData.path); pdfUrl = u.publicUrl }
 
       await supabase.from('paineis').insert({
         usuario_id: userId, nome,
@@ -173,210 +192,278 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
       })
 
       const url = URL.createObjectURL(pdfBlob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `painel_${nome}.pdf`
-      a.click()
+      const a = document.createElement('a'); a.href = url; a.download = `painel_${nome}.pdf`; a.click()
       URL.revokeObjectURL(url)
       setPdfBaixado(true)
-
-    } catch (err) {
-      alert(`Erro ao gerar PDF: ${err}`)
-    }
+    } catch (err) { alert(`Erro ao gerar PDF: ${err}`) }
     setGerando(false)
   }
 
-  const cardStyle: React.CSSProperties = { background: '#fff', border: '1px solid #eeeeee', borderRadius: '16px', padding: '24px', marginBottom: '20px' }
-  const labelStyle: React.CSSProperties = { display: 'block', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', marginBottom: '6px', letterSpacing: '1px', textTransform: 'uppercase' }
-  const inputStyle: React.CSSProperties = { width: '100%', background: '#fff', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '12px 16px', color: '#140033', fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }
+  async function baixarDaComunidade(painel: PainelComunidade) {
+    if (!logado) { setModalLogin(true); return }
+    await supabase.from('paineis_comunidade').update({ downloads: painel.downloads + 1 }).eq('id', painel.id)
+    window.open(painel.pdf_url, '_blank')
+  }
+
   const botaoDesabilitado = gerando || !nome.trim() || !imagem
 
   return (
     <div>
-      {/* Banner Comunidade */}
-      <div className="banner-comunidade" style={{ background: 'linear-gradient(135deg, #140033, #2d0066)', borderRadius: '20px', padding: '20px 24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', boxShadow: '0 8px 32px rgba(20,0,51,0.18)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ fontSize: '32px', flexShrink: 0 }}>🖼️</div>
-          <div>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#fff', margin: '0 0 3px 0' }}>Painéis prontos na comunidade</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>Centenas de painéis feitos por artesãs — entre para baixar grátis</p>
-          </div>
-        </div>
-        {/* ✅ ALTERADO: "Ver painéis" → "Em breve" apontando para página de captura */}
-        <a href="/pagina-de-captura" className="banner-comunidade-btn" style={{ background: 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '10px', padding: '10px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', textDecoration: 'none', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 16px rgba(255,51,204,0.4)', flexShrink: 0 }}>
-          Em breve ✨
-        </a>
+      <style>{`
+        .cp-upload:hover { border-color: #ff33cc !important; background: #fff0fb !important; }
+        .cp-fatia { transition: transform .15s, box-shadow .15s; cursor: pointer; }
+        .cp-fatia:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(255,51,204,0.15); }
+      `}</style>
+
+      {/* ── Abas ── */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
+        {[
+          { key: 'cortador',  label: 'Cortador' },
+          { key: 'comunidade', label: 'Comunidade' },
+        ].map(aba => (
+          <button
+            key={aba.key}
+            onClick={() => setAbaAtiva(aba.key as 'cortador' | 'comunidade')}
+            style={{
+              flex: 1, padding: '10px 16px',
+              background: abaAtiva === aba.key ? '#ff33cc' : '#fff',
+              border: `1.5px solid ${abaAtiva === aba.key ? 'transparent' : '#e8e8ec'}`,
+              borderRadius: '999px', cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
+              color: abaAtiva === aba.key ? '#fff' : '#6b7280',
+              transition: 'all .15s',
+            }}
+          >
+            {aba.label}
+          </button>
+        ))}
       </div>
 
-      {/* Banner pós-download */}
-      {pdfBaixado && (
-        <div style={{ background: 'linear-gradient(135deg, #f0fff4, #e8f5e9)', border: '1.5px solid #bbf7d0', borderRadius: '20px', padding: '24px', marginBottom: '24px', animation: 'fadeIn 0.4s ease' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkles size={18} style={{ color: '#fff' }} />
-            </div>
-            <div>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '15px', color: '#140033', margin: 0 }}>✅ PDF baixado com sucesso!</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: 0 }}>Isso é só o começo — veja tudo que a Encantiva oferece</p>
-            </div>
-          </div>
-          <div className="pos-download-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-            {FUNCIONALIDADES.map((f, i) => (
-              <div key={i} style={{ background: '#fff', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid #e5e5e5' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${f.cor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <f.icon size={15} style={{ color: f.cor }} />
+      {/* ── ABA CORTADOR ── */}
+      {abaAtiva === 'cortador' && (
+        <>
+          {/* Banner pós-download */}
+          {pdfBaixado && (
+            <div style={{ background: '#fff', border: '1.5px solid #bbf7d0', borderRadius: '14px', padding: '20px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <div style={{ width: 34, height: 34, borderRadius: '10px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Check size={16} style={{ color: '#fff' }} />
                 </div>
                 <div>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#140033', margin: 0 }}>{f.label}</p>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000055', margin: 0 }}>{f.desc}</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>PDF baixado com sucesso!</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>Veja tudo que a Encantiva Pro oferece</p>
                 </div>
               </div>
-            ))}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+                {FUNCIONALIDADES.map((f, i) => (
+                  <div key={i} style={{ background: '#fafafa', borderRadius: '10px', padding: '10px', display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #e8e8ec' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '7px', background: `${f.cor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <f.icon size={13} style={{ color: f.cor }} />
+                    </div>
+                    <div>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', color: '#111827', margin: 0 }}>{f.label}</p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: 0 }}>{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <a href="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#ff33cc', borderRadius: '999px', padding: '12px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}>
+                Explorar tudo grátis <ArrowRight size={14} />
+              </a>
+            </div>
+          )}
+
+          {/* Orientação */}
+          <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>Orientação das folhas</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                {orientacao === 'paisagem' ? '2 colunas × 3 linhas — folha deitada' : '3 colunas × 2 linhas — folha em pé'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+                gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+                gap: '3px',
+                width: orientacao === 'paisagem' ? '60px' : '45px',
+                height: orientacao === 'paisagem' ? '45px' : '60px',
+                flexShrink: 0,
+              }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} style={{ background: '#fff0fb', border: '1.5px solid #ffd6f5', borderRadius: '3px' }} />
+                ))}
+              </div>
+              <OrientacaoToggle value={orientacao} onChange={setOrientacao} />
+            </div>
           </div>
-          <a href="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '14px', padding: '14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none', boxShadow: '0 8px 24px rgba(255,51,204,0.3)' }}>
-            Explorar tudo grátis <ArrowRight size={15} />
-          </a>
-        </div>
+
+          {/* Upload — bloco completo, embaixo da orientação */}
+          <div
+            className="cp-upload"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            style={{
+              background: dragOver ? '#fff0fb' : imagem ? '#fff0fb' : '#fafafa',
+              border: `2px dashed ${dragOver || imagem ? '#ff33cc' : '#e8e8ec'}`,
+              borderRadius: '14px', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              gap: '10px', padding: '28px 20px',
+              marginBottom: '12px',
+              transition: 'all .2s', boxSizing: 'border-box',
+            }}
+          >
+            {imagem ? (
+              <>
+                <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                  <NextImage src={imagem.src} fill style={{ objectFit: 'cover' }} alt="Preview" unoptimized />
+                  <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '1px' }}>
+                    {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ border: '1px solid rgba(255,255,255,0.6)' }} />)}
+                  </div>
+                </div>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ff33cc', fontWeight: 700, margin: 0 }}>✅ Clique para trocar</p>
+              </>
+            ) : (
+              <>
+                <ImageIcon size={28} style={{ color: '#d1d5db' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, color: '#6b7280', margin: '0 0 2px' }}>Clique ou arraste a imagem</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: 0 }}>PNG ou JPEG · mín. 3000×3000px</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          <input ref={inputRef} type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} />
+
+          {/* Nome */}
+          <div style={card}>
+            <label style={labelStyle}>Nome do painel *</label>
+            <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Painel Unicórnio" style={inputStyle} />
+          </div>
+
+          {/* Preview + Botão */}
+          {fatias.length > 0 && (
+            <div style={card}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>Preview — Grade {COLS}×{ROWS}</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>Clique em uma fatia para ampliar</p>
+                </div>
+                <span style={{ background: '#fff0fb', color: '#ff33cc', borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700 }}>6 folhas A4</span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: '6px', marginBottom: '14px' }}>
+                {fatias.map((fatia, idx) => (
+                  <div key={idx} className="cp-fatia" onClick={() => setPreviewAtivo(previewAtivo === idx ? null : idx)} style={{ position: 'relative', border: `2px solid ${previewAtivo === idx ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '10px', overflow: 'hidden' }}>
+                    <NextImage src={fatia} width={300} height={300} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${idx + 1}`} unoptimized />
+                    <div style={{ position: 'absolute', bottom: '5px', right: '5px', background: previewAtivo === idx ? '#ff33cc' : 'rgba(0,0,0,0.55)', borderRadius: '6px', padding: '2px 7px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#fff' }}>
+                      {idx + 1}/6
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {previewAtivo !== null && (
+                <div style={{ borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #ff33cc33', marginBottom: '14px' }}>
+                  <NextImage src={fatias[previewAtivo]} width={800} height={800} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${previewAtivo + 1}`} unoptimized />
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', textAlign: 'center', padding: '8px', margin: 0, borderTop: '1px solid #f3f4f6' }}>
+                    Folha {previewAtivo + 1} de 6
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={handleBotaoDownload}
+                disabled={botaoDesabilitado}
+                style={{ width: '100%', border: 'none', borderRadius: '999px', padding: '14px', background: botaoDesabilitado ? '#f3f4f6' : '#ff33cc', color: botaoDesabilitado ? '#9ca3af' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: botaoDesabilitado ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background .2s' }}
+              >
+                <Download size={15} />
+                {gerando ? 'Gerando PDF...' : !nome.trim() ? 'Dê um nome ao painel' : logado ? `Gerar PDF — ${orientacao === 'paisagem' ? 'Paisagem' : 'Retrato'}` : 'Entre para baixar o PDF'}
+              </button>
+
+              {!logado && (
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', textAlign: 'center', margin: '8px 0 0' }}>
+                  É grátis — conta em menos de 1 minuto ✨
+                </p>
+              )}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Como funciona */}
-      <div style={{ background: 'linear-gradient(135deg, #fff5fd, #f5f0ff)', border: '1px solid #ff33cc22', borderRadius: '16px', padding: '20px 24px', marginBottom: '24px', display: 'flex', gap: '20px', alignItems: 'center' }}>
-        <div style={{ fontSize: '36px', flexShrink: 0 }}>🎨</div>
+      {/* ── ABA COMUNIDADE ── */}
+      {abaAtiva === 'comunidade' && (
         <div>
-          <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '16px', color: '#140033', margin: '0 0 4px 0' }}>Como funciona</h2>
-          {['1. Escolha a orientação (paisagem ou retrato)', '2. Faça upload da imagem (mínimo 3000×3000px)', '3. Dê um nome ao painel', '4. Veja o preview e baixe — conta grátis em 1 minuto!'].map((item, i) => (
-            <p key={i} style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9900ff', margin: '2px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Check size={12} style={{ flexShrink: 0 }} /> {item}
-            </p>
-          ))}
-        </div>
-      </div>
-
-      {/* Toggle de orientação */}
-      <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 2px 0' }}>📐 Orientação das folhas</p>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: 0 }}>
-            {orientacao === 'paisagem' ? 'Paisagem — 2 colunas × 3 linhas — folha deitada' : 'Retrato — 3 colunas × 2 linhas — folha em pé'}
-          </p>
-        </div>
-        <OrientacaoToggle value={orientacao} onChange={setOrientacao} />
-      </div>
-
-      {/* Upload */}
-      <div className="upload-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-        <div style={{ ...cardStyle, marginBottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', background: 'linear-gradient(135deg, #fff5fd, #f5f0ff)', border: '1px solid #ff33cc22' }}>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#00000055', letterSpacing: '1px', textTransform: 'uppercase', margin: 0 }}>Exemplo</p>
-          <div style={{ position: 'relative', width: orientacao === 'paisagem' ? '120px' : '80px', height: orientacao === 'paisagem' ? '80px' : '120px' }}>
-            <svg viewBox="0 0 120 80" width={orientacao === 'paisagem' ? '120' : '80'} height={orientacao === 'paisagem' ? '80' : '120'}
-              style={{ transform: orientacao === 'retrato' ? 'rotate(90deg)' : 'none' }}>
-              <defs><linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ff33cc" /><stop offset="100%" stopColor="#9900ff" /></linearGradient></defs>
-              <circle cx="60" cy="40" r="38" fill="url(#grad2)" />
-            </svg>
-            <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '1px' }}>
-              {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ border: '1px dashed rgba(255,255,255,0.5)', borderRadius: '2px' }} />)}
-            </div>
-          </div>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9900ff', fontWeight: 600, margin: 0, textAlign: 'center' }}>Grade {COLS}×{ROWS} — 6 folhas A4</p>
-        </div>
-
-        <div onClick={() => inputRef.current?.click()} style={{ ...cardStyle, marginBottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', minHeight: '200px', border: `2px dashed ${imagem ? '#ff33cc55' : '#e5e5e5'}`, background: imagem ? '#fff5fd' : '#fafafa', transition: 'all 0.2s' }}>
-          {imagem ? (
-            <>
-              <div style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '8px', overflow: 'hidden' }}>
-                <NextImage src={imagem.src} fill style={{ objectFit: 'cover' }} alt="Imagem selecionada" unoptimized />
-                <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '1px' }}>
-                  {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ border: '1px solid rgba(255,255,255,0.6)' }} />)}
-                </div>
-              </div>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ff33cc', fontWeight: 600, margin: 0 }}>✅ Clique para trocar</p>
-            </>
-          ) : (
-            <>
-              <ImageIcon size={32} style={{ color: '#00000022' }} />
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000044', margin: 0, textAlign: 'center' }}>Clique para fazer upload</p>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Dica */}
-      <div style={{ background: '#f5f0ff', border: '1px solid #9900ff22', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ fontSize: '18px' }}>💡</span>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9900ff', margin: 0 }}>
-          Use imagens <strong>PNG ou JPEG</strong> de no mínimo <strong>3000×3000px</strong> para melhor qualidade.
-        </p>
-      </div>
-
-      <input ref={inputRef} type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} />
-
-      {/* Nome */}
-      <div style={cardStyle}>
-        <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 20px 0' }}>⚙️ Configurar painel</h2>
-        <div>
-          <label style={labelStyle}>Nome do painel</label>
-          <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Painel Unicórnio" style={inputStyle} />
-        </div>
-      </div>
-
-      {/* Preview + Download */}
-      {fatias.length > 0 && (
-        <div style={cardStyle}>
-          <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#140033', margin: '0 0 8px 0' }}>🔍 Preview — Grade {COLS}×{ROWS}</h2>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 16px 0' }}>Clique em uma fatia para ampliar</p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: '4px', marginBottom: '16px' }}>
-            {fatias.map((fatia, idx) => (
-              <div key={idx} onClick={() => setPreviewAtivo(previewAtivo === idx ? null : idx)} style={{ position: 'relative', cursor: 'pointer', border: `2px solid ${previewAtivo === idx ? '#ff33cc' : 'transparent'}`, borderRadius: '8px', overflow: 'hidden' }}>
-                <NextImage src={fatia} width={300} height={300} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${idx + 1}`} unoptimized />
-                <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', borderRadius: '4px', padding: '2px 6px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#fff' }}>
-                  {idx + 1}/6
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {previewAtivo !== null && (
-            <div style={{ marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ff33cc33' }}>
-              <NextImage src={fatias[previewAtivo]} width={800} height={800} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${previewAtivo + 1} ampliada`} unoptimized />
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', textAlign: 'center', padding: '8px', margin: 0 }}>Folha {previewAtivo + 1} de 6</p>
-            </div>
-          )}
-
-          <button onClick={handleBotaoDownload} disabled={botaoDesabilitado} style={{
-            width: '100%',
-            background: botaoDesabilitado ? '#e5e5e5' : 'linear-gradient(135deg, #ff33cc, #9900ff)',
-            border: 'none', borderRadius: '14px', padding: '16px',
-            color: botaoDesabilitado ? '#00000033' : '#fff',
-            fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
-            cursor: botaoDesabilitado ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            boxShadow: botaoDesabilitado ? 'none' : '0 8px 32px rgba(255,51,204,0.3)',
-            transition: 'all 0.2s',
-          }}>
-            <Download size={16} />
-            {gerando ? 'Gerando PDF...' : !nome.trim() ? 'Dê um nome ao painel' : logado ? `Gerar PDF — ${orientacao === 'paisagem' ? '🖼️ Paisagem' : '📄 Retrato'}` : '🔓 Entre para baixar o PDF'}
-          </button>
-
           {!logado && (
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000044', textAlign: 'center', margin: '10px 0 0 0' }}>
-              É grátis — cria conta em menos de 1 minuto ✨
-            </p>
+            <div style={{ background: '#fff0fb', border: '1px solid #ffd6f5', borderRadius: '14px', padding: '16px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: 40, height: 40, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Lock size={18} style={{ color: '#fff' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>
+                  Crie uma conta grátis para baixar
+                </p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>
+                  Acesso gratuito a painéis da comunidade com conta Encantiva.
+                </p>
+              </div>
+              <button
+                onClick={() => setModalLogin(true)}
+                style={{ background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '8px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', flexShrink: 0 }}
+              >
+                Criar conta
+              </button>
+            </div>
+          )}
+
+          {carregandoComunidade ? (
+            <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af' }}>
+              Carregando painéis...
+            </div>
+          ) : paineisComunidade.length === 0 ? (
+            <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', textAlign: 'center', padding: '60px 24px' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum painel na comunidade ainda</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Seja a primeira a compartilhar pelo dashboard!</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+              {paineisComunidade.map(painel => (
+                <div key={painel.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden' }}>
+                  <div style={{ position: 'relative', aspectRatio: '1', background: '#f9fafb' }}>
+                    <NextImage src={painel.imagem_url} fill style={{ objectFit: 'cover' }} alt={painel.nome} unoptimized />
+                    <div style={{ position: 'absolute', top: '8px', left: '8px', background: painel.usuario_id === 'encantiva' ? '#ff33cc' : 'rgba(0,0,0,0.55)', borderRadius: '999px', padding: '3px 9px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#fff' }}>
+                      {painel.usuario_id === 'encantiva' ? 'Encantiva' : 'Comunidade'}
+                    </div>
+                  </div>
+                  <div style={{ padding: '12px 14px' }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>{painel.nome}</p>
+                    {painel.descricao && (
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 10px' }}>{painel.descricao}</p>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af' }}>{painel.downloads} downloads</span>
+                      <button
+                        onClick={() => baixarDaComunidade(painel)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: logado ? '#ff33cc' : '#f3f4f6', border: 'none', borderRadius: '999px', padding: '6px 12px', color: logado ? '#fff' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}
+                      >
+                        {logado ? <Download size={11} /> : <Lock size={11} />}
+                        {logado ? 'Baixar PDF' : 'Entrar'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
 
       {modalLogin && <ModalLogin onFechar={() => setModalLogin(false)} onSucesso={aoFazerLogin} />}
-
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 480px) {
-          .banner-comunidade { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
-          .banner-comunidade-btn { width: 100% !important; justify-content: center !important; }
-          .pos-download-grid { grid-template-columns: 1fr !important; }
-          .upload-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </div>
   )
 }

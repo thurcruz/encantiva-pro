@@ -36,28 +36,32 @@ interface Props {
 
 type Orientacao = 'paisagem' | 'retrato'
 
-// ── Ícones SVG inline ─────────────────────────────────────
-const IconUpload  = () => <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 14V4M7 8l4-4 4 4"/><path d="M3 16v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg>
+const IconUpload = () => (
+  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 14V4M7 8l4-4 4 4"/>
+    <path d="M3 16v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/>
+  </svg>
+)
 
 export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAssinante }: Props) {
   const supabase = createClient()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const [imagem, setImagem] = useState<HTMLImageElement | null>(null)
-  const [imagemFile, setImagemFile] = useState<File | null>(null)
-  const [nome, setNome] = useState('')
-  const [descricao, setDescricao] = useState('')
-  const [gerando, setGerando] = useState(false)
-  const [paineis, setPaineis] = useState<Painel[]>(paineisSalvos)
+  const [imagem, setImagem]           = useState<HTMLImageElement | null>(null)
+  const [imagemFile, setImagemFile]   = useState<File | null>(null)
+  const [nome, setNome]               = useState('')
+  const [descricao, setDescricao]     = useState('')
+  const [gerando, setGerando]         = useState(false)
+  const [paineis, setPaineis]         = useState<Painel[]>(paineisSalvos)
   const [previewAtivo, setPreviewAtivo] = useState<number | null>(null)
-  const [fatias, setFatias] = useState<string[]>([])
-  const [abaAtiva, setAbaAtiva] = useState<'meus' | 'comunidade'>('meus')
+  const [fatias, setFatias]           = useState<string[]>([])
+  const [abaAtiva, setAbaAtiva]       = useState<'meus' | 'comunidade'>('meus')
   const [paineisComunidade, setPaineisComunidade] = useState<PainelComunidade[]>([])
   const [carregandoComunidade, setCarregandoComunidade] = useState(false)
   const [modalUpgrade, setModalUpgrade] = useState(false)
-  const [publicando, setPublicando] = useState<string | null>(null)
-  const [orientacao, setOrientacao] = useState<Orientacao>('paisagem')
-  const [dragOver, setDragOver] = useState(false)
+  const [publicando, setPublicando]   = useState<string | null>(null)
+  const [orientacao, setOrientacao]   = useState<Orientacao>('paisagem')
+  const [dragOver, setDragOver]       = useState(false)
 
   const COLS = orientacao === 'paisagem' ? 2 : 3
   const ROWS = orientacao === 'paisagem' ? 3 : 2
@@ -68,8 +72,8 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       for (let col = 0; col < COLS; col++) {
         const canvas = document.createElement('canvas')
         const larguraFatia = img.naturalWidth / COLS
-        const alturaFatia = img.naturalHeight / ROWS
-        canvas.width = larguraFatia
+        const alturaFatia  = img.naturalHeight / ROWS
+        canvas.width  = larguraFatia
         canvas.height = alturaFatia
         const ctx = canvas.getContext('2d')!
         ctx.imageSmoothingEnabled = true
@@ -88,7 +92,10 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
 
   const carregarComunidade = useCallback(async () => {
     setCarregandoComunidade(true)
-    const { data } = await supabase.from('paineis_comunidade').select('*').order('downloads', { ascending: false })
+    const { data } = await supabase
+      .from('paineis_comunidade')
+      .select('*')
+      .order('downloads', { ascending: false })
     if (data) setPaineisComunidade(data)
     setCarregandoComunidade(false)
   }, [supabase])
@@ -103,7 +110,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
     reader.onload = (ev) => {
       const src = ev.target?.result as string
       const img = new window.Image()
-      img.onload = () => { setImagem(img); setFatias([]); setPreviewAtivo(null) }
+      img.onload  = () => { setImagem(img); setFatias([]); setPreviewAtivo(null) }
       img.onerror = () => alert('Erro ao carregar imagem. Tente outro arquivo.')
       img.src = src
     }
@@ -127,10 +134,8 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       const img = new window.Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
-        const largura = orientacao === 'paisagem' ? 1240 : 827
-        const altura  = orientacao === 'paisagem' ? 825  : 1169
-        canvas.width = largura
-        canvas.height = altura
+        canvas.width  = orientacao === 'paisagem' ? 1240 : 827
+        canvas.height = orientacao === 'paisagem' ? 825  : 1169
         const ctx = canvas.getContext('2d')!
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
@@ -149,14 +154,19 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       const fatiasPequenas = await Promise.all(fatias.map(comprimirFatia))
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/gerar-painel-pdf`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` }, body: JSON.stringify({ fatias: fatiasPequenas, nome, orientacao }) }
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({ fatias: fatiasPequenas, nome, orientacao }),
+        }
       )
       if (!response.ok) throw new Error(`Erro ${response.status}: ${await response.text()}`)
       const result = await response.json()
       if (result.error) throw new Error(result.error)
+
       const base64Limpo = result.pdf.replace(/[^A-Za-z0-9+/=]/g, '')
-      const pdfBytes = Uint8Array.from(atob(base64Limpo), c => c.charCodeAt(0))
-      const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' })
+      const pdfBytes    = Uint8Array.from(atob(base64Limpo), c => c.charCodeAt(0))
+      const pdfBlob     = new Blob([pdfBytes], { type: 'application/pdf' })
 
       let imagemUrl = null
       if (imagemFile) {
@@ -226,6 +236,10 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
     fontWeight: 600, color: '#9ca3af', marginBottom: '5px',
     letterSpacing: '0.6px', textTransform: 'uppercase',
   }
+  const card: React.CSSProperties = {
+    background: '#fff', border: '1px solid #e8e8ec',
+    borderRadius: '14px', padding: '18px', marginBottom: '12px',
+  }
 
   return (
     <div>
@@ -239,13 +253,21 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       {/* ── Abas ── */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
         {[
-          { key: 'meus', label: 'Minha Biblioteca' },
+          { key: 'meus',      label: 'Minha Biblioteca' },
           { key: 'comunidade', label: 'Comunidade' },
         ].map(aba => (
           <button
             key={aba.key}
             onClick={() => setAbaAtiva(aba.key as 'meus' | 'comunidade')}
-            style={{ flex: 1, padding: '10px 16px', background: abaAtiva === aba.key ? '#ff33cc' : '#fff', border: `1.5px solid ${abaAtiva === aba.key ? 'transparent' : '#e8e8ec'}`, borderRadius: '999px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: abaAtiva === aba.key ? '#fff' : '#6b7280', transition: 'all .15s' }}
+            style={{
+              flex: 1, padding: '10px 16px',
+              background: abaAtiva === aba.key ? '#ff33cc' : '#fff',
+              border: `1.5px solid ${abaAtiva === aba.key ? 'transparent' : '#e8e8ec'}`,
+              borderRadius: '999px', cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
+              color: abaAtiva === aba.key ? '#fff' : '#6b7280',
+              transition: 'all .15s',
+            }}
           >
             {aba.label}
             {aba.key === 'comunidade' && !isAssinante && (
@@ -255,69 +277,87 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
         ))}
       </div>
 
-      {/* ════ ABA MINHA BIBLIOTECA ════ */}
+      {/* ── ABA MEUS ── */}
       {abaAtiva === 'meus' && (
         <>
-          {/* ── Orientação + Upload em linha ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+          {/* Orientação */}
+          <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>
+                Orientação das folhas
+              </p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                {orientacao === 'paisagem' ? '2 colunas × 3 linhas — folha deitada' : '3 colunas × 2 linhas — folha em pé'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {/* Mini-preview da grade */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+                gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+                gap: '3px',
+                width: orientacao === 'paisagem' ? '60px' : '45px',
+                height: orientacao === 'paisagem' ? '45px' : '60px',
+                flexShrink: 0,
+              }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} style={{ background: '#fff0fb', border: '1.5px solid #ffd6f5', borderRadius: '3px' }} />
+                ))}
+              </div>
+              <OrientacaoToggle value={orientacao} onChange={setOrientacao} />
+            </div>
+          </div>
 
-            {/* Orientação */}
-            <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
-              <div>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>Orientação das folhas</p>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
-                  {orientacao === 'paisagem' ? '2 colunas × 3 linhas — folha deitada' : '3 colunas × 2 linhas — folha em pé'}
+          {/* Upload — agora em bloco separado, 100% de largura */}
+          <div
+            className="painel-upload-zone"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            style={{
+              background: dragOver ? '#fff0fb' : imagem ? '#fff0fb' : '#fafafa',
+              border: `2px dashed ${dragOver || imagem ? '#ff33cc' : '#e8e8ec'}`,
+              borderRadius: '14px', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              gap: '10px', padding: '28px 20px',
+              marginBottom: '12px',
+              transition: 'all .2s', boxSizing: 'border-box',
+            }}
+          >
+            {imagem ? (
+              <>
+                <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                  <NextImage src={imagem.src} fill style={{ objectFit: 'cover' }} alt="Imagem selecionada" unoptimized />
+                  <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '1px' }}>
+                    {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ border: '1px solid rgba(255,255,255,0.6)' }} />)}
+                  </div>
+                </div>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ff33cc', fontWeight: 700, margin: 0 }}>
+                  ✅ Clique para trocar
                 </p>
-              </div>
-
-              {/* Grade visual */}
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '3px', width: orientacao === 'paisagem' ? '60px' : '45px', height: orientacao === 'paisagem' ? '45px' : '60px', flexShrink: 0 }}>
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} style={{ background: '#fff0fb', border: '1.5px solid #ffd6f5', borderRadius: '3px' }} />
-                  ))}
+              </>
+            ) : (
+              <>
+                <span style={{ color: '#d1d5db' }}><IconUpload /></span>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, color: '#6b7280', margin: '0 0 2px' }}>
+                    Clique ou arraste a imagem
+                  </p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: 0 }}>
+                    PNG ou JPEG · mín. 3000×3000px
+                  </p>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <OrientacaoToggle value={orientacao} onChange={setOrientacao} />
-                </div>
-              </div>
-            </div>
-
-            {/* Upload */}
-            <div
-              className="painel-upload-zone"
-              onClick={() => inputRef.current?.click()}
-              onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-              style={{ background: dragOver ? '#fff0fb' : imagem ? '#fff0fb' : '#fafafa', border: `2px dashed ${dragOver || imagem ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '14px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '20px', minHeight: '140px', transition: 'all .2s' }}
-            >
-              {imagem ? (
-                <>
-                  <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
-                    <NextImage src={imagem.src} fill style={{ objectFit: 'cover' }} alt="Imagem selecionada" unoptimized />
-                    <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '1px' }}>
-                      {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ border: '1px solid rgba(255,255,255,0.6)' }} />)}
-                    </div>
-                  </div>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ff33cc', fontWeight: 700, margin: 0 }}>Clique para trocar</p>
-                </>
-              ) : (
-                <>
-                  <span style={{ color: '#d1d5db' }}><IconUpload /></span>
-                  <div style={{ textAlign: 'center' }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, color: '#6b7280', margin: '0 0 2px' }}>Clique ou arraste</p>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: 0 }}>PNG ou JPEG · mín. 3000×3000px</p>
-                  </div>
-                </>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
           <input ref={inputRef} type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} />
 
-          {/* ── Nome + Descrição ── */}
-          <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '18px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Nome + Descrição */}
+          <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
               <label style={labelStyle}>Nome do painel *</label>
               <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Painel Unicórnio" style={inputStyle} />
@@ -328,26 +368,26 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
             </div>
           </div>
 
-          {/* ── Preview das fatias ── */}
+          {/* Preview das fatias */}
           {fatias.length > 0 && (
-            <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '18px', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={card}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
                 <div>
                   <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>
                     Preview — Grade {COLS}×{ROWS}
                   </p>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>Clique em uma fatia para ampliar</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                    Clique em uma fatia para ampliar
+                  </p>
                 </div>
                 <span style={{ background: '#fff0fb', color: '#ff33cc', borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700 }}>
                   6 folhas A4
                 </span>
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: '6px', marginBottom: previewAtivo !== null ? '10px' : '0' }}>
                 {fatias.map((fatia, idx) => (
                   <div
-                    key={idx}
-                    className="painel-fatia"
+                    key={idx} className="painel-fatia"
                     onClick={() => setPreviewAtivo(previewAtivo === idx ? null : idx)}
                     style={{ position: 'relative', cursor: 'pointer', border: `2px solid ${previewAtivo === idx ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '10px', overflow: 'hidden' }}
                   >
@@ -358,7 +398,6 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                   </div>
                 ))}
               </div>
-
               {previewAtivo !== null && (
                 <div style={{ borderRadius: '10px', overflow: 'hidden', border: '1px solid #e8e8ec' }}>
                   <NextImage src={fatias[previewAtivo]} width={800} height={800} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${previewAtivo + 1} ampliada`} unoptimized />
@@ -370,25 +409,31 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
             </div>
           )}
 
-          {/* ── Botão gerar PDF ── */}
+          {/* Botão gerar PDF */}
           <button
             onClick={gerarPDF}
             disabled={gerando || !nome.trim() || fatias.length === 0}
             style={{
               width: '100%', border: 'none', borderRadius: '999px', padding: '14px',
               background: gerando || !nome.trim() || fatias.length === 0 ? '#f3f4f6' : '#ff33cc',
-              color: gerando || !nome.trim() || fatias.length === 0 ? '#9ca3af' : '#fff',
+              color:      gerando || !nome.trim() || fatias.length === 0 ? '#9ca3af' : '#fff',
               fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px',
               cursor: gerando || !nome.trim() || fatias.length === 0 ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              marginBottom: '20px', transition: 'background .2s',
+              marginBottom: '24px', transition: 'background .2s',
             }}
           >
             <Download size={15} />
-            {gerando ? 'Gerando PDF...' : fatias.length === 0 ? 'Envie uma imagem primeiro' : !nome.trim() ? 'Dê um nome ao painel' : `Gerar PDF — ${orientacao === 'paisagem' ? 'Paisagem' : 'Retrato'}`}
+            {gerando
+              ? 'Gerando PDF...'
+              : fatias.length === 0
+                ? 'Envie uma imagem primeiro'
+                : !nome.trim()
+                  ? 'Dê um nome ao painel'
+                  : `Gerar PDF — ${orientacao === 'paisagem' ? 'Paisagem' : 'Retrato'}`}
           </button>
 
-          {/* ── Histórico ── */}
+          {/* Histórico */}
           {paineis.length > 0 && (
             <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden' }}>
               <div style={{ padding: '16px 18px', borderBottom: '1px solid #f3f4f6' }}>
@@ -399,8 +444,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {paineis.map((painel, idx) => (
                   <div
-                    key={painel.id}
-                    className="painel-kit-card"
+                    key={painel.id} className="painel-kit-card"
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', gap: '12px', borderBottom: idx < paineis.length - 1 ? '1px solid #f3f4f6' : 'none', transition: 'border-color .15s' }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
@@ -414,7 +458,9 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                         </div>
                       )}
                       <div style={{ minWidth: 0 }}>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{painel.nome}</p>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {painel.nome}
+                        </p>
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                           <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af' }}>
                             {new Date(painel.criado_em).toLocaleDateString('pt-BR')}
@@ -425,7 +471,9 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                             </span>
                           )}
                           {painel.publicado_comunidade && (
-                            <span style={{ background: '#dcfce7', color: '#16a34a', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '999px' }}>Comunidade</span>
+                            <span style={{ background: '#dcfce7', color: '#16a34a', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '999px' }}>
+                              Comunidade
+                            </span>
                           )}
                         </div>
                       </div>
@@ -453,7 +501,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
         </>
       )}
 
-      {/* ════ ABA COMUNIDADE ════ */}
+      {/* ── ABA COMUNIDADE ── */}
       {abaAtiva === 'comunidade' && (
         <div>
           {!isAssinante && (
@@ -472,11 +520,13 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
           )}
 
           {carregandoComunidade ? (
-            <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af' }}>Carregando painéis...</div>
+            <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af' }}>
+              Carregando painéis...
+            </div>
           ) : paineisComunidade.length === 0 ? (
             <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', textAlign: 'center', padding: '60px 24px' }}>
               <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum painel na comunidade ainda</p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Seja o primeiro a compartilhar!</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Seja a primeira a compartilhar!</p>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
@@ -490,7 +540,9 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                   </div>
                   <div style={{ padding: '12px 14px' }}>
                     <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>{painel.nome}</p>
-                    {painel.descricao && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 10px' }}>{painel.descricao}</p>}
+                    {painel.descricao && (
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 10px' }}>{painel.descricao}</p>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af' }}>{painel.downloads} downloads</span>
                       <button
@@ -511,7 +563,10 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
 
       {/* ── Modal Upgrade ── */}
       {modalUpgrade && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={e => e.target === e.currentTarget && setModalUpgrade(false)}>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          onClick={e => e.target === e.currentTarget && setModalUpgrade(false)}
+        >
           <div style={{ background: '#fff', borderRadius: '24px 24px 0 0', padding: '28px 24px 36px', maxWidth: '480px', width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '16px', color: '#111827', margin: 0 }}>Acesse a Comunidade</p>
