@@ -1,5 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getPlanoId, getLimites } from '@/lib/planos'
+
+// Limites de pedidos por plano
+const LIMITES_PEDIDOS: Record<string, number | 'ilimitado'> = {
+  free:      0,
+  trial:     5,
+  iniciante: 'ilimitado',
+  avancado:  'ilimitado',
+  elite:     'ilimitado',
+  admin:     'ilimitado',
+}
 
 export async function POST(request: Request) {
   try {
@@ -9,6 +20,52 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+
+    // ── Verificar limite de pedidos do plano ──────────────
+    const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
+    if (!isAdmin) {
+      const { data: assinatura } = await supabase
+        .from('assinaturas')
+        .select('status, plano, trial_expira_em, is_beta')
+        .eq('usuario_id', user.id)
+        .single()
+
+      const isBeta = assinatura?.is_beta === true
+      const planoId = getPlanoId(
+        assinatura?.status ?? null,
+        assinatura?.plano ?? null,
+        assinatura?.trial_expira_em ?? null,
+        isAdmin,
+      )
+
+      if (!isBeta) {
+        const limite = LIMITES_PEDIDOS[planoId] ?? 0
+
+        if (limite === 0) {
+          return NextResponse.json(
+            { error: 'limite_atingido', planoMinimo: 'iniciante' },
+            { status: 403 }
+          )
+        }
+
+        if (limite !== 'ilimitado') {
+          // Conta pedidos existentes
+          const { count } = await supabase
+            .from('pedidos')
+            .select('id', { count: 'exact', head: true })
+            .eq('usuario_id', user.id)
+
+          if ((count ?? 0) >= limite) {
+            return NextResponse.json(
+              { error: 'limite_atingido', limite, planoMinimo: 'iniciante' },
+              { status: 403 }
+            )
+          }
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────
 
     const body = await request.json()
     const { nome_cliente, data_evento, valor_total, status, tema_id, kit_id, forma_pagamento, observacoes } = body
@@ -20,7 +77,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from('pedidos')
       .insert({
-        usuario_id: user.id,          // sempre da sessão, nunca do body
+        usuario_id: user.id,
         nome_cliente: nome_cliente.trim(),
         data_evento,
         valor_total: Number(valor_total),

@@ -18,6 +18,8 @@ const PLANOS: Record<string, { nome: string; valor: number; descricao: string }>
   elite:     { nome: 'Encantiva Pro — Elite',      valor: 54.90, descricao: 'Plano Elite — acesso mensal'     },
 }
 
+const URL_SUCESSO = 'https://encantivapro.com.br/pagamento/sucesso'
+
 async function buscarOuCriarCliente(email: string, nome: string, cpfCnpj: string): Promise<string> {
   const { key, url } = getAsaasConfig()
 
@@ -90,6 +92,7 @@ export async function POST(req: NextRequest) {
     proximoVencimento.setDate(proximoVencimento.getDate() + 1)
     const nextDueDate = proximoVencimento.toISOString().split('T')[0]
 
+    // Cria a assinatura com callback de sucesso
     const subRes = await fetch(`${url}/subscriptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
@@ -101,6 +104,10 @@ export async function POST(req: NextRequest) {
         cycle:             'MONTHLY',
         description:       config.descricao,
         externalReference: `${user.id}::${plano}`,
+        callback: {
+          successUrl:   URL_SUCESSO,
+          autoRedirect: true,
+        },
       }),
     })
 
@@ -116,6 +123,7 @@ export async function POST(req: NextRequest) {
       atualizado_em:         new Date().toISOString(),
     }, { onConflict: 'usuario_id' })
 
+    // Busca a primeira cobrança gerada pela assinatura para obter o invoiceUrl
     const cobrancasRes = await fetch(`${url}/payments?subscription=${sub.id}`, {
       headers: { accept: 'application/json', access_token: key },
     })
