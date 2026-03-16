@@ -49,43 +49,28 @@ export default async function PaginaCortadorPublico() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Se logado → vai para /inicio, senão → /cadastro
+  // Sempre /cadastro para quem ainda não entrou no dashboard
   const ctaHref = user ? '/inicio' : '/cadastro'
-  const ctaLabel = user ? 'Abrir dashboard →' : 'Começar teste grátis →'
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
 
-      {/* Header */}
+      {/* Header — sem CTA para não parecer que o cortador é pago */}
       <div style={{
         borderBottom: '1px solid #eeeeee', padding: '16px 20px',
-        backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: '#fff',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
+          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: '#ff33cc' }} />
           <div>
             <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#140033', letterSpacing: '-0.5px', margin: 0 }}>
               Cortador de Painéis
             </h1>
             <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '13px', margin: 0 }}>
-              Transforme sua imagem em 6 folhas A4 prontas para imprimir
+              Transforme sua imagem em 6 folhas A4 prontas para imprimir — grátis ✨
             </p>
           </div>
         </div>
-
-        {/* CTA no header */}
-        <a
-          href={ctaHref}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-            borderRadius: '999px', padding: '9px 18px',
-            color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px',
-            textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
-          }}
-        >
-          {ctaLabel}
-        </a>
       </div>
 
       {/* Cortador */}
@@ -111,71 +96,71 @@ export default async function PaginaCortadorPublico() {
             </p>
           </div>
 
+          {/* Lista de módulos */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px' }}>
             {MODULOS.map((m, i) => (
               <div key={i} style={{
                 display: 'flex', alignItems: 'center', gap: '16px',
-                background: m.destaque ? 'linear-gradient(135deg, #fff5fd, #f5f0ff)' : '#fafafa',
-                border: `1px solid ${m.destaque ? '#ff33cc33' : '#eeeeee'}`,
+                background: m.destaque ? '#fff5fd' : '#fafafa',
+                border: `1px solid ${m.destaque ? '#ffd6f5' : '#eeeeee'}`,
                 borderRadius: '14px', padding: '16px 20px',
               }}>
                 <div style={{
                   width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
-                  background: m.destaque ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#fff',
+                  background: m.destaque ? '#ff33cc' : '#fff',
                   border: m.destaque ? 'none' : '1px solid #e5e5e5',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: m.destaque ? '0 4px 12px rgba(255,51,204,0.3)' : 'none',
                 }}>
                   <m.icon size={20} style={{ color: m.destaque ? '#fff' : '#9900ff' }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 4px 0' }}>{m.titulo}</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#140033', margin: '0 0 4px 0' }}>
+                    {m.titulo}
+                  </p>
                   <span style={{
                     display: 'inline-block',
-                    background: m.destaque ? 'linear-gradient(135deg, #ff33cc, #9900ff)' : '#e8f5e9',
+                    background: m.destaque ? '#ff33cc' : '#e8f5e9',
                     color: m.destaque ? '#fff' : '#2e7d32',
                     fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700,
                     padding: '2px 8px', borderRadius: '20px', marginBottom: '4px',
                   }}>
                     {m.tag}
                   </span>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: 0 }}>{m.desc}</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: 0 }}>
+                    {m.desc}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* CTA principal — adaptado ao estado de login */}
+          {/* CTA — sempre "Começar teste grátis" */}
           <div style={{
-            background: 'linear-gradient(135deg, #140033, #2d0066)',
+            background: '#140033',
             borderRadius: '20px', padding: '28px 24px',
             textAlign: 'center',
           }}>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#fff', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
-              {user ? 'Continue no dashboard 🎀' : '7 dias grátis — sem cartão 🎀'}
+              7 dias grátis — sem cartão 🎀
             </p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.55)', margin: '0 0 20px 0' }}>
-              {user
-                ? 'Acesse contratos, catálogo, agenda e muito mais.'
-                : 'Acesse contratos, catálogo, agenda e o cortador ilimitado.'}
+              Acesse contratos, catálogo, agenda e o cortador ilimitado.
             </p>
             <a
               href={ctaHref}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
+                background: '#ff33cc',
                 borderRadius: '999px', padding: '16px 32px',
                 color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
-                textDecoration: 'none', boxShadow: '0 8px 28px rgba(255,51,204,0.4)',
+                textDecoration: 'none',
               }}
             >
-              {ctaLabel} <ArrowRight size={16} />
+              Começar teste grátis → <ArrowRight size={16} />
             </a>
-            {!user && (
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.35)', margin: '12px 0 0 0' }}>
-                Cancele quando quiser • Sem fidelidade
-              </p>
-            )}
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.35)', margin: '12px 0 0 0' }}>
+              Cancele quando quiser • Sem fidelidade
+            </p>
           </div>
         </div>
       </div>
