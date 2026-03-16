@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
 
+const supabase = createClient()
+
 export default function PaginaPagamentoSucesso() {
-  const supabase = createClient()
   const [nomePlano, setNomePlano] = useState<string | null>(null)
   const [verificando, setVerificando] = useState(true)
 
