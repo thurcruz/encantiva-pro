@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import BuscaClientes from './BuscaClientes'
+import BannerBeta from '../componentes/BannerBeta'
 
 export default async function PaginaClientes({
   searchParams,
@@ -70,6 +71,9 @@ export default async function PaginaClientes({
       </div>
 
       <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 40px 80px' }}>
+
+        {/* Banner beta */}
+        <BannerBeta />
 
         <BuscaClientes buscaInicial={busca ?? ''} />
 
