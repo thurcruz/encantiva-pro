@@ -32,12 +32,11 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // ── Rotas do dashboard — redireciona para login se não autenticado ──
-  // NOTA: /planos é público (landing page) — NÃO está nessa lista
+  // NOTA: /planos e /cortador-de-paineis são públicos — NÃO estão nessa lista
   const rotasDashboard = [
     '/inicio', '/agenda', '/calculadora', '/catalogo', '/clientes',
     '/configuracoes', '/contratos', '/financeiro', '/gerenciar-plano',
     '/materiais', '/paineis', '/acervo', '/admin',
-    '/cortador-de-paineis',
   ]
 
   const acessandoDashboard = rotasDashboard.some(rota =>
