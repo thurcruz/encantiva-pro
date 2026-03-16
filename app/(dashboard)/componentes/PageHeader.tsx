@@ -50,7 +50,7 @@ export default async function PageHeader({ titulo, subtitulo, maxWidth = '1000px
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
           <div style={{
             width: '4px', height: '32px', borderRadius: '4px',
-            background: 'linear-gradient(180deg, #ff33cc, #9900ff)',
+            background: '#ff33cc',
             flexShrink: 0,
           }} />
           <div style={{ minWidth: 0 }}>

@@ -14,34 +14,40 @@ export default function NavItem({ href, icon, label }: Props) {
   const ativo = pathname === href || pathname.startsWith(href + '/')
 
   return (
-    <Link href={href} style={{ textDecoration: 'none' }}>
-      <div style={{
+    <Link href={href} style={{ textDecoration: 'none' }} className="nav-item-link">
+      <div className={`nav-item ${ativo ? 'nav-item-ativo' : ''}`} style={{
         display: 'flex',
         alignItems: 'center',
         gap: '10px',
-        padding: '10px 12px',
+        padding: '9px 12px',
         borderRadius: '10px',
-        color: ativo ? '#fff' : '#ffffff66',
-        background: ativo ? 'linear-gradient(135deg, rgba(255,51,204,0.15), rgba(153,0,255,0.15))' : 'transparent',
-        border: ativo ? '1px solid rgba(255,51,204,0.2)' : '1px solid transparent',
+        background: ativo ? '#ff33cc' : 'transparent',
         fontFamily: 'Inter, sans-serif',
         fontWeight: ativo ? 700 : 500,
-        fontSize: '14px',
+        fontSize: '13.5px',
         cursor: 'pointer',
-        transition: 'all 0.15s',
+        transition: 'background 0.15s, color 0.15s',
+        color: ativo ? '#fff' : '#ffffffaa',
       }}>
-        <span style={{ color: ativo ? '#ff33cc' : '#ffffff44', display: 'flex', alignItems: 'center' }}>
+        <span style={{
+          display: 'flex', alignItems: 'center', flexShrink: 0,
+          color: ativo ? '#fff' : '#ffffff77',
+          transition: 'color 0.15s',
+        }}>
           {icon}
         </span>
         {label}
-        {ativo && (
-          <div style={{
-            marginLeft: 'auto',
-            width: '6px', height: '6px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-          }} />
-        )}
       </div>
+
+      <style>{`
+        .nav-item:hover:not(.nav-item-ativo) {
+          background: rgba(255, 255, 255, 0.07) !important;
+          color: #ffffffdd !important;
+        }
+        .nav-item:hover:not(.nav-item-ativo) span {
+          color: #ffffffbb !important;
+        }
+      `}</style>
     </Link>
   )
 }

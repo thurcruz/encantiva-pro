@@ -19,6 +19,24 @@ export const metadata: Metadata = {
   },
 }
 
+// ── Label de seção ───────────────────────────────────────
+function SecaoLabel({ label, primeiro }: { label: string; primeiro?: boolean }) {
+  return (
+    <p style={{
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '10px',
+      fontWeight: 700,
+      color: '#ffffff44',
+      letterSpacing: '1.2px',
+      textTransform: 'uppercase',
+      padding: '0 12px',
+      margin: primeiro ? '8px 0 4px 0' : '20px 0 4px 0',
+    }}>
+      {label}
+    </p>
+  )
+}
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -61,8 +79,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : 0
 
   const assinaturaAtiva = isAdmin || assinatura?.status === 'active' || isTrial
-
-  // Acervo só aparece para plano elite, beta ou admin
   const temAcervo = isAdmin || isBeta || assinatura?.plano === 'elite'
 
   return (
@@ -77,6 +93,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
           .main-desktop { margin-left: 0 !important; padding-bottom: 90px !important; }
           .bottom-nav-wrapper { display: block; }
         }
+        .sidebar-divider {
+          height: 1px;
+          background: rgba(255,255,255,0.06);
+          margin: 8px 12px;
+        }
       `}</style>
 
       {/* ── SIDEBAR ── */}
@@ -85,15 +106,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
         flexDirection: 'column', position: 'fixed', top: 0, left: 0,
         height: '100vh', zIndex: 40,
       }}>
+
         {/* Logo */}
-        <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #ffffff08', display: 'flex', alignItems: 'center' }}>
+        <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center' }}>
           <Image src="/enc_logotipo.svg" width={160} height={27} alt="Encantiva" />
         </div>
 
-        {/* Badge trial */}
+        {/* Badge trial ativo */}
         {isTrial && !isAdmin && (
-          <div style={{ margin: '12px', padding: '10px 14px', background: 'rgba(255,51,204,0.1)', border: '1px solid rgba(255,51,204,0.25)', borderRadius: '10px' }}>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff33cc', margin: '0 0 2px 0' }}>MODO TESTE</p>
+          <div style={{ margin: '12px 12px 0', padding: '10px 14px', background: 'rgba(255,51,204,0.1)', border: '1px solid rgba(255,51,204,0.2)', borderRadius: '10px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff33cc', margin: '0 0 2px 0' }}>
+              MODO TESTE
+            </p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff55', margin: 0 }}>
               {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'}
             </p>
@@ -102,52 +126,74 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         {/* Badge trial expirado */}
         {trialExpirado && !isAdmin && (
-          <div style={{ margin: '12px', padding: '10px 14px', background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.25)', borderRadius: '10px' }}>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff4444', margin: '0 0 2px 0' }}>TESTE EXPIRADO</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff55', margin: 0 }}>Assine para continuar</p>
+          <div style={{ margin: '12px 12px 0', padding: '10px 14px', background: 'rgba(255,60,60,0.1)', border: '1px solid rgba(255,60,60,0.2)', borderRadius: '10px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ff5555', margin: '0 0 2px 0' }}>
+              TESTE EXPIRADO
+            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff55', margin: 0 }}>
+              Assine para continuar
+            </p>
           </div>
         )}
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
+        <nav style={{
+          flex: 1, padding: '12px 8px',
+          overflowY: 'auto',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255,255,255,0.08) transparent',
+        }}>
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '0 0 4px 0' }}>Geral</p>
+          {/* Início — sem label de seção, isolado */}
           <NavItem href="/inicio" icon={<Home size={16} />} label="Início" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Pedidos</p>
-          <NavItem href="/agenda" icon={<CalendarDays size={16} />} label="Agenda" />
-          <NavItem href="/catalogo" icon={<ShoppingBag size={16} />} label="Catálogo" />
+          <div className="sidebar-divider" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Financeiro</p>
-          <NavItem href="/financeiro" icon={<TrendingUp size={16} />} label="Financeiro" />
-          <NavItem href="/calculadora" icon={<Calculator size={16} />} label="Calculadora" />
+          {/* Negócio */}
+          <SecaoLabel label="Negócio" primeiro />
+          <NavItem href="/agenda"     icon={<CalendarDays size={16} />} label="Agenda" />
+          <NavItem href="/catalogo"   icon={<ShoppingBag size={16} />}  label="Catálogo & Pedidos" />
+          <NavItem href="/clientes"   icon={<Users size={16} />}        label="Clientes" />
+          <NavItem href="/contratos"  icon={<FileText size={16} />}     label="Contratos" />
+
+          <div className="sidebar-divider" />
+
+          {/* Financeiro */}
+          <SecaoLabel label="Financeiro" />
+          <NavItem href="/financeiro"  icon={<TrendingUp size={16} />}  label="Dashboard" />
+          <NavItem href="/calculadora" icon={<Calculator size={16} />}  label="Calculadora" />
           {temAcervo && (
             <NavItem href="/acervo" icon={<Archive size={16} />} label="Acervo" />
           )}
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Clientes</p>
-          <NavItem href="/clientes" icon={<Users size={16} />} label="Clientes" />
+          <div className="sidebar-divider" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Biblioteca</p>
-          <NavItem href="/paineis" icon={<LayoutTemplate size={16} />} label="Painéis" />
-          <NavItem href="/materiais" icon={<Package size={16} />} label="Materiais" />
-          <NavItem href="/contratos" icon={<FileText size={16} />} label="Contratos" />
+          {/* Materiais */}
+          <SecaoLabel label="Materiais" />
+          <NavItem href="/materiais" icon={<Package size={16} />}        label="Biblioteca" />
+          <NavItem href="/paineis"   icon={<LayoutTemplate size={16} />} label="Criador de Painéis" />
 
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Conta</p>
-          <NavItem href="/configuracoes" icon={<Settings size={16} />} label="Configurações" />
-          <NavItem href="/gerenciar-plano" icon={<Crown size={16} />} label="Meu Plano" />
+          <div className="sidebar-divider" />
 
+          {/* Conta */}
+          <SecaoLabel label="Conta" />
+          <NavItem href="/configuracoes"  icon={<Settings size={16} />} label="Configurações" />
+          <NavItem href="/planos"         icon={<Crown size={16} />}    label="Meu Plano" />
+
+          {/* Admin */}
           {isAdmin && (
             <>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '8px 12px', margin: '16px 0 4px 0' }}>Admin</p>
-              <NavItem href="/admin" icon={<LayoutDashboard size={16} />} label="Painel Admin" />
-              <NavItem href="/admin/materiais/novo" icon={<Upload size={16} />} label="Novo Material" />
-              <NavItem href="/admin/materiais" icon={<Package size={16} />} label="Ver Materiais" />
+              <div className="sidebar-divider" />
+              <SecaoLabel label="Admin" />
+              <NavItem href="/admin"                icon={<LayoutDashboard size={16} />} label="Painel Admin" />
+              <NavItem href="/admin/materiais/novo" icon={<Upload size={16} />}          label="Novo Material" />
+              <NavItem href="/admin/materiais"      icon={<Package size={16} />}         label="Ver Materiais" />
             </>
           )}
         </nav>
 
-        <div style={{ padding: '16px', borderTop: '1px solid #ffffff08' }}>
+        {/* Logout */}
+        <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <BotaoLogout />
         </div>
       </aside>
@@ -155,6 +201,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* ── MAIN ── */}
       <main className="main-desktop">
 
+        {/* Banner trial */}
         {isTrial && !isAdmin && (
           <div style={{ background: '#ff33cc', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#fff', margin: 0 }}>
@@ -164,15 +211,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         )}
 
+        {/* Banner trial expirado */}
         {trialExpirado && !isAdmin && (
           <div style={{ background: 'rgba(255,0,0,0.1)', borderBottom: '1px solid rgba(255,0,0,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff99', margin: 0 }}>
-              Seu período de teste <strong style={{ color: '#ff4444' }}>expirou</strong>.{' '}
-              <Link href="/planos" style={{ color: '#ff4444', fontWeight: 700 }}>Escolha um plano para continuar →</Link>
+              Seu período de teste <strong style={{ color: '#ff5555' }}>expirou</strong>.{' '}
+              <Link href="/planos" style={{ color: '#ff5555', fontWeight: 700 }}>Escolha um plano para continuar →</Link>
             </p>
           </div>
         )}
 
+        {/* Bloqueio pós-trial */}
         {trialExpirado && !isAdmin && !assinaturaAtiva ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: '40px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
