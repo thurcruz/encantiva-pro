@@ -7,11 +7,11 @@ import Link from 'next/link'
 
 export default function PaginaCadastro() {
   const [nomeLoja, setNomeLoja] = useState('')
-  const [email, setEmail] = useState('')
-  const [senha, setSenha] = useState('')
+  const [email, setEmail]       = useState('')
+  const [senha, setSenha]       = useState('')
   const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState('')
-  const [sucesso, setSucesso] = useState(false)
+  const [erro, setErro]         = useState('')
+  const [sucesso, setSucesso]   = useState(false)
   const [verSenha, setVerSenha] = useState(false)
 
   const supabase = createClient()
@@ -25,17 +25,9 @@ export default function PaginaCadastro() {
     const { data, error } = await supabase.auth.signUp({ email, password: senha })
     if (error) { setErro(error.message); setCarregando(false); return }
 
-    if (data.user) {
-      const trialExpira = new Date()
-      trialExpira.setDate(trialExpira.getDate() + 7)
-      await supabase.from('assinaturas').insert({
-        usuario_id: data.user.id,
-        status: 'trial',
-        trial_expira_em: trialExpira.toISOString(),
-      })
-      if (nomeLoja) {
-        await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nomeLoja })
-      }
+    // Salva o perfil — trial é criado quando entrar no dashboard pela primeira vez
+    if (data.user && nomeLoja) {
+      await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nomeLoja })
     }
 
     setSucesso(true)

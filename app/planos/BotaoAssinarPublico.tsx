@@ -93,18 +93,9 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
         return
       }
 
-      // Cria assinatura trial + perfil
-      if (data.user) {
-        const trialExpira = new Date()
-        trialExpira.setDate(trialExpira.getDate() + 7)
-        await supabase.from('assinaturas').insert({
-          usuario_id: data.user.id,
-          status: 'trial',
-          trial_expira_em: trialExpira.toISOString(),
-        })
-        if (nome) {
-          await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nome })
-        }
+      // Salva o perfil — sem trial (vai assinar plano pago)
+      if (data.user && nome) {
+        await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nome })
       }
     }
 

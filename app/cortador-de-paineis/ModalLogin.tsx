@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { X, Mail, Lock, User, Loader2, Sparkles, BookOpen, Calendar, DollarSign, Users } from 'lucide-react'
+import { X, Mail, Lock, User, Loader2 } from 'lucide-react'
 
 interface Props {
   onFechar: () => void
@@ -10,177 +10,212 @@ interface Props {
 }
 
 const BENEFICIOS = [
-  { icon: Sparkles, label: 'Cortador de Painéis ilimitado' },
-  { icon: BookOpen, label: 'Catálogo digital dos seus produtos' },
-  { icon: Calendar, label: 'Agenda de pedidos e entregas' },
-  { icon: DollarSign, label: 'Controle financeiro do seu negócio' },
-  { icon: Users, label: 'Painéis prontos da comunidade' },
+  '✂️ Cortador de Painéis ilimitado',
+  '📋 Catálogo digital dos seus produtos',
+  '📅 Agenda de pedidos e entregas',
+  '💰 Controle financeiro do seu negócio',
+  '🖼️ Painéis prontos da comunidade',
 ]
 
 export default function ModalLogin({ onFechar, onSucesso }: Props) {
   const supabase = createClient()
-  const [modo, setModo] = useState<'login' | 'cadastro'>('cadastro')
-  const [email, setEmail] = useState('')
-  const [senha, setSenha] = useState('')
-  const [nome, setNome] = useState('')
+  const [modo, setModo]             = useState<'login' | 'cadastro'>('cadastro')
+  const [email, setEmail]           = useState('')
+  const [senha, setSenha]           = useState('')
+  const [nome, setNome]             = useState('')
   const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState('')
-  const [sucesso, setSucesso] = useState('')
+  const [erro, setErro]             = useState('')
 
   async function handleSubmit() {
-    setErro(''); setSucesso('')
-    if (!email || !senha) { setErro('Preencha e-mail e senha.'); return }
+    setErro('')
+    if (!email.trim() || !senha.trim()) { setErro('Preencha e-mail e senha.'); return }
     if (modo === 'cadastro' && !nome.trim()) { setErro('Digite seu nome.'); return }
+    if (senha.length < 6) { setErro('A senha deve ter no mínimo 6 caracteres.'); return }
     setCarregando(true)
 
     if (modo === 'login') {
       const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
-      if (error) setErro('E-mail ou senha incorretos.')
-      else onSucesso()
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email, password: senha,
-        options: { data: { full_name: nome } },
-      })
       if (error) {
-        setErro(error.message.includes('already registered')
-          ? 'Este e-mail já possui conta. Faça login.'
-          : 'Erro ao criar conta. Tente novamente.')
+        setErro('E-mail ou senha incorretos.')
+        setCarregando(false)
       } else {
-        setSucesso('Conta criada! Verifique seu e-mail para confirmar.')
+        onSucesso()
       }
+      return
     }
-    setCarregando(false)
+
+    // Cadastro — sem verificação de e-mail, chama onSucesso direto
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: senha,
+      options: { data: { full_name: nome } },
+    })
+
+    if (error) {
+      setErro(
+        error.message.includes('already registered')
+          ? 'Este e-mail já tem conta. Faça login.'
+          : 'Erro ao criar conta. Tente novamente.'
+      )
+      setCarregando(false)
+      return
+    }
+
+    // Salva o nome — trial é criado quando entrar no dashboard
+    if (data.user && nome) {
+      await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nome })
+    }
+
+    onSucesso()
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', background: '#fafafa', border: '1.5px solid #e5e5e5',
-    borderRadius: '12px', padding: '12px 16px 12px 44px', color: '#140033',
+    width: '100%', background: '#fafafa', border: '1.5px solid #e8e8ec',
+    borderRadius: '10px', padding: '11px 14px 11px 42px', color: '#111827',
     fontFamily: 'Inter, sans-serif', fontSize: '14px', outline: 'none',
-    boxSizing: 'border-box', transition: 'border-color 0.2s',
+    boxSizing: 'border-box',
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(20,0,51,0.6)', backdropFilter: 'blur(6px)',
-      zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
-    }}>
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onFechar() }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(20,0,51,0.55)', backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+      }}
+    >
       <div style={{
-        background: '#fff', borderRadius: '28px',
-        maxWidth: '460px', width: '100%', position: 'relative',
-        boxShadow: '0 32px 80px rgba(153,0,255,0.2)',
-        overflow: 'hidden',
+        background: '#fff', borderRadius: '24px',
+        maxWidth: '420px', width: '100%',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
       }}>
 
-        {/* Header gradiente */}
-        <div style={{
-          background: 'linear-gradient(135deg, #140033, #2d0066)',
-          padding: '28px 28px 24px',
-        }}>
-          <button onClick={onFechar} style={{
-            position: 'absolute', top: '16px', right: '16px',
-            background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px',
-            width: '32px', height: '32px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <X size={15} style={{ color: 'rgba(255,255,255,0.7)' }} />
-          </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(255,51,204,0.4)' }}>
-              <Sparkles size={22} style={{ color: '#fff' }} />
-            </div>
-            <div>
-              <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#fff', margin: 0, letterSpacing: '-0.5px' }}>
-                {modo === 'cadastro' ? 'Crie sua conta grátis' : 'Bem-vinda de volta!'}
-              </h2>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
-                {modo === 'cadastro' ? 'E baixe o PDF agora' : 'Entre para baixar o PDF'}
-              </p>
-            </div>
+        {/* ── Header ── */}
+        <div style={{ padding: '24px 24px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#111827', margin: '0 0 4px 0', letterSpacing: '-0.5px' }}>
+              {modo === 'cadastro' ? 'Criar conta grátis' : 'Entrar na conta'}
+            </h2>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0 }}>
+              {modo === 'cadastro' ? 'E baixe o PDF agora' : 'Entre para baixar o PDF'}
+            </p>
           </div>
-
-          {/* Benefícios — só no modo cadastro */}
-          {modo === 'cadastro' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {BENEFICIOS.map((b, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(255,51,204,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <b.icon size={10} style={{ color: '#ff99ee' }} />
-                  </div>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.8)', margin: 0 }}>{b.label}</p>
-                </div>
-              ))}
-            </div>
-          )}
+          <button
+            onClick={onFechar}
+            style={{ width: 32, height: 32, borderRadius: '8px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280', flexShrink: 0 }}
+          >
+            <X size={14} />
+          </button>
         </div>
 
-        {/* Formulário */}
-        <div style={{ padding: '24px 28px 28px' }}>
-
-          {/* Toggle login/cadastro */}
-          <div style={{ display: 'flex', background: '#f5f5f5', borderRadius: '12px', padding: '4px', marginBottom: '20px' }}>
-            {(['cadastro', 'login'] as const).map(m => (
-              <button key={m} onClick={() => { setModo(m); setErro(''); setSucesso('') }} style={{
-                flex: 1, padding: '9px',
-                background: modo === m ? '#fff' : 'transparent',
-                border: 'none', borderRadius: '9px', cursor: 'pointer',
-                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
-                color: modo === m ? '#140033' : '#00000044',
-                boxShadow: modo === m ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.2s',
-              }}>
-                {m === 'cadastro' ? 'Criar conta' : 'Já tenho conta'}
-              </button>
+        {/* ── Benefícios (só no cadastro) ── */}
+        {modo === 'cadastro' && (
+          <div style={{ margin: '16px 24px 0', background: '#fafafa', border: '1px solid #e8e8ec', borderRadius: '12px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {BENEFICIOS.map((b, i) => (
+              <p key={i} style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#374151', margin: 0 }}>{b}</p>
             ))}
           </div>
+        )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-            {modo === 'cadastro' && (
-              <div style={{ position: 'relative' }}>
-                <User size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#00000033', pointerEvents: 'none' }} />
-                <input type="text" placeholder="Seu nome" value={nome} onChange={e => setNome(e.target.value)} style={inputStyle} />
-              </div>
-            )}
+        {/* ── Toggle cadastro / login ── */}
+        <div style={{ margin: '16px 24px 0', display: 'flex', background: '#f3f4f6', borderRadius: '10px', padding: '3px', gap: '3px' }}>
+          {(['cadastro', 'login'] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => { setModo(m); setErro('') }}
+              style={{
+                flex: 1, padding: '8px',
+                background: modo === m ? '#fff' : 'transparent',
+                border: 'none', borderRadius: '8px', cursor: 'pointer',
+                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
+                color: modo === m ? '#111827' : '#9ca3af',
+                boxShadow: modo === m ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all .15s',
+              }}
+            >
+              {m === 'cadastro' ? 'Criar conta' : 'Já tenho conta'}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Formulário ── */}
+        <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+          {modo === 'cadastro' && (
             <div style={{ position: 'relative' }}>
-              <Mail size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#00000033', pointerEvents: 'none' }} />
-              <input type="email" placeholder="Seu e-mail" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
+              <User size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
+              <input
+                type="text"
+                placeholder="Seu nome"
+                value={nome}
+                onChange={e => setNome(e.target.value)}
+                autoFocus
+                style={inputStyle}
+              />
             </div>
-            <div style={{ position: 'relative' }}>
-              <Lock size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#00000033', pointerEvents: 'none' }} />
-              <input type="password" placeholder="Senha" value={senha} onChange={e => setSenha(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} style={inputStyle} />
-            </div>
+          )}
+
+          <div style={{ position: 'relative' }}>
+            <Mail size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
+            <input
+              type="email"
+              placeholder="Seu e-mail"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              autoFocus={modo === 'login'}
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <Lock size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
+            <input
+              type="password"
+              placeholder={modo === 'cadastro' ? 'Mínimo 6 caracteres' : 'Sua senha'}
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              style={inputStyle}
+            />
           </div>
 
           {erro && (
-            <div style={{ background: '#fff5f5', border: '1px solid #ffcccc', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#cc0000' }}>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '9px 12px', fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#dc2626' }}>
               {erro}
             </div>
           )}
-          {sucesso && (
-            <div style={{ background: '#f0fff4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#166534' }}>
-              {sucesso}
-            </div>
-          )}
 
-          <button onClick={handleSubmit} disabled={carregando} style={{
-            width: '100%',
-            background: carregando ? '#e5e5e5' : 'linear-gradient(135deg, #ff33cc, #9900ff)',
-            border: 'none', borderRadius: '14px', padding: '15px',
-            color: carregando ? '#00000033' : '#fff',
-            fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
-            cursor: carregando ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            boxShadow: carregando ? 'none' : '0 8px 28px rgba(255,51,204,0.3)',
-          }}>
-            {carregando && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
-            {carregando ? 'Aguarde...' : modo === 'cadastro' ? 'Criar conta e baixar PDF ✨' : 'Entrar e baixar PDF'}
+          <button
+            onClick={handleSubmit}
+            disabled={carregando}
+            style={{
+              width: '100%', border: 'none', borderRadius: '10px', padding: '13px',
+              background: carregando ? '#e5e7eb' : '#ff33cc',
+              color: carregando ? '#9ca3af' : '#fff',
+              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px',
+              cursor: carregando ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              marginTop: '2px', transition: 'background .15s',
+            }}
+          >
+            {carregando && <Loader2 size={15} style={{ animation: 'spin 0.8s linear infinite' }} />}
+            {carregando
+              ? 'Aguarde...'
+              : modo === 'cadastro'
+                ? 'Criar conta e baixar PDF ✨'
+                : 'Entrar e baixar PDF'}
           </button>
-        </div>
 
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+          {modo === 'cadastro' && (
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', textAlign: 'center', margin: 0 }}>
+              Ao criar conta você concorda com os termos de uso
+            </p>
+          )}
+        </div>
       </div>
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
