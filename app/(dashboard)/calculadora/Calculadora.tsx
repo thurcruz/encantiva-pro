@@ -30,7 +30,6 @@ interface Kit {
   custo_vida: number
   festas_kit_mes: number
   criado_em: string
-  // legado
   frete?: number
 }
 
@@ -39,12 +38,8 @@ interface Props {
 }
 
 export default function Calculadora({ acervo }: Props) {
-  const [itens, setItens] = useState<ItemAcervoKit[]>([
-    { id: 1, nome: '', custo: 0 },
-  ])
-  const [consumiveis, setConsumiveis] = useState<ItemConsumivel[]>([
-    { id: 1, nome: '', custo: 0, rende: 1 },
-  ])
+  const [itens, setItens] = useState<ItemAcervoKit[]>([{ id: 1, nome: '', custo: 0 }])
+  const [consumiveis, setConsumiveis] = useState<ItemConsumivel[]>([{ id: 1, nome: '', custo: 0, rende: 1 }])
   const [locacoes, setLocacoes] = useState(20)
   const [multiplicador, setMultiplicador] = useState(100)
   const [lucro, setLucro] = useState(150)
@@ -93,10 +88,8 @@ export default function Calculadora({ acervo }: Props) {
   }
 
   function carregarKit(kit: Kit) {
-    // Suporte a kits antigos
     const itensLegado = kit.itens ?? []
     if (itensLegado[0] && 'locacoes' in itensLegado[0]) {
-      // formato novo com locacoes por item → converte
       const converted = (itensLegado as unknown as (ItemAcervoKit & { locacoes?: number })[]).map(i => ({ id: i.id, nome: i.nome, custo: i.custo, acervoId: i.acervoId }))
       setItens(converted)
       const firstLocacoes = (itensLegado[0] as unknown as { locacoes?: number }).locacoes
@@ -166,6 +159,25 @@ export default function Calculadora({ acervo }: Props) {
   const custoComExtras = custoBase * (1 + multiplicador / 100) + frete
   const valorLucro = custoComExtras * (lucro / 100)
   const precoFinal = custoComExtras + valorLucro
+
+  // Custo total investido no acervo (quanto custou comprar tudo)
+  const custoTotalAcervo = itens.reduce((acc, i) => acc + i.custo, 0)
+
+  // Em quantas festas o acervo se paga
+  const festasParaPagarAcervo = precoFinal > 0 && custoTotalAcervo > 0
+    ? Math.ceil(custoTotalAcervo / precoFinal)
+    : null
+
+  // Verde se paga até a 4ª festa, vermelho se demora mais
+  const acervoPagoNaQuarta = festasParaPagarAcervo !== null && festasParaPagarAcervo <= 4
+
+  // Número ordinal
+  function ordinal(n: number) {
+    if (n === 1) return '1ª'
+    if (n === 2) return '2ª'
+    if (n === 3) return '3ª'
+    return `${n}ª`
+  }
 
   // Informativo
   const receitaMensalEstimada = precoFinal * festasKitMes
@@ -253,7 +265,6 @@ export default function Calculadora({ acervo }: Props) {
                 </button>
               </div>
 
-              {/* Mobile */}
               <div className="calc-item-mobile" style={{ display: 'none', flexDirection: 'column', gap: '8px', background: '#f9f9f9', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={labelStyle}>Item do acervo</span>
@@ -315,7 +326,6 @@ export default function Calculadora({ acervo }: Props) {
                 </button>
               </div>
 
-              {/* Mobile consumível */}
               <div className="calc-item-mobile" style={{ display: 'none', flexDirection: 'column', gap: '8px', background: '#fff5fd', borderRadius: '12px', padding: '12px', marginTop: '4px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={labelStyle}>Consumível</span>
@@ -361,7 +371,6 @@ export default function Calculadora({ acervo }: Props) {
         <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 4px 0' }}>Precificação</h2>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: '0 0 20px 0' }}>Configure como o preço do seu kit é calculado</p>
 
-        {/* Linha 1: Locações + Frete */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
           <div>
             <label style={labelStyle}>Locações esperadas do kit</label>
@@ -371,8 +380,7 @@ export default function Calculadora({ acervo }: Props) {
                   {n}x
                 </button>
               ))}
-              <input type="number" value={locacoes || ''} onChange={e => setLocacoes(parseFloat(e.target.value) || 1)} placeholder="20" min="1"
-                style={{ ...inputStyle, textAlign: 'center' }} />
+              <input type="number" value={locacoes || ''} onChange={e => setLocacoes(parseFloat(e.target.value) || 1)} placeholder="20" min="1" style={{ ...inputStyle, textAlign: 'center' }} />
             </div>
             {custoAcervo > 0 && (
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ff33cc', margin: '5px 0 0', fontWeight: 600 }}>
@@ -386,7 +394,6 @@ export default function Calculadora({ acervo }: Props) {
           </div>
         </div>
 
-        {/* Linha 2: Fluxo de caixa */}
         <div style={{ marginBottom: '20px' }}>
           <label style={labelStyle}>% Fluxo de caixa da empresa</label>
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000044', margin: '0 0 10px 0' }}>
@@ -411,7 +418,6 @@ export default function Calculadora({ acervo }: Props) {
           )}
         </div>
 
-        {/* Linha 3: Preço desejado + Margem lado a lado */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' }}>
           <div>
             <label style={labelStyle}>Preço desejado (R$)</label>
@@ -493,6 +499,44 @@ export default function Calculadora({ acervo }: Props) {
           </div>
         )}
       </div>
+
+      {/* ── CARD DE ALERTA — payback do acervo ── */}
+      {festasParaPagarAcervo !== null && precoFinal > 0 && (
+        <div style={{
+          background: acervoPagoNaQuarta ? '#f0fdf4' : '#fef2f2',
+          border: `1.5px solid ${acervoPagoNaQuarta ? '#86efac' : '#fca5a5'}`,
+          borderRadius: '14px',
+          padding: '16px 20px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '12px',
+        }}>
+          <span style={{ fontSize: '22px', flexShrink: 0, lineHeight: 1 }}>
+            {acervoPagoNaQuarta ? '✅' : '⚠️'}
+          </span>
+          <div>
+            <p style={{
+              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px',
+              color: acervoPagoNaQuarta ? '#15803d' : '#dc2626',
+              margin: '0 0 4px 0',
+            }}>
+              {acervoPagoNaQuarta
+                ? `Você paga os materiais na ${ordinal(festasParaPagarAcervo)} festa 🎉`
+                : `Você só paga os materiais na ${ordinal(festasParaPagarAcervo)} festa`}
+            </p>
+            <p style={{
+              fontFamily: 'Inter, sans-serif', fontSize: '12px',
+              color: acervoPagoNaQuarta ? '#166534' : '#991b1b',
+              margin: 0, lineHeight: 1.5,
+            }}>
+              {acervoPagoNaQuarta
+                ? `Com R$ ${precoFinal.toFixed(2).replace('.', ',')} por festa, seu acervo de R$ ${custoTotalAcervo.toFixed(2).replace('.', ',')} se paga rapidinho. A ${ordinal(festasParaPagarAcervo + 1)} festa em diante é lucro puro.`
+                : `Seu acervo custa R$ ${custoTotalAcervo.toFixed(2).replace('.', ',')} e você cobra R$ ${precoFinal.toFixed(2).replace('.', ',')} por festa. Considere aumentar o preço para recuperar o investimento antes da 4ª festa.`}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── ANÁLISE DE RENDIMENTO ── */}
       <div style={cardStyle}>
