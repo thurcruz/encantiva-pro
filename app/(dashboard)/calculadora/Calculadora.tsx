@@ -175,9 +175,6 @@ export default function Calculadora({ acervo }: Props) {
   const acervoPagoNaQuarta = festasParaPagarAcervo !== null && festasParaPagarAcervo <= 4
 
   // Rendimento mensal
-  const receitaMensalEstimada = precoFinal * festasKitMes
-  const percentualVidaCoberto = custoVida > 0 ? Math.min(Math.round((receitaMensalEstimada / custoVida) * 100), 100) : null
-  const festasParaCobrir = custoVida > 0 && precoFinal > 0 ? Math.ceil(custoVida / precoFinal) : null
   const margemParaAlvo = precoAlvo > 0 && custoComExtras > 0 ? Math.round(((precoAlvo - custoComExtras) / custoComExtras) * 100) : null
 
   const inputStyle: React.CSSProperties = {
@@ -492,59 +489,7 @@ export default function Calculadora({ acervo }: Props) {
         </div>
       )}
 
-      {/* ── ANÁLISE DE RENDIMENTO ── */}
-      <div style={cardStyle}>
-        <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 4px 0' }}>Rendimento mensal</h2>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: '0 0 18px 0' }}>Não entra no preço — só para você planejar</p>
-
-        <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-          <div>
-            <label style={labelStyle}>Meta de salário mensal (R$)</label>
-            <input type="number" value={custoVida || ''} onChange={e => setCustoVida(parseFloat(e.target.value) || 0)} placeholder="Ex: 2000,00" min="0" step="0.01" style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Festas por mês</label>
-            <input type="number" value={festasKitMes || ''} onChange={e => setFestasKitMes(parseFloat(e.target.value) || 1)} placeholder="16" min="1" style={inputStyle} />
-            <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
-              {[16, 20, 24].map(n => (
-                <button key={n} onClick={() => setFestasKitMes(n)} style={{ flex: 1, padding: '5px', borderRadius: '8px', border: `1.5px solid ${festasKitMes === n ? '#ff33cc' : '#e5e5e5'}`, background: festasKitMes === n ? '#fff0fb' : '#fafafa', color: festasKitMes === n ? '#ff33cc' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>
-                  {n}x
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {precoFinal > 0 && (
-          <div style={{ background: '#f9f9f9', borderRadius: '12px', padding: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: custoVida > 0 ? '12px' : 0 }}>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000066' }}>
-                {festasKitMes} festa(s) × R$ {precoFinal.toFixed(2).replace('.', ',')}
-              </span>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '17px', color: '#140033' }}>
-                R$ {receitaMensalEstimada.toFixed(2).replace('.', ',')} / mês
-              </span>
-            </div>
-
-            {custoVida > 0 && percentualVidaCoberto !== null && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000066' }}>Meta: R$ {custoVida.toLocaleString('pt-BR')}</span>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: percentualVidaCoberto >= 100 ? '#10b981' : '#f59e0b' }}>{percentualVidaCoberto}%</span>
-                </div>
-                <div style={{ height: '8px', background: '#e5e5e5', borderRadius: '999px', overflow: 'hidden', marginBottom: '8px' }}>
-                  <div style={{ height: '100%', width: `${percentualVidaCoberto}%`, background: percentualVidaCoberto >= 100 ? '#10b981' : '#ff33cc', borderRadius: '999px', transition: 'width .3s' }} />
-                </div>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: 0 }}>
-                  {percentualVidaCoberto >= 100
-                    ? `✅ Você atinge sua meta com ${festasKitMes} festas/mês`
-                    : `Precisa de ${festasParaCobrir} festas/mês para atingir R$ ${custoVida.toLocaleString('pt-BR')}`}
-                </p>
-              </>
-            )}
-          </div>
-        )}
-      </div>
+    
 
       {/* Modal Salvar */}
       {modalSalvar && (
