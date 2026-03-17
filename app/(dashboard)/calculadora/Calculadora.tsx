@@ -44,12 +44,30 @@ function ordinal(n: number) {
   return `${n}ª`
 }
 
+// Sugestões de arredondamento atrativo
+function sugerirPrecos(preco: number): number[] {
+  const sugestoes = new Set<number>()
+  // terminações atrativas: .90, .00, .50
+  const bases = [
+    Math.floor(preco / 10) * 10 - 0.10,
+    Math.round(preco / 10) * 10 - 0.10,
+    Math.ceil(preco / 10) * 10 - 0.10,
+    Math.floor(preco / 5) * 5,
+    Math.round(preco / 5) * 5,
+    Math.ceil(preco / 5) * 5,
+  ]
+  bases.forEach(b => {
+    if (b > 0) sugestoes.add(parseFloat(b.toFixed(2)))
+  })
+  return Array.from(sugestoes).filter(v => v >= preco * 0.85).sort((a, b) => a - b).slice(0, 5)
+}
+
 export default function Calculadora({ acervo }: Props) {
   const [itens, setItens] = useState<ItemAcervoKit[]>([{ id: 1, nome: '', custo: 0 }])
   const [consumiveis, setConsumiveis] = useState<ItemConsumivel[]>([{ id: 1, nome: '', custo: 0, rende: 1 }])
   const [locacoes, setLocacoes] = useState(20)
   const [multiplicador, setMultiplicador] = useState(100)
-  const [lucro, setLucro] = useState(150)
+  const [lucro, setLucro] = useState(100)
   const [custoVida, setCustoVida] = useState(0)
   const [festasKitMes, setFestasKitMes] = useState(16)
   const [frete, setFrete] = useState(0)
@@ -63,7 +81,10 @@ export default function Calculadora({ acervo }: Props) {
   const [salvando, setSalvando] = useState(false)
   const [carregandoKits, setCarregandoKits] = useState(false)
   const [exportando, setExportando] = useState(false)
-  const [exportadoId, setExportadoId] = useState<string | null>(null)
+
+  // Modal de exportar com arredondamento
+  const [modalExportar, setModalExportar] = useState<{ kit: Kit; precoCalculado: number } | null>(null)
+  const [precoExportar, setPrecoExportar] = useState(0)
 
   const supabase = createClient()
 
@@ -107,7 +128,7 @@ export default function Calculadora({ acervo }: Props) {
     setConsumiveis(kit.consumiveis?.length > 0 ? kit.consumiveis : [{ id: 1, nome: '', custo: 0, rende: 1 }])
     setLocacoes(kit.locacoes ?? 20)
     setMultiplicador(kit.multiplicador ?? 100)
-    setLucro(kit.lucro)
+    setLucro(kit.lucro ?? 100)
     setCustoVida(kit.custo_vida ?? 0)
     setFrete(kit.frete ?? 0)
     setFestasKitMes(kit.festas_kit_mes ?? 16)
@@ -122,31 +143,38 @@ export default function Calculadora({ acervo }: Props) {
     if (editandoId === id) { setEditandoId(null); setNomeKit('') }
   }
 
-  async function exportarParaCatalogo(kit: Kit) {
+  // Abre o modal de exportar com sugestões de preço
+  function abrirModalExportar(kit: Kit) {
+    const custoAcervoK = (kit.itens ?? []).reduce((acc, i) => acc + (kit.locacoes > 0 ? i.custo / kit.locacoes : 0), 0)
+    const custoConsumivelK = (kit.consumiveis ?? []).reduce((acc, i) => acc + (i.rende > 0 ? i.custo / i.rende : 0), 0)
+    const custoBaseK = custoAcervoK + custoConsumivelK
+    const custoComExtrasK = custoBaseK + (kit.frete ?? 0)
+    const precoCalc = custoComExtrasK * (1 + kit.lucro / 100)
+    setPrecoExportar(parseFloat(precoCalc.toFixed(2)))
+    setModalExportar({ kit, precoCalculado: precoCalc })
+  }
+
+  async function confirmarExportacao() {
+    if (!modalExportar) return
     setExportando(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const custoAcervo = (kit.itens ?? []).reduce((acc, i) => acc + (kit.locacoes > 0 ? i.custo / kit.locacoes : 0), 0)
-    const custoConsumivel = (kit.consumiveis ?? []).reduce((acc, i) => acc + (i.rende > 0 ? i.custo / i.rende : 0), 0)
-    const custoBase = custoAcervo + custoConsumivel
-    const custoComExtras = custoBase * (1 + (kit.multiplicador ?? 100) / 100)
-    const preco = custoComExtras * (1 + kit.lucro / 100)
     await supabase.from('catalogo_kits').insert({
-      usuario_id: user.id, nome: kit.nome,
-      descricao: `Kit exportado da calculadora`,
-      preco: Math.ceil(preco / 5) * 5,
-      itens: [...(kit.itens ?? []), ...(kit.consumiveis ?? [])].map(i => i.nome).filter(Boolean),
+      usuario_id: user.id,
+      nome: modalExportar.kit.nome,
+      descricao: 'Kit exportado da calculadora',
+      preco: precoExportar,
+      itens: [...(modalExportar.kit.itens ?? []), ...(modalExportar.kit.consumiveis ?? [])].map(i => i.nome).filter(Boolean),
       foto_url: null,
     })
-    setExportadoId(kit.id)
-    setTimeout(() => setExportadoId(null), 3000)
+    setModalExportar(null)
     setExportando(false)
   }
 
   function novaCalculadora() {
     setItens([{ id: 1, nome: '', custo: 0 }])
     setConsumiveis([{ id: 1, nome: '', custo: 0, rende: 1 }])
-    setLocacoes(20); setMultiplicador(100); setLucro(150); setFrete(0)
+    setLocacoes(20); setMultiplicador(100); setLucro(100); setFrete(0)
     setCustoVida(0); setFestasKitMes(16); setPrecoAlvo(0)
     setEditandoId(null); setNomeKit('')
   }
@@ -159,7 +187,7 @@ export default function Calculadora({ acervo }: Props) {
 
   const temAcervo = acervo.length > 0
 
-  // ── CÁLCULOS ─────────────────────────────────────────
+  // ── CÁLCULOS ──────────────────────────────────────────
   const custoAcervo = itens.reduce((acc, i) => acc + (locacoes > 0 ? i.custo / locacoes : 0), 0)
   const custoConsumiveis = consumiveis.reduce((acc, i) => acc + (i.rende > 0 ? i.custo / i.rende : 0), 0)
   const custoBase = custoAcervo + custoConsumiveis
@@ -167,15 +195,19 @@ export default function Calculadora({ acervo }: Props) {
   const valorLucro = custoComExtras * (lucro / 100)
   const precoFinal = custoComExtras + valorLucro
 
-  // Payback do acervo
   const custoTotalAcervo = itens.reduce((acc, i) => acc + i.custo, 0)
   const festasParaPagarAcervo = precoFinal > 0 && custoTotalAcervo > 0
-    ? Math.ceil(custoTotalAcervo / precoFinal)
-    : null
+    ? Math.ceil(custoTotalAcervo / precoFinal) : null
   const acervoPagoNaQuarta = festasParaPagarAcervo !== null && festasParaPagarAcervo <= 4
 
-  // Rendimento mensal
   const margemParaAlvo = precoAlvo > 0 && custoComExtras > 0 ? Math.round(((precoAlvo - custoComExtras) / custoComExtras) * 100) : null
+
+  // Status da margem
+  const margemStatus = lucro < 100
+    ? { cor: '#dc2626', texto: '❌ Abaixo do mínimo recomendado: 100%' }
+    : lucro < 150
+    ? { cor: '#f59e0b', texto: '⚠️ Recomendado: 150%–200%' }
+    : { cor: '#10b981', texto: '✅ Boa margem' }
 
   const inputStyle: React.CSSProperties = {
     width: '100%', background: '#fff', border: '1px solid #e5e5e5',
@@ -227,50 +259,45 @@ export default function Calculadora({ acervo }: Props) {
           </p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
-          <div className="calc-header-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 36px', gap: '10px', alignItems: 'end' }}>
-            <span style={labelStyle}>Item {temAcervo && <span style={{ color: '#ff33cc', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>· ou selecione do acervo</span>}</span>
-            <span style={labelStyle}>Custo (R$)</span>
-            <div />
-          </div>
-
-          {itens.map(item => (
-            <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              <div className="calc-item-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 36px', gap: '10px', alignItems: 'center' }}>
-                {temAcervo ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
+          {itens.map((item, idx) => (
+            <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  {idx === 0 && <span style={{ ...labelStyle, marginBottom: '4px', display: 'block' }}>Item{temAcervo ? <span style={{ color: '#ff33cc', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}> · selecione ou digite</span> : ''}</span>}
+                  {/* Input misto: select + text unificados */}
                   <div style={{ display: 'flex', border: '1px solid #e5e5e5', borderRadius: '10px', overflow: 'hidden', background: '#fff' }}>
-                    <select value={item.acervoId ?? ''} onChange={e => preencherDoAcervo(item.id, e.target.value)}
-                      style={{ border: 'none', borderRight: '1px solid #e5e5e5', background: 'transparent', padding: '10px 8px', fontFamily: 'Inter, sans-serif', fontSize: '12px', color: item.acervoId ? '#ff33cc' : '#9ca3af', outline: 'none', cursor: 'pointer', maxWidth: '110px', flexShrink: 0 }}>
-                      <option value="">Acervo...</option>
-                      {acervo.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
-                    </select>
-                    <input type="text" value={item.nome} onChange={e => setItens(p => p.map(i => i.id === item.id ? { ...i, nome: e.target.value } : i))} placeholder="ou digite o item..."
-                      style={{ flex: 1, border: 'none', background: 'transparent', padding: '10px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#140033', outline: 'none', minWidth: 0 }} />
+                    {temAcervo && (
+                      <select
+                        value={item.acervoId ?? ''}
+                        onChange={e => preencherDoAcervo(item.id, e.target.value)}
+                        style={{ border: 'none', borderRight: '1px solid #e5e5e5', background: 'transparent', padding: '10px 6px', fontFamily: 'Inter, sans-serif', fontSize: '11px', color: item.acervoId ? '#ff33cc' : '#9ca3af', outline: 'none', cursor: 'pointer', width: '90px', flexShrink: 0 }}
+                      >
+                        <option value="">Acervo</option>
+                        {acervo.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                      </select>
+                    )}
+                    <input
+                      type="text"
+                      value={item.nome}
+                      onChange={e => setItens(p => p.map(i => i.id === item.id ? { ...i, nome: e.target.value, acervoId: undefined } : i))}
+                      placeholder={temAcervo ? 'ou digite...' : 'Ex: Painel, Mesa...'}
+                      style={{ flex: 1, border: 'none', background: 'transparent', padding: '10px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#140033', outline: 'none', minWidth: 0 }}
+                    />
                   </div>
-                ) : (
-                  <input type="text" value={item.nome} onChange={e => setItens(p => p.map(i => i.id === item.id ? { ...i, nome: e.target.value } : i))} placeholder="Ex: Painel, Mesa, Capa..." style={inputStyle} />
-                )}
-                <input type="number" value={item.custo || ''} onChange={e => setItens(p => p.map(i => i.id === item.id ? { ...i, custo: parseFloat(e.target.value) || 0 } : i))} placeholder="0,00" min="0" step="0.01" style={inputStyle} />
-                <button onClick={() => setItens(p => p.filter(i => i.id !== item.id))} disabled={itens.length === 1}
-                  style={{ width: 36, height: 36, borderRadius: '8px', border: `1px solid ${itens.length === 1 ? '#eeeeee' : '#ff33cc33'}`, background: itens.length === 1 ? '#f9f9f9' : '#fff5fd', color: itens.length === 1 ? '#00000022' : '#ff33cc', cursor: itens.length === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                </div>
+                <div style={{ width: '110px', flexShrink: 0 }}>
+                  {idx === 0 && <span style={{ ...labelStyle, marginBottom: '4px', display: 'block' }}>Custo (R$)</span>}
+                  <input type="number" value={item.custo || ''} onChange={e => setItens(p => p.map(i => i.id === item.id ? { ...i, custo: parseFloat(e.target.value) || 0 } : i))} placeholder="0,00" min="0" step="0.01" style={inputStyle} />
+                </div>
+                <button
+                  onClick={() => setItens(p => p.filter(i => i.id !== item.id))}
+                  disabled={itens.length === 1}
+                  style={{ width: 36, height: 36, borderRadius: '8px', border: `1px solid ${itens.length === 1 ? '#eeeeee' : '#ff33cc33'}`, background: itens.length === 1 ? '#f9f9f9' : '#fff5fd', color: itens.length === 1 ? '#00000022' : '#ff33cc', cursor: itens.length === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: idx === 0 ? '20px' : '0' }}
+                >
                   <Trash2 size={14} />
                 </button>
               </div>
-
-              <div className="calc-item-mobile" style={{ display: 'none', flexDirection: 'column', gap: '8px', background: '#f9f9f9', borderRadius: '12px', padding: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={labelStyle}>Item do acervo</span>
-                  <button onClick={() => setItens(p => p.filter(i => i.id !== item.id))} disabled={itens.length === 1} style={{ background: 'transparent', border: 'none', color: itens.length === 1 ? '#00000022' : '#ff33cc', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Trash2 size={12} /> Remover
-                  </button>
-                </div>
-                <input type="text" value={item.nome} onChange={e => setItens(p => p.map(i => i.id === item.id ? { ...i, nome: e.target.value } : i))} placeholder="Ex: Painel, Mesa..." style={inputStyle} />
-                <div>
-                  <span style={labelStyle}>Custo (R$)</span>
-                  <input type="number" value={item.custo || ''} onChange={e => setItens(p => p.map(i => i.id === item.id ? { ...i, custo: parseFloat(e.target.value) || 0 } : i))} placeholder="0,00" style={inputStyle} />
-                </div>
-              </div>
-
               {item.custo > 0 && locacoes > 0 && (
                 <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ff33cc', fontWeight: 600, paddingLeft: '4px' }}>
                   R$ {(item.custo / locacoes).toFixed(2).replace('.', ',')} por festa
@@ -298,46 +325,30 @@ export default function Calculadora({ acervo }: Props) {
           Bolas, spray, fita, adesivo... — coloque o custo que você gasta por festa
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
-          <div className="calc-header-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 110px 120px 36px', gap: '10px', alignItems: 'end' }}>
-            <span style={labelStyle}>Item</span>
-            <span style={labelStyle}>Custo (R$)</span>
-            <span style={labelStyle}>Rende X festas</span>
-            <div />
-          </div>
-
-          {consumiveis.map(item => (
-            <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              <div className="calc-item-desktop" style={{ display: 'grid', gridTemplateColumns: '2fr 110px 120px 36px', gap: '10px', alignItems: 'center' }}>
-                <input type="text" value={item.nome} onChange={e => setConsumiveis(p => p.map(i => i.id === item.id ? { ...i, nome: e.target.value } : i))} placeholder="Ex: Saco de bola, Spray..." style={inputStyle} />
-                <input type="number" value={item.custo || ''} onChange={e => setConsumiveis(p => p.map(i => i.id === item.id ? { ...i, custo: parseFloat(e.target.value) || 0 } : i))} placeholder="0,00" min="0" step="0.01" style={inputStyle} />
-                <input type="number" value={item.rende || ''} onChange={e => setConsumiveis(p => p.map(i => i.id === item.id ? { ...i, rende: parseFloat(e.target.value) || 1 } : i))} placeholder="1" min="1" style={inputStyle} />
-                <button onClick={() => setConsumiveis(p => p.filter(i => i.id !== item.id))} disabled={consumiveis.length === 1}
-                  style={{ width: 36, height: 36, borderRadius: '8px', border: `1px solid ${consumiveis.length === 1 ? '#eeeeee' : '#ff33cc33'}`, background: consumiveis.length === 1 ? '#f9f9f9' : '#fff5fd', color: consumiveis.length === 1 ? '#00000022' : '#ff33cc', cursor: consumiveis.length === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
+          {consumiveis.map((item, idx) => (
+            <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  {idx === 0 && <span style={labelStyle}>Item</span>}
+                  <input type="text" value={item.nome} onChange={e => setConsumiveis(p => p.map(i => i.id === item.id ? { ...i, nome: e.target.value } : i))} placeholder="Ex: Saco de bola, Spray..." style={inputStyle} />
+                </div>
+                <div style={{ width: '100px', flexShrink: 0 }}>
+                  {idx === 0 && <span style={labelStyle}>Custo (R$)</span>}
+                  <input type="number" value={item.custo || ''} onChange={e => setConsumiveis(p => p.map(i => i.id === item.id ? { ...i, custo: parseFloat(e.target.value) || 0 } : i))} placeholder="0,00" min="0" step="0.01" style={inputStyle} />
+                </div>
+                <div style={{ width: '100px', flexShrink: 0 }}>
+                  {idx === 0 && <span style={labelStyle}>Rende</span>}
+                  <input type="number" value={item.rende || ''} onChange={e => setConsumiveis(p => p.map(i => i.id === item.id ? { ...i, rende: parseFloat(e.target.value) || 1 } : i))} placeholder="festas" min="1" style={inputStyle} />
+                </div>
+                <button
+                  onClick={() => setConsumiveis(p => p.filter(i => i.id !== item.id))}
+                  disabled={consumiveis.length === 1}
+                  style={{ width: 36, height: 36, borderRadius: '8px', border: `1px solid ${consumiveis.length === 1 ? '#eeeeee' : '#ff33cc33'}`, background: consumiveis.length === 1 ? '#f9f9f9' : '#fff5fd', color: consumiveis.length === 1 ? '#00000022' : '#ff33cc', cursor: consumiveis.length === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: idx === 0 ? '20px' : '0' }}
+                >
                   <Trash2 size={14} />
                 </button>
               </div>
-
-              <div className="calc-item-mobile" style={{ display: 'none', flexDirection: 'column', gap: '8px', background: '#fff5fd', borderRadius: '12px', padding: '12px', marginTop: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={labelStyle}>Consumível</span>
-                  <button onClick={() => setConsumiveis(p => p.filter(i => i.id !== item.id))} disabled={consumiveis.length === 1} style={{ background: 'transparent', border: 'none', color: consumiveis.length === 1 ? '#00000022' : '#ff33cc', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Trash2 size={12} /> Remover
-                  </button>
-                </div>
-                <input type="text" value={item.nome} onChange={e => setConsumiveis(p => p.map(i => i.id === item.id ? { ...i, nome: e.target.value } : i))} placeholder="Ex: Saco de bola..." style={inputStyle} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div>
-                    <span style={labelStyle}>Custo (R$)</span>
-                    <input type="number" value={item.custo || ''} onChange={e => setConsumiveis(p => p.map(i => i.id === item.id ? { ...i, custo: parseFloat(e.target.value) || 0 } : i))} placeholder="0,00" style={inputStyle} />
-                  </div>
-                  <div>
-                    <span style={labelStyle}>Rende X festas</span>
-                    <input type="number" value={item.rende || ''} onChange={e => setConsumiveis(p => p.map(i => i.id === item.id ? { ...i, rende: parseFloat(e.target.value) || 1 } : i))} placeholder="1" style={inputStyle} />
-                  </div>
-                </div>
-              </div>
-
               {item.custo > 0 && item.rende > 0 && (
                 <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ff33cc', fontWeight: 600, paddingLeft: '4px' }}>
                   R$ {(item.custo / item.rende).toFixed(2).replace('.', ',')} por festa
@@ -363,18 +374,18 @@ export default function Calculadora({ acervo }: Props) {
         <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#140033', margin: '0 0 4px 0' }}>Precificação</h2>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#00000055', margin: '0 0 20px 0' }}>Configure como o preço do seu kit é calculado</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        {/* Locações + Frete */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
           <div>
             <label style={labelStyle}>Locações esperadas do kit</label>
-            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-              {[16, 20, 24].map(n => (
-                <button key={n} onClick={() => setLocacoes(n)} style={{ padding: '9px 10px', borderRadius: '10px', border: `1.5px solid ${locacoes === n ? '#ff33cc' : '#e5e5e5'}`, background: locacoes === n ? '#fff0fb' : '#fafafa', color: locacoes === n ? '#ff33cc' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
-                  {n}x
-                </button>
-              ))}
-              <input type="number" value={locacoes || ''} onChange={e => setLocacoes(parseFloat(e.target.value) || 1)} placeholder="20" min="1"
-                style={{ ...inputStyle, textAlign: 'center' }} />
-            </div>
+            <input
+              type="number"
+              value={locacoes || ''}
+              onChange={e => setLocacoes(parseFloat(e.target.value) || 1)}
+              placeholder="Ex: 20"
+              min="1"
+              style={inputStyle}
+            />
             {custoAcervo > 0 && (
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ff33cc', margin: '5px 0 0', fontWeight: 600 }}>
                 R$ {custoAcervo.toFixed(2).replace('.', ',')} de acervo por festa
@@ -387,30 +398,34 @@ export default function Calculadora({ acervo }: Props) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' }}>
-          <div>
-            <label style={labelStyle}>Preço desejado (R$)</label>
-            <input type="number" value={precoAlvo || ''} onChange={e => setPrecoAlvo(parseFloat(e.target.value) || 0)} placeholder="Ex: 100,00" min="0" step="0.01" style={inputStyle} />
-            {margemParaAlvo !== null && (
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', margin: '4px 0 0', fontWeight: 600, color: margemParaAlvo < 0 ? '#cc0000' : '#10b981' }}>
-                {margemParaAlvo < 0 ? '❌ Abaixo do custo mínimo' : `→ Equivale a ${margemParaAlvo}% de lucro`}
-              </p>
-            )}
+        {/* Preço desejado */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={labelStyle}>Preço desejado (R$) <span style={{ color: '#00000033', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>— opcional</span></label>
+          <input type="number" value={precoAlvo || ''} onChange={e => setPrecoAlvo(parseFloat(e.target.value) || 0)} placeholder="Ex: 100,00" min="0" step="0.01" style={inputStyle} />
+          {margemParaAlvo !== null && (
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', margin: '4px 0 0', fontWeight: 600, color: margemParaAlvo < 0 ? '#cc0000' : '#10b981' }}>
+              {margemParaAlvo < 0 ? '❌ Abaixo do custo mínimo' : `→ Equivale a ${margemParaAlvo}% de lucro`}
+            </p>
+          )}
+        </div>
+
+        {/* Margem de lucro — único slider */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label style={{ ...labelStyle, margin: 0 }}>Margem de lucro</label>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '26px', color: '#ff33cc', letterSpacing: '-0.5px', lineHeight: 1 }}>{lucro}%</span>
           </div>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <label style={{ ...labelStyle, margin: 0 }}>Margem de lucro</label>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#ff33cc', letterSpacing: '-0.5px', lineHeight: 1 }}>{lucro}%</span>
-            </div>
-            <input type="range" min={0} max={300} value={lucro} onChange={e => setLucro(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#ff33cc', height: '4px', cursor: 'pointer' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>0%</span>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: lucro < 150 ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
-                {lucro < 150 ? '⚠️ Mínimo recomendado: 150%' : '✅ Boa margem'}
-              </span>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>300%</span>
-            </div>
+          <input
+            type="range" min={0} max={300} value={lucro}
+            onChange={e => setLucro(Number(e.target.value))}
+            style={{ width: '100%', accentColor: '#ff33cc', height: '4px', cursor: 'pointer', marginBottom: '6px' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>0%</span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: margemStatus.cor, fontWeight: 600 }}>
+              {margemStatus.texto}
+            </span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#d1d5db' }}>300%</span>
           </div>
         </div>
       </div>
@@ -489,18 +504,14 @@ export default function Calculadora({ acervo }: Props) {
         </div>
       )}
 
-    
-
-      {/* Modal Salvar */}
+      {/* ── Modal Salvar ── */}
       {modalSalvar && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#00000055', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={e => e.target === e.currentTarget && setModalSalvar(false)}>
           <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '420px', boxShadow: '0 24px 60px #00000033' }}>
             <h3 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#140033', margin: '0 0 8px 0' }}>
               {editandoId ? 'Salvar alterações' : 'Salvar kit'}
             </h3>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 24px 0' }}>
-              Dê um nome para identificar este kit
-            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 24px 0' }}>Dê um nome para identificar este kit</p>
             <input type="text" value={nomeKit} onChange={e => setNomeKit(e.target.value)} placeholder="Ex: Kit Mesa Completo..." autoFocus
               onKeyDown={e => e.key === 'Enter' && salvarKit()}
               style={{ width: '100%', background: '#f9f9f9', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '14px 16px', color: '#140033', fontFamily: 'Inter, sans-serif', fontSize: '15px', outline: 'none', boxSizing: 'border-box', marginBottom: '16px' }} />
@@ -514,7 +525,7 @@ export default function Calculadora({ acervo }: Props) {
         </div>
       )}
 
-      {/* Modal Kits */}
+      {/* ── Modal Kits ── */}
       {modalKits && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#00000055', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={e => e.target === e.currentTarget && setModalKits(false)}>
           <div style={{ background: '#fff', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: '540px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)' }}>
@@ -549,13 +560,9 @@ export default function Calculadora({ acervo }: Props) {
                         <button onClick={() => carregarKit(kit)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '8px 12px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>
                           <Pencil size={12} /> Carregar
                         </button>
-                        {exportadoId === kit.id ? (
-                          <span style={{ display: 'flex', alignItems: 'center', background: '#f0fff4', border: '1px solid #00aa5533', borderRadius: '999px', padding: '8px 10px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00aa55' }}>✓ Enviado!</span>
-                        ) : (
-                          <button onClick={() => exportarParaCatalogo(kit)} disabled={exportando} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fff', border: '1.5px solid #ff33cc', borderRadius: '999px', padding: '8px 10px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer', opacity: exportando ? 0.6 : 1 }}>
-                            ↑ Catálogo
-                          </button>
-                        )}
+                        <button onClick={() => { abrirModalExportar(kit); setModalKits(false) }} disabled={exportando} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fff', border: '1.5px solid #ff33cc', borderRadius: '999px', padding: '8px 10px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer', opacity: exportando ? 0.6 : 1 }}>
+                          ↑ Catálogo
+                        </button>
                         <button onClick={() => deletarKit(kit.id)} style={{ width: 32, height: 32, background: '#fff5fd', border: '1px solid #ff33cc33', borderRadius: '999px', color: '#ff33cc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Trash2 size={13} />
                         </button>
@@ -569,14 +576,73 @@ export default function Calculadora({ acervo }: Props) {
         </div>
       )}
 
-      <style>{`
-        @media (max-width: 768px) {
-          .calc-header-desktop { display: none !important; }
-          .calc-item-desktop { display: none !important; }
-          .calc-item-mobile { display: flex !important; }
-          .form-grid-3 { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+      {/* ── Modal Exportar com arredondamento ── */}
+      {modalExportar && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: '#00000055', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={e => e.target === e.currentTarget && setModalExportar(null)}>
+          <div style={{ background: '#fff', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '400px', boxShadow: '0 24px 60px #00000033' }}>
+            <h3 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '18px', color: '#140033', margin: '0 0 4px 0' }}>
+              Enviar para o catálogo
+            </h3>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#00000055', margin: '0 0 20px 0' }}>
+              Kit: <strong style={{ color: '#140033' }}>{modalExportar.kit.nome}</strong>
+            </p>
+
+            {/* Preço calculado */}
+            <div style={{ background: '#fafafa', border: '1px solid #eeeeee', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#00000055', margin: '0 0 2px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Preço calculado</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '22px', color: '#140033', margin: 0 }}>
+                R$ {modalExportar.precoCalculado.toFixed(2).replace('.', ',')}
+              </p>
+            </div>
+
+            {/* Sugestões */}
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, color: '#00000055', margin: '0 0 8px 0' }}>
+              💡 Preços mais atrativos:
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+              {sugerirPrecos(modalExportar.precoCalculado).map(sugestao => (
+                <button
+                  key={sugestao}
+                  onClick={() => setPrecoExportar(sugestao)}
+                  style={{
+                    padding: '7px 14px', borderRadius: '999px',
+                    border: `1.5px solid ${precoExportar === sugestao ? '#ff33cc' : '#e5e5e5'}`,
+                    background: precoExportar === sugestao ? '#fff0fb' : '#fafafa',
+                    color: precoExportar === sugestao ? '#ff33cc' : '#140033',
+                    fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  R$ {sugestao.toFixed(2).replace('.', ',')}
+                </button>
+              ))}
+            </div>
+
+            {/* Campo editável */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ ...labelStyle, marginBottom: '6px', display: 'block' }}>Ou defina o valor manualmente</label>
+              <input
+                type="number"
+                value={precoExportar || ''}
+                onChange={e => setPrecoExportar(parseFloat(e.target.value) || 0)}
+                placeholder="0,00"
+                min="0" step="0.01"
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setModalExportar(null)} style={{ flex: 1, padding: '12px', background: '#f5f5f5', border: 'none', borderRadius: '999px', color: '#00000066', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={confirmarExportacao} disabled={exportando || precoExportar <= 0} style={{ flex: 2, padding: '12px', background: precoExportar > 0 ? '#ff33cc' : '#f0f0f0', border: 'none', borderRadius: '999px', color: precoExportar > 0 ? '#fff' : '#00000033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: precoExportar > 0 ? 'pointer' : 'not-allowed' }}>
+                {exportando ? 'Enviando...' : 'Enviar para o catálogo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
