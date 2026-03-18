@@ -1,15 +1,25 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+interface Cliente {
+  id: string
+  nome: string
+  telefone: string | null
+  email: string | null
+}
 
 interface Pedido {
   id: string
   nome_cliente: string
+  telefone_cliente: string | null
   valor_total: number
   status: string
   data_evento: string
   forma_pagamento: string | null
   observacoes: string | null
+  cliente_id: string | null
   catalogo_temas: { nome: string } | null
   catalogo_kits: { nome: string } | null
 }
@@ -19,10 +29,11 @@ interface Props {
   usuarioId: string
   temas: { id: string; nome: string }[]
   kits: { id: string; nome: string; tema_id: string }[]
+  clientes: Cliente[]
 }
 
-const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const DIAS        = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+const MESES_FULL  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const MESES_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 const STATUS: Record<string, { dot: string; color: string; bg: string; label: string }> = {
@@ -42,6 +53,9 @@ const IconBell      = () => <svg width="14" height="14" viewBox="0 0 14 14" fill
 const IconX         = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 3l8 8M11 3L3 11"/></svg>
 const IconEmpty     = () => <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#e0e0e6" strokeWidth="1.4" strokeLinecap="round"><rect x="6" y="6" width="28" height="28" rx="3"/><path d="M12 20h16M12 26h10M20 8v6"/></svg>
 const IconCheck     = () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6l3 3 5-5"/></svg>
+const IconEdit      = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 2l2 2-7 7H2v-2L9 2z"/></svg>
+const IconTrash     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3.5h9M5 3.5V2h3v1.5M10 3.5L9.5 11h-6L3 3.5"/></svg>
+const IconUser      = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="6.5" cy="4" r="2.5"/><path d="M1.5 11.5c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>
 
 // ── Estilos reutilizáveis ────────────────────────────────
 const inputStyle: React.CSSProperties = {
@@ -64,80 +78,192 @@ const btnPrimario: React.CSSProperties = {
 }
 const btnSecundario: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
-  background: 'transparent', color: '#ff33cc',
-  border: '1.5px solid #ff33cc',
+  background: 'transparent', color: '#ff33cc', border: '1.5px solid #ff33cc',
   fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px',
   borderRadius: '999px', cursor: 'pointer', padding: '6px 14px',
   whiteSpace: 'nowrap',
 }
 
-// ── Modal de novo pedido ──────────────────────────────────
-function ModalNovoPedido({
-  onClose, dataInicial, usuarioId, temas, kits, onSalvo,
+// ── Tipos do form ────────────────────────────────────────
+interface FormPedido {
+  nome_cliente: string
+  telefone_cliente: string
+  data_evento: string
+  valor_total: string
+  status: string
+  tema_id: string
+  kit_id: string
+  forma_pagamento: string
+  observacoes: string
+  cliente_id: string
+}
+
+function formVazio(dataInicial: string): FormPedido {
+  return {
+    nome_cliente: '', telefone_cliente: '', data_evento: dataInicial,
+    valor_total: '', status: 'pendente', tema_id: '', kit_id: '',
+    forma_pagamento: '', observacoes: '', cliente_id: '',
+  }
+}
+
+function pedidoParaForm(p: Pedido): FormPedido {
+  return {
+    nome_cliente: p.nome_cliente,
+    telefone_cliente: p.telefone_cliente ?? '',
+    data_evento: p.data_evento,
+    valor_total: Number(p.valor_total).toFixed(2).replace('.', ','),
+    status: p.status,
+    tema_id: '',
+    kit_id: p.catalogo_kits ? '' : '',
+    forma_pagamento: p.forma_pagamento ?? '',
+    observacoes: p.observacoes ?? '',
+    cliente_id: p.cliente_id ?? '',
+  }
+}
+
+// ── Modal de pedido (novo + editar) ──────────────────────
+function ModalPedido({
+  onClose, pedidoEditando, dataInicial, usuarioId, temas, kits, clientes, onSalvo, onDeletado,
 }: {
   onClose: () => void
+  pedidoEditando: Pedido | null
   dataInicial: string
   usuarioId: string
   temas: { id: string; nome: string }[]
   kits: { id: string; nome: string; tema_id: string }[]
-  onSalvo: (pedido: Pedido) => void
+  clientes: Cliente[]
+  onSalvo: (pedido: Pedido, isEdicao: boolean) => void
+  onDeletado: (id: string) => void
 }) {
+  const isEdicao = !!pedidoEditando
   const [isPending, startTransition] = useTransition()
-  const [form, setForm] = useState({
-    nome_cliente: '',
-    data_evento: dataInicial,
-    valor_total: '',
-    status: 'pendente',
-    tema_id: '',
-    kit_id: '',
-    forma_pagamento: '',
-    observacoes: '',
-  })
+  const [form, setForm] = useState<FormPedido>(
+    isEdicao ? pedidoParaForm(pedidoEditando!) : formVazio(dataInicial)
+  )
   const [erro, setErro] = useState('')
   const [salvo, setSalvo] = useState(false)
+  const [confirmarDelete, setConfirmarDelete] = useState(false)
+  const [deletando, setDeletando] = useState(false)
 
-  // ✅ Fix: mostra todos os kits se nenhum tema selecionado, filtra se tem tema
+  // Busca de cliente — campo misto
+  const [buscaCliente, setBuscaCliente] = useState(
+    isEdicao && pedidoEditando!.cliente_id
+      ? clientes.find(c => c.id === pedidoEditando!.cliente_id)?.nome ?? pedidoEditando!.nome_cliente
+      : isEdicao ? pedidoEditando!.nome_cliente : ''
+  )
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false)
+
+  const supabase = createClient()
+
+  const clientesFiltrados = buscaCliente.length >= 1
+    ? clientes.filter(c => c.nome.toLowerCase().includes(buscaCliente.toLowerCase())).slice(0, 5)
+    : []
+
+  function selecionarCliente(c: Cliente) {
+    setBuscaCliente(c.nome)
+    setForm(f => ({
+      ...f,
+      nome_cliente: c.nome,
+      telefone_cliente: c.telefone ?? f.telefone_cliente,
+      cliente_id: c.id,
+    }))
+    setMostrarSugestoes(false)
+  }
+
+  function limparCliente() {
+    setBuscaCliente('')
+    setForm(f => ({ ...f, nome_cliente: '', cliente_id: '' }))
+  }
+
   const kitsFiltrados = form.tema_id
     ? kits.filter(k => k.tema_id === form.tema_id)
     : kits
 
   async function handleSalvar() {
-    if (!form.nome_cliente.trim()) return setErro('Informe o nome do cliente')
+    const nomeFinal = form.cliente_id ? form.nome_cliente : buscaCliente.trim()
+    if (!nomeFinal) return setErro('Informe o nome do cliente')
     if (!form.data_evento) return setErro('Informe a data do evento')
     if (!form.valor_total || isNaN(Number(form.valor_total.replace(',', '.')))) return setErro('Informe um valor válido')
     setErro('')
 
     startTransition(async () => {
       try {
-        const res = await fetch('/api/pedidos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            usuario_id: usuarioId,
-            nome_cliente: form.nome_cliente.trim(),
-            data_evento: form.data_evento,
-            valor_total: Number(form.valor_total.replace(',', '.')),
-            status: form.status,
-            tema_id: form.tema_id || null,
-            kit_id: form.kit_id || null,
-            forma_pagamento: form.forma_pagamento || null,
-            observacoes: form.observacoes || null,
-          }),
-        })
-
-        const data = await res.json()
-
-        if (!res.ok) {
-          setErro(data?.error ?? 'Erro ao salvar pedido. Tente novamente.')
-          return
+        const payload = {
+          usuario_id: usuarioId,
+          nome_cliente: nomeFinal,
+          telefone_cliente: form.telefone_cliente || null,
+          data_evento: form.data_evento,
+          valor_total: Number(form.valor_total.replace(',', '.')),
+          status: form.status,
+          tema_id: form.tema_id || null,
+          catalogo_kit_id: form.kit_id || null,
+          forma_pagamento: form.forma_pagamento || null,
+          observacoes: form.observacoes || null,
+          cliente_id: form.cliente_id || null,
         }
 
-        setSalvo(true)
-        setTimeout(() => { onSalvo(data); onClose() }, 700)
+        if (isEdicao) {
+          const { data, error } = await supabase
+            .from('pedidos')
+            .update({ ...payload, atualizado_em: new Date().toISOString() })
+            .eq('id', pedidoEditando!.id)
+            .eq('usuario_id', usuarioId)
+            .select('*, catalogo_temas(nome), catalogo_kits(nome)')
+            .single()
+          if (error) { setErro('Erro ao atualizar: ' + error.message); return }
+          setSalvo(true)
+          setTimeout(() => { onSalvo(data as Pedido, true); onClose() }, 700)
+        } else {
+          const { data, error } = await supabase
+            .from('pedidos')
+            .insert(payload)
+            .select('*, catalogo_temas(nome), catalogo_kits(nome)')
+            .single()
+          if (error) { setErro('Erro ao salvar: ' + error.message); return }
+          setSalvo(true)
+          setTimeout(() => { onSalvo(data as Pedido, false); onClose() }, 700)
+        }
       } catch {
         setErro('Erro de conexão. Verifique sua internet.')
       }
     })
+  }
+
+  async function handleDeletar() {
+    setDeletando(true)
+    const { error } = await supabase
+      .from('pedidos')
+      .delete()
+      .eq('id', pedidoEditando!.id)
+      .eq('usuario_id', usuarioId)
+    if (error) { setErro('Erro ao apagar: ' + error.message); setDeletando(false); return }
+    onDeletado(pedidoEditando!.id)
+    onClose()
+  }
+
+  // Modal de confirmação de delete
+  if (confirmarDelete) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', padding: '24px' }}>
+        <div style={{ background: '#fff', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '360px', boxShadow: '0 24px 60px rgba(0,0,0,0.2)' }}>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#fef2f2', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <IconTrash />
+          </div>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '16px', color: '#111827', textAlign: 'center', margin: '0 0 8px' }}>Apagar pedido?</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6b7280', textAlign: 'center', margin: '0 0 24px', lineHeight: 1.5 }}>
+            O pedido de <strong>{pedidoEditando!.nome_cliente}</strong> em {new Date(pedidoEditando!.data_evento + 'T00:00:00').toLocaleDateString('pt-BR')} será removido permanentemente.
+          </p>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => setConfirmarDelete(false)} style={{ flex: 1, padding: '12px', background: '#f5f5f5', border: 'none', borderRadius: '999px', color: '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
+              Cancelar
+            </button>
+            <button onClick={handleDeletar} disabled={deletando} style={{ flex: 1, padding: '12px', background: '#dc2626', border: 'none', borderRadius: '999px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: deletando ? 'not-allowed' : 'pointer', opacity: deletando ? 0.7 : 1 }}>
+              {deletando ? 'Apagando...' : 'Apagar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -150,20 +276,103 @@ function ModalNovoPedido({
         {/* Header */}
         <div style={{ position: 'sticky', top: 0, background: '#fff', borderBottom: '1px solid #f3f4f6', padding: '18px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: '24px 24px 0 0', zIndex: 1 }}>
           <div>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '15px', color: '#111827', margin: 0 }}>Novo pedido</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '2px 0 0' }}>Preencha os dados do evento</p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '15px', color: '#111827', margin: 0 }}>
+              {isEdicao ? 'Editar pedido' : 'Novo pedido'}
+            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '2px 0 0' }}>
+              {isEdicao ? pedidoEditando!.nome_cliente : 'Preencha os dados do evento'}
+            </p>
           </div>
-          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
-            <IconX />
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {isEdicao && (
+              <button
+                onClick={() => setConfirmarDelete(true)}
+                style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #fecaca', background: '#fef2f2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}
+              >
+                <IconTrash />
+              </button>
+            )}
+            <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+              <IconX />
+            </button>
+          </div>
         </div>
 
         <div style={{ padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-          {/* Nome */}
+          {/* Cliente — campo misto busca + digitação livre */}
+          <div style={{ position: 'relative' }}>
+            <label style={labelStyle}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <IconUser /> Cliente *
+              </span>
+            </label>
+            <div style={{ display: 'flex', border: '1px solid #e8e8ec', borderRadius: '10px', overflow: 'hidden', background: '#fafafa' }}>
+              <input
+                style={{ ...inputStyle, border: 'none', background: 'transparent', flex: 1 }}
+                placeholder="Buscar cadastrado ou digitar nome..."
+                value={buscaCliente}
+                onChange={e => {
+                  setBuscaCliente(e.target.value)
+                  setForm(f => ({ ...f, nome_cliente: e.target.value, cliente_id: '' }))
+                  setMostrarSugestoes(true)
+                }}
+                onFocus={() => setMostrarSugestoes(true)}
+                onBlur={() => setTimeout(() => setMostrarSugestoes(false), 150)}
+              />
+              {(form.cliente_id || buscaCliente) && (
+                <button
+                  onClick={limparCliente}
+                  style={{ padding: '0 10px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af', flexShrink: 0 }}
+                >
+                  <IconX />
+                </button>
+              )}
+            </div>
+
+            {/* Badge de cliente vinculado */}
+            {form.cliente_id && (
+              <div style={{ marginTop: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#059669', fontWeight: 600 }}>
+                  Cliente vinculado ao cadastro
+                </span>
+              </div>
+            )}
+
+            {/* Dropdown de sugestões */}
+            {mostrarSugestoes && clientesFiltrados.length > 0 && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #e8e8ec', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 10, overflow: 'hidden', marginTop: '4px' }}>
+                {clientesFiltrados.map(c => (
+                  <button
+                    key={c.id}
+                    onMouseDown={() => selecionarCliente(c)}
+                    style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid #f3f4f6' }}
+                  >
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#fff0fb', border: '1px solid #ffd6f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '11px', color: '#ff33cc' }}>
+                        {c.nome.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0 }}>{c.nome}</p>
+                      {c.telefone && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>{c.telefone}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Telefone */}
           <div>
-            <label style={labelStyle}>Nome do cliente *</label>
-            <input style={inputStyle} placeholder="Ex: Maria Silva" value={form.nome_cliente} onChange={e => setForm(f => ({ ...f, nome_cliente: e.target.value }))} />
+            <label style={labelStyle}>WhatsApp</label>
+            <input
+              style={inputStyle}
+              placeholder="(00) 00000-0000"
+              value={form.telefone_cliente}
+              onChange={e => setForm(f => ({ ...f, telefone_cliente: e.target.value }))}
+            />
           </div>
 
           {/* Data + Status */}
@@ -207,17 +416,13 @@ function ModalNovoPedido({
             </div>
           </div>
 
-          {/* Tema + Kit — sempre visível se tiver kits */}
+          {/* Tema + Kit */}
           {(temas.length > 0 || kits.length > 0) && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               {temas.length > 0 && (
                 <div>
                   <label style={labelStyle}>Tema</label>
-                  <select
-                    style={inputStyle}
-                    value={form.tema_id}
-                    onChange={e => setForm(f => ({ ...f, tema_id: e.target.value, kit_id: '' }))}
-                  >
+                  <select style={inputStyle} value={form.tema_id} onChange={e => setForm(f => ({ ...f, tema_id: e.target.value, kit_id: '' }))}>
                     <option value="">Todos os temas</option>
                     {temas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
                   </select>
@@ -225,15 +430,8 @@ function ModalNovoPedido({
               )}
               {kits.length > 0 && (
                 <div>
-                  <label style={labelStyle}>
-                    Kit {form.tema_id ? `(${kitsFiltrados.length})` : `(${kits.length})`}
-                  </label>
-                  {/* ✅ Fix: nunca disabled, sempre mostra kits disponíveis */}
-                  <select
-                    style={inputStyle}
-                    value={form.kit_id}
-                    onChange={e => setForm(f => ({ ...f, kit_id: e.target.value }))}
-                  >
+                  <label style={labelStyle}>Kit ({kitsFiltrados.length})</label>
+                  <select style={inputStyle} value={form.kit_id} onChange={e => setForm(f => ({ ...f, kit_id: e.target.value }))}>
                     <option value="">Selecione o kit</option>
                     {kitsFiltrados.map(k => <option key={k.id} value={k.id}>{k.nome}</option>)}
                   </select>
@@ -266,15 +464,19 @@ function ModalNovoPedido({
             disabled={isPending || salvo}
             style={{
               ...btnPrimario,
-              width: '100%', padding: '14px',
-              borderRadius: '999px', fontSize: '14px',
+              width: '100%', padding: '14px', borderRadius: '999px', fontSize: '14px',
               background: salvo ? '#059669' : '#ff33cc',
               opacity: isPending ? 0.75 : 1,
               cursor: isPending || salvo ? 'default' : 'pointer',
               transition: 'background .2s, opacity .2s',
             }}
           >
-            {salvo ? <><IconCheck /> Pedido criado!</> : isPending ? 'Salvando...' : <><IconPlus /> Criar pedido</>}
+            {salvo
+              ? <><IconCheck /> {isEdicao ? 'Atualizado!' : 'Pedido criado!'}</>
+              : isPending ? 'Salvando...'
+              : isEdicao ? <><IconEdit /> Salvar alterações</>
+              : <><IconPlus /> Criar pedido</>
+            }
           </button>
 
         </div>
@@ -284,7 +486,7 @@ function ModalNovoPedido({
 }
 
 // ── Componente principal ─────────────────────────────────
-export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, temas, kits }: Props) {
+export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, temas, kits, clientes }: Props) {
   const agora = new Date()
   const [pedidos, setPedidos] = useState(pedidosIniciais)
   const [mes, setMes] = useState(agora.getMonth())
@@ -294,6 +496,7 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
   const [diaSel, setDiaSel] = useState<string | null>(null)
   const [modalAberto, setModalAberto] = useState(false)
   const [dataModal, setDataModal] = useState(agora.toISOString().split('T')[0])
+  const [pedidoEditando, setPedidoEditando] = useState<Pedido | null>(null)
 
   function mesAnterior() {
     if (mes === 0) { setMes(11); setAno(a => a - 1) } else setMes(m => m - 1)
@@ -301,9 +504,18 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
   function proximoMes() {
     if (mes === 11) { setMes(0); setAno(a => a + 1) } else setMes(m => m + 1)
   }
-  function abrirModal(data?: string) {
+  function abrirModalNovo(data?: string) {
+    setPedidoEditando(null)
     setDataModal(data ?? agora.toISOString().split('T')[0])
     setModalAberto(true)
+  }
+  function abrirModalEditar(pedido: Pedido) {
+    setPedidoEditando(pedido)
+    setModalAberto(true)
+  }
+  function fecharModal() {
+    setModalAberto(false)
+    setPedidoEditando(null)
   }
 
   const pedidosFiltrados = pedidos.filter(p => filtro === 'todos' || p.status === filtro)
@@ -330,6 +542,19 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
     if (!porMes[key]) porMes[key] = []
     porMes[key].push(p)
   })
+
+  function handleSalvo(pedido: Pedido, isEdicao: boolean) {
+    if (isEdicao) {
+      setPedidos(pp => pp.map(p => p.id === pedido.id ? pedido : p))
+    } else {
+      setPedidos(pp => [...pp, pedido])
+    }
+  }
+
+  function handleDeletado(id: string) {
+    setPedidos(pp => pp.filter(p => p.id !== id))
+    if (diaSel && pedidosDiaSel.length <= 1) setDiaSel(null)
+  }
 
   const toggleBtnStyle = (ativo: boolean): React.CSSProperties => ({
     padding: '6px 14px', borderRadius: '999px', border: 'none',
@@ -375,44 +600,20 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
 
       {/* ── Barra de controles ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {/* Filtros */}
         <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', flexShrink: 1 }}>
           {(['todos', 'pendente', 'confirmado', 'concluido', 'cancelado'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFiltro(f)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '5px',
-                padding: '6px 12px', borderRadius: '999px',
-                border: `1.5px solid ${filtro === f ? '#ff33cc' : '#e8e8ec'}`,
-                background: filtro === f ? '#ff33cc' : '#fff',
-                color: filtro === f ? '#fff' : '#6b7280',
-                fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px',
-                cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                transition: 'all .15s',
-              }}
-            >
-              {f !== 'todos' && (
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: filtro === f ? '#fff' : STATUS[f]?.dot, display: 'inline-block' }} />
-              )}
+            <button key={f} onClick={() => setFiltro(f)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '999px', border: `1.5px solid ${filtro === f ? '#ff33cc' : '#e8e8ec'}`, background: filtro === f ? '#ff33cc' : '#fff', color: filtro === f ? '#fff' : '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all .15s' }}>
+              {f !== 'todos' && <span style={{ width: 6, height: 6, borderRadius: '50%', background: filtro === f ? '#fff' : STATUS[f]?.dot, display: 'inline-block' }} />}
               {f === 'todos' ? 'Todos' : STATUS[f]?.label}
             </button>
           ))}
         </div>
-
-        {/* Toggle + botão novo */}
         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: '3px', background: '#f3f4f6', borderRadius: '999px', padding: '3px' }}>
-            <button style={toggleBtnStyle(vis === 'calendario')} onClick={() => setVis('calendario')}>
-              <IconCalendar /> Calendário
-            </button>
-            <button style={toggleBtnStyle(vis === 'lista')} onClick={() => setVis('lista')}>
-              <IconList /> Lista
-            </button>
+            <button style={toggleBtnStyle(vis === 'calendario')} onClick={() => setVis('calendario')}><IconCalendar /> Calendário</button>
+            <button style={toggleBtnStyle(vis === 'lista')} onClick={() => setVis('lista')}><IconList /> Lista</button>
           </div>
-          <button onClick={() => abrirModal()} style={btnPrimario}>
-            <IconPlus /> Novo pedido
-          </button>
+          <button onClick={() => abrirModalNovo()} style={btnPrimario}><IconPlus /> Novo pedido</button>
         </div>
       </div>
 
@@ -420,23 +621,13 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
       {vis === 'calendario' && (
         <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '16px', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f3f4f6' }}>
-            <button onClick={mesAnterior} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
-              <IconChevLeft />
-            </button>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>
-              {MESES_FULL[mes]} {ano}
-            </p>
-            <button onClick={proximoMes} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
-              <IconChevRight />
-            </button>
+            <button onClick={mesAnterior} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}><IconChevLeft /></button>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>{MESES_FULL[mes]} {ano}</p>
+            <button onClick={proximoMes} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}><IconChevRight /></button>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid #f3f4f6' }}>
-            {DIAS.map(d => (
-              <p key={d} style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#9ca3af', textAlign: 'center', margin: 0, padding: '8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{d}</p>
-            ))}
+            {DIAS.map(d => <p key={d} style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#9ca3af', textAlign: 'center', margin: 0, padding: '8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{d}</p>)}
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '8px', gap: '2px' }}>
             {Array.from({ length: primeiroDia }).map((_, i) => <div key={`e-${i}`} />)}
             {Array.from({ length: diasNoMes }, (_, i) => i + 1).map(dia => {
@@ -445,25 +636,11 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
               const isHoje = dataStr === hoje
               const isSel = diaSel === dataStr
               return (
-                <button
-                  key={dia}
-                  onClick={() => setDiaSel(isSel ? null : dataStr)}
-                  style={{
-                    aspectRatio: '1', borderRadius: '999px', border: 'none',
-                    background: isSel ? '#ff33cc' : isHoje ? '#fff0fb' : 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
-                    padding: '2px',
-                    outline: isHoje && !isSel ? '2px solid #ffccee' : 'none',
-                    outlineOffset: '1px',
-                  }}
-                >
+                <button key={dia} onClick={() => setDiaSel(isSel ? null : dataStr)} style={{ aspectRatio: '1', borderRadius: '999px', border: 'none', background: isSel ? '#ff33cc' : isHoje ? '#fff0fb' : 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '2px', outline: isHoje && !isSel ? '2px solid #ffccee' : 'none', outlineOffset: '1px' }}>
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: isHoje ? 800 : 500, color: isSel ? '#fff' : isHoje ? '#ff33cc' : '#374151', margin: 0, lineHeight: 1 }}>{dia}</p>
                   {pp.length > 0 && (
                     <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
-                      {pp.slice(0, 3).map((p, i) => (
-                        <span key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: isSel ? '#ffffff99' : STATUS[p.status]?.dot ?? '#ff33cc', display: 'inline-block' }} />
-                      ))}
+                      {pp.slice(0, 3).map((p, i) => <span key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: isSel ? '#ffffff99' : STATUS[p.status]?.dot ?? '#ff33cc', display: 'inline-block' }} />)}
                     </div>
                   )}
                 </button>
@@ -478,12 +655,10 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
                 <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: 0 }}>
                   {new Date(diaSel + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
-                <button onClick={() => abrirModal(diaSel)} style={btnSecundario}>
-                  <IconPlus /> Adicionar
-                </button>
+                <button onClick={() => abrirModalNovo(diaSel)} style={btnSecundario}><IconPlus /> Adicionar</button>
               </div>
               {pedidosDiaSel.length > 0
-                ? <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{pedidosDiaSel.map(p => <PedidoCard key={p.id} pedido={p} />)}</div>
+                ? <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{pedidosDiaSel.map(p => <PedidoCard key={p.id} pedido={p} onEditar={abrirModalEditar} />)}</div>
                 : <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#d1d5db', margin: 0, textAlign: 'center', padding: '16px 0' }}>Nenhum evento neste dia</p>
               }
             </div>
@@ -499,39 +674,38 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}><IconEmpty /></div>
               <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum pedido encontrado</p>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 20px' }}>Tente mudar o filtro ou crie um novo pedido</p>
-              <button onClick={() => abrirModal()} style={btnPrimario}>
-                <IconPlus /> Criar pedido
-              </button>
+              <button onClick={() => abrirModalNovo()} style={btnPrimario}><IconPlus /> Criar pedido</button>
             </div>
           ) : (
-            Object.entries(porMes)
-              .sort((a, b) => a[0].localeCompare(b[0]))
-              .map(([key, pp]) => {
-                const [y, m] = key.split('-').map(Number)
-                return (
-                  <div key={key} style={{ marginBottom: '20px' }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#9ca3af', letterSpacing: '0.8px', textTransform: 'uppercase', margin: '0 0 8px 4px' }}>
-                      {MESES_SHORT[m - 1]} {y}
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {pp.map(p => <PedidoCard key={p.id} pedido={p} />)}
-                    </div>
+            Object.entries(porMes).sort((a, b) => a[0].localeCompare(b[0])).map(([key, pp]) => {
+              const [y, m] = key.split('-').map(Number)
+              return (
+                <div key={key} style={{ marginBottom: '20px' }}>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#9ca3af', letterSpacing: '0.8px', textTransform: 'uppercase', margin: '0 0 8px 4px' }}>
+                    {MESES_SHORT[m - 1]} {y}
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {pp.map(p => <PedidoCard key={p.id} pedido={p} onEditar={abrirModalEditar} />)}
                   </div>
-                )
-              })
+                </div>
+              )
+            })
           )}
         </div>
       )}
 
       {/* ── Modal ── */}
       {modalAberto && (
-        <ModalNovoPedido
-          onClose={() => setModalAberto(false)}
+        <ModalPedido
+          onClose={fecharModal}
+          pedidoEditando={pedidoEditando}
           dataInicial={dataModal}
           usuarioId={usuarioId}
           temas={temas}
           kits={kits}
-          onSalvo={novoPedido => setPedidos(pp => [...pp, novoPedido])}
+          clientes={clientes}
+          onSalvo={handleSalvo}
+          onDeletado={handleDeletado}
         />
       )}
     </div>
@@ -539,7 +713,7 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
 }
 
 // ── Card de pedido ────────────────────────────────────────
-function PedidoCard({ pedido }: { pedido: Pedido }) {
+function PedidoCard({ pedido, onEditar }: { pedido: Pedido; onEditar: (p: Pedido) => void }) {
   const s = STATUS[pedido.status] ?? STATUS.pendente
   const agora = new Date()
   const dataEvento = new Date(pedido.data_evento + 'T00:00:00')
@@ -547,14 +721,22 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
   const urgente = dias >= 0 && dias <= 7 && pedido.status !== 'cancelado' && pedido.status !== 'concluido'
 
   return (
-    <div style={{ background: urgente ? '#fffbf0' : '#fff', border: `1px solid ${urgente ? '#fde68a' : '#e8e8ec'}`, borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div
+      onClick={() => onEditar(pedido)}
+      style={{ background: urgente ? '#fffbf0' : '#fff', border: `1px solid ${urgente ? '#fde68a' : '#e8e8ec'}`, borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'border-color .15s' }}
+    >
       <div style={{ width: '36px', textAlign: 'center', flexShrink: 0 }}>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '16px', fontWeight: 900, color: '#ff33cc', margin: 0, lineHeight: 1 }}>{dataEvento.getDate()}</p>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 600, color: '#9ca3af', margin: 0, textTransform: 'uppercase' }}>{MESES_SHORT[dataEvento.getMonth()]}</p>
       </div>
       <div style={{ width: 1, height: 28, background: '#e5e7eb', flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pedido.nome_cliente}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pedido.nome_cliente}</p>
+          {pedido.cliente_id && (
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} title="Cliente vinculado" />
+          )}
+        </div>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {[pedido.catalogo_temas?.nome, pedido.catalogo_kits?.nome].filter(Boolean).join(' · ') || '—'}
         </p>
@@ -573,6 +755,7 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
           </p>
         )}
       </div>
+      <div style={{ color: '#d1d5db', flexShrink: 0 }}><IconEdit /></div>
     </div>
   )
 }

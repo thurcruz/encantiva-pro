@@ -26,7 +26,7 @@ export default async function PaginaAgenda() {
     return <ModuloBloqueado titulo="Agenda de Festas" descricao="Visualize todos os seus eventos em um calendário organizado. Nunca mais perca um prazo." planoMinimo="avancado" icone="📅" />
   }
 
-  const [{ data: pedidos }, { data: temas }, { data: kits }] = await Promise.all([
+  const [{ data: pedidos }, { data: temas }, { data: kits }, { data: clientes }] = await Promise.all([
     supabase
       .from('pedidos')
       .select('*, catalogo_temas(nome), catalogo_kits(nome)')
@@ -42,6 +42,11 @@ export default async function PaginaAgenda() {
       .select('id, nome, tema_id')
       .eq('usuario_id', user.id)
       .order('nome'),
+    supabase
+      .from('clientes')
+      .select('id, nome, telefone, email')
+      .eq('usuario_id', user.id)
+      .order('nome'),
   ])
 
   return (
@@ -53,6 +58,7 @@ export default async function PaginaAgenda() {
           usuarioId={user.id}
           temas={temas ?? []}
           kits={kits ?? []}
+          clientes={clientes ?? []}
         />
       </div>
     </div>
