@@ -658,7 +658,7 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
                 <button onClick={() => abrirModalNovo(diaSel)} style={btnSecundario}><IconPlus /> Adicionar</button>
               </div>
               {pedidosDiaSel.length > 0
-                ? <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{pedidosDiaSel.map(p => <PedidoCard key={p.id} pedido={p} onEditar={abrirModalEditar} />)}</div>
+                ? <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{pedidosDiaSel.map(p => <PedidoCard key={p.id} pedido={p} clientes={clientes} onEditar={abrirModalEditar} onVinculado={(id, cId) => setPedidos(pp => pp.map(x => x.id === id ? {...x, cliente_id: cId} : x))} />)}</div>
                 : <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#d1d5db', margin: 0, textAlign: 'center', padding: '16px 0' }}>Nenhum evento neste dia</p>
               }
             </div>
@@ -685,7 +685,7 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
                     {MESES_SHORT[m - 1]} {y}
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {pp.map(p => <PedidoCard key={p.id} pedido={p} onEditar={abrirModalEditar} />)}
+                    {pp.map(p => <PedidoCard key={p.id} pedido={p} clientes={clientes} onEditar={abrirModalEditar} onVinculado={(id, cId) => setPedidos(pp2 => pp2.map(x => x.id === id ? {...x, cliente_id: cId} : x))} />)}
                   </div>
                 </div>
               )
@@ -713,49 +713,92 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
 }
 
 // ── Card de pedido ────────────────────────────────────────
-function PedidoCard({ pedido, onEditar }: { pedido: Pedido; onEditar: (p: Pedido) => void }) {
+const IconLink = () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 6.5a2.5 2.5 0 0 0 3.5 0l1.2-1.2a2.5 2.5 0 0 0-3.5-3.5L5.5 3"/><path d="M7 5.5a2.5 2.5 0 0 0-3.5 0L2.3 6.7a2.5 2.5 0 0 0 3.5 3.5L7 9"/></svg>
+
+function PedidoCard({ pedido, clientes, onEditar, onVinculado }: {
+  pedido: Pedido
+  clientes: Cliente[]
+  onEditar: (p: Pedido) => void
+  onVinculado: (pedidoId: string, clienteId: string) => void
+}) {
+  const supabase = createClient()
   const s = STATUS[pedido.status] ?? STATUS.pendente
   const agora = new Date()
   const dataEvento = new Date(pedido.data_evento + 'T00:00:00')
   const dias = Math.ceil((dataEvento.getTime() - agora.getTime()) / 86400000)
   const urgente = dias >= 0 && dias <= 7 && pedido.status !== 'cancelado' && pedido.status !== 'concluido'
+  const [mostrarVincular, setMostrarVincular] = useState(false)
+  const [clienteSel, setClienteSel] = useState('')
+  const [vinculando, setVinculando] = useState(false)
+  const [vinculado, setVinculado] = useState(false)
+
+  async function vincular(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!clienteSel) return
+    setVinculando(true)
+    const { error } = await supabase.from('pedidos').update({ cliente_id: clienteSel }).eq('id', pedido.id)
+    if (!error) {
+      setVinculado(true)
+      onVinculado(pedido.id, clienteSel)
+      setTimeout(() => setMostrarVincular(false), 800)
+    }
+    setVinculando(false)
+  }
 
   return (
-    <div
-      onClick={() => onEditar(pedido)}
-      style={{ background: urgente ? '#fffbf0' : '#fff', border: `1px solid ${urgente ? '#fde68a' : '#e8e8ec'}`, borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'border-color .15s' }}
-    >
-      <div style={{ width: '36px', textAlign: 'center', flexShrink: 0 }}>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '16px', fontWeight: 900, color: '#ff33cc', margin: 0, lineHeight: 1 }}>{dataEvento.getDate()}</p>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 600, color: '#9ca3af', margin: 0, textTransform: 'uppercase' }}>{MESES_SHORT[dataEvento.getMonth()]}</p>
-      </div>
-      <div style={{ width: 1, height: 28, background: '#e5e7eb', flexShrink: 0 }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pedido.nome_cliente}</p>
-          {pedido.cliente_id && (
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} title="Cliente vinculado" />
+    <div style={{ background: urgente ? '#fffbf0' : '#fff', border: `1px solid ${urgente ? '#fde68a' : '#e8e8ec'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color .15s' }}>
+      <div onClick={() => onEditar(pedido)} style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+        <div style={{ width: '36px', textAlign: 'center', flexShrink: 0 }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '16px', fontWeight: 900, color: '#ff33cc', margin: 0, lineHeight: 1 }}>{dataEvento.getDate()}</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 600, color: '#9ca3af', margin: 0, textTransform: 'uppercase' }}>{MESES_SHORT[dataEvento.getMonth()]}</p>
+        </div>
+        <div style={{ width: 1, height: 28, background: '#e5e7eb', flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pedido.nome_cliente}</p>
+            {(pedido.cliente_id || vinculado) && (
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} title="Cliente vinculado" />
+            )}
+          </div>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {[pedido.catalogo_temas?.nome, pedido.catalogo_kits?.nome].filter(Boolean).join(' · ') || '—'}
+          </p>
+        </div>
+        <span style={{ background: s.bg, color: s.color, borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.dot, display: 'inline-block' }} />
+          {s.label}
+        </span>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px', letterSpacing: '-0.2px' }}>
+            R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}
+          </p>
+          {pedido.status !== 'cancelado' && pedido.status !== 'concluido' && (
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: urgente ? '#d97706' : '#d1d5db', margin: 0 }}>
+              {dias < 0 ? `${Math.abs(dias)}d atras` : dias === 0 ? 'Hoje' : dias === 1 ? 'Amanha' : `${dias}d`}
+            </p>
           )}
         </div>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {[pedido.catalogo_temas?.nome, pedido.catalogo_kits?.nome].filter(Boolean).join(' · ') || '—'}
-        </p>
-      </div>
-      <span style={{ background: s.bg, color: s.color, borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.dot, display: 'inline-block' }} />
-        {s.label}
-      </span>
-      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px', letterSpacing: '-0.2px' }}>
-          R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}
-        </p>
-        {pedido.status !== 'cancelado' && pedido.status !== 'concluido' && (
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: urgente ? '#d97706' : '#d1d5db', margin: 0 }}>
-            {dias < 0 ? `${Math.abs(dias)}d atrás` : dias === 0 ? 'Hoje' : dias === 1 ? 'Amanhã' : `${dias}d`}
-          </p>
+        {!pedido.cliente_id && !vinculado && clientes.length > 0 && (
+          <button onClick={e => { e.stopPropagation(); setMostrarVincular(v => !v) }}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: mostrarVincular ? '#fff0fb' : '#f9f9f9', border: `1px solid ${mostrarVincular ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '999px', padding: '5px 10px', color: mostrarVincular ? '#ff33cc' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer', flexShrink: 0 }}>
+            <IconLink /> Vincular
+          </button>
         )}
+        {(pedido.cliente_id || vinculado) && <div style={{ color: '#d1d5db', flexShrink: 0 }}><IconEdit /></div>}
       </div>
-      <div style={{ color: '#d1d5db', flexShrink: 0 }}><IconEdit /></div>
+      {mostrarVincular && !pedido.cliente_id && !vinculado && (
+        <div onClick={e => e.stopPropagation()} style={{ borderTop: '1px solid #f3f4f6', padding: '10px 14px', background: '#fafafa', display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <select value={clienteSel} onChange={e => setClienteSel(e.target.value)}
+            style={{ flex: 1, background: '#fff', border: '1px solid #e8e8ec', borderRadius: '8px', padding: '8px 10px', fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#111827', outline: 'none' }}>
+            <option value="">Selecionar cliente...</option>
+            {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+          <button onClick={vincular} disabled={!clienteSel || vinculando}
+            style={{ background: clienteSel ? '#ff33cc' : '#f0f0f0', border: 'none', borderRadius: '999px', padding: '8px 14px', color: clienteSel ? '#fff' : '#00000033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: clienteSel ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
+            {vinculando ? '...' : 'Confirmar'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

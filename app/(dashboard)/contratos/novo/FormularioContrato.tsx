@@ -55,21 +55,41 @@ export default function FormularioContrato({ usuarioId }: Props) {
   const [regras, setRegras] = useState(REGRAS_PADRAO)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+
+  // ── Cliente — busca mista (cadastrado ou nome livre) ──
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
   const [buscaCliente, setBuscaCliente] = useState('')
-  const [mostrarBusca, setMostrarBusca] = useState(false)
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false)
 
   const valorTotal = itens.reduce((acc, i) => acc + i.quantidade * i.valor, 0)
 
   const clientesFiltrados = useMemo(() =>
-    !buscaCliente.trim() ? clientes : clientes.filter(c => c.nome.toLowerCase().includes(buscaCliente.toLowerCase()))
+    buscaCliente.trim().length >= 1
+      ? clientes.filter(c => c.nome.toLowerCase().includes(buscaCliente.toLowerCase())).slice(0, 6)
+      : []
   , [buscaCliente, clientes])
 
+  // ✅ CORRIGIDO: tabela clientes (não listaClientes)
   useEffect(() => {
-    supabase.from('listaClientes').select('id, nome, telefone, email, endereco').eq('usuario_id', usuarioId).order('nome')
+    supabase
+      .from('clientes')
+      .select('id, nome, telefone, email, endereco')
+      .eq('usuario_id', usuarioId)
+      .order('nome')
       .then(({ data }) => { if (data) setClientes(data) })
-  }, [usuarioId])
+  }, [usuarioId]) // eslint-disable-line
+
+  function selecionarCliente(c: Cliente) {
+    setClienteSelecionado(c)
+    setBuscaCliente(c.nome)
+    setMostrarSugestoes(false)
+  }
+
+  function limparCliente() {
+    setClienteSelecionado(null)
+    setBuscaCliente('')
+  }
 
   function adicionarItem() {
     setItens(p => [...p, { id: Date.now(), descricao: '', quantidade: 1, valor: 0 }])
@@ -85,18 +105,22 @@ export default function FormularioContrato({ usuarioId }: Props) {
     if (itens.every(i => !i.descricao)) return setErro('Adicione pelo menos um item.')
     setSalvando(true); setErro(null)
 
+    // Nome final: cliente cadastrado ou texto livre digitado
+    const nomeClienteFinal = clienteSelecionado?.nome ?? buscaCliente.trim() ?? null
+
     const { data, error } = await supabase.from('contratos').insert({
       usuario_id: usuarioId,
       cliente_id: clienteSelecionado?.id ?? null,
-      // ✅ nome opcional — cliente preenche ao assinar
-      cliente_nome: clienteSelecionado?.nome ?? null,
+      cliente_nome: nomeClienteFinal,
       evento_data: eventoData,
       evento_local: eventoLocal || null,
       evento_horario: eventoHorario || null,
-      itens, valor_total: valorTotal,
+      itens,
+      valor_total: valorTotal,
       forma_pagamento: formaPagamento || null,
       valor_sinal: valorSinal,
-      regras, status: 'pendente',
+      regras,
+      status: 'pendente',
     }).select().single()
 
     if (error) { setErro(`Erro: ${error.message}`); setSalvando(false); return }
@@ -106,67 +130,89 @@ export default function FormularioContrato({ usuarioId }: Props) {
   return (
     <form onSubmit={handleSubmit}>
 
-      {/* Dica */}
-      <div style={{ background: '#fff0fb', border: '1px solid #ffd6f5', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px' }}>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9900ff', margin: 0 }}>
-          O cliente preencherá nome, CPF e dados pessoais ao assinar pelo link. Vincular um cliente é opcional.
-        </p>
-      </div>
-
-      {/* ── Cliente (opcional) ── */}
+      {/* ── Cliente — campo misto ── */}
       <div style={card}>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: '0 0 14px' }}>
-          Cliente <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', fontWeight: 400 }}>— opcional</span>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: '0 0 4px' }}>
+          Cliente
+        </p>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 14px' }}>
+          Selecione um cliente cadastrado ou digite o nome livremente
         </p>
 
-        {clienteSelecionado ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff0fb', border: '1px solid #ffd6f5', borderRadius: '10px', padding: '12px 14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: 34, height: 34, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#fff', flexShrink: 0 }}>
-                {clienteSelecionado.nome[0].toUpperCase()}
-              </div>
-              <div>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 1px' }}>{clienteSelecionado.nome}</p>
-                {clienteSelecionado.telefone && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>{clienteSelecionado.telefone}</p>}
-              </div>
-            </div>
-            <button type="button" onClick={() => setClienteSelecionado(null)} style={{ width: 30, height: 30, borderRadius: '999px', border: '1px solid #ffd6f5', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-              <IconX />
-            </button>
-          </div>
-        ) : (
-          <div style={{ position: 'relative' }}>
-            <button type="button" onClick={() => setMostrarBusca(!mostrarBusca)} style={{ width: '100%', background: '#fafafa', border: '1px dashed #e8e8ec', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontSize: '13px', cursor: 'pointer' }}>
-              <IconSearch /> Buscar cliente cadastrado...
-            </button>
-            {mostrarBusca && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: '#fff', border: '1px solid #e8e8ec', borderRadius: '12px', marginTop: '4px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-                <div style={{ padding: '10px', borderBottom: '1px solid #f3f4f6' }}>
-                  <input type="text" value={buscaCliente} onChange={e => setBuscaCliente(e.target.value)} placeholder="Buscar pelo nome..." autoFocus style={{ ...input, padding: '8px 12px' }} />
-                </div>
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {clientesFiltrados.length === 0 ? (
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', padding: '16px', margin: 0, textAlign: 'center' }}>Nenhum cliente encontrado</p>
-                  ) : clientesFiltrados.map(c => (
-                    <button key={c.id} type="button" onClick={() => { setClienteSelecionado(c); setMostrarBusca(false); setBuscaCliente('') }}
-                      style={{ width: '100%', background: 'none', border: 'none', padding: '10px 14px', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid #f9fafb' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                    >
-                      <div style={{ width: 30, height: 30, borderRadius: '999px', background: '#fff0fb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter', fontWeight: 800, fontSize: '13px', color: '#ff33cc', flexShrink: 0 }}>
-                        {c.nome[0].toUpperCase()}
-                      </div>
-                      <div>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0 }}>{c.nome}</p>
-                        {c.telefone && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>{c.telefone}</p>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+        <div style={{ position: 'relative' }}>
+          {/* Campo de busca/digitação */}
+          <div style={{ display: 'flex', border: `1px solid ${clienteSelecionado ? '#10b981' : '#e8e8ec'}`, borderRadius: '10px', overflow: 'hidden', background: '#fafafa', transition: 'border-color .15s' }}>
+            <span style={{ display: 'flex', alignItems: 'center', paddingLeft: '12px', color: '#9ca3af', flexShrink: 0 }}>
+              <IconSearch />
+            </span>
+            <input
+              type="text"
+              value={buscaCliente}
+              onChange={e => {
+                setBuscaCliente(e.target.value)
+                if (clienteSelecionado) setClienteSelecionado(null)
+                setMostrarSugestoes(true)
+              }}
+              onFocus={() => setMostrarSugestoes(true)}
+              onBlur={() => setTimeout(() => setMostrarSugestoes(false), 150)}
+              placeholder="Buscar cadastrado ou digitar nome..."
+              style={{ ...input, border: 'none', background: 'transparent', flex: 1 }}
+            />
+            {buscaCliente && (
+              <button type="button" onClick={limparCliente} style={{ padding: '0 10px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af', flexShrink: 0 }}>
+                <IconX />
+              </button>
             )}
           </div>
-        )}
+
+          {/* Badge de cliente vinculado */}
+          {clienteSelecionado && (
+            <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '8px 12px' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '12px', color: '#fff' }}>
+                  {clienteSelecionado.nome.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {clienteSelecionado.nome}
+                </p>
+                {clienteSelecionado.telefone && (
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#6b7280', margin: 0 }}>
+                    {clienteSelecionado.telefone}
+                  </p>
+                )}
+              </div>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#059669', background: '#dcfce7', borderRadius: '999px', padding: '2px 8px', flexShrink: 0 }}>
+                Vinculado
+              </span>
+            </div>
+          )}
+
+          {/* Dropdown de sugestões */}
+          {mostrarSugestoes && clientesFiltrados.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #e8e8ec', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 20, overflow: 'hidden', marginTop: '4px' }}>
+              {clientesFiltrados.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onMouseDown={() => selecionarCliente(c)}
+                  style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid #f3f4f6' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#fff0fb', border: '1px solid #ffd6f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '12px', color: '#ff33cc', flexShrink: 0 }}>
+                    {c.nome.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0 }}>{c.nome}</p>
+                    {c.telefone && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>{c.telefone}</p>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Evento ── */}
