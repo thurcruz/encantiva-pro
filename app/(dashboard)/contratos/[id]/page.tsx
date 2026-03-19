@@ -8,38 +8,37 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: contrato } = await supabase
-    .from('contratos')
-    .select('*')
-    .eq('id', id)
-    .eq('usuario_id', user.id)
-    .single()
+  const [{ data: contrato }, { data: perfil }, { data: clientes }] = await Promise.all([
+    supabase.from('contratos').select('*').eq('id', id).single(),
+    supabase.from('perfis').select('nome_loja, cpf_cnpj, telefone, endereco, assinatura_loja').eq('id', user.id).single(),
+    supabase.from('clientes').select('id, nome, telefone, email').eq('usuario_id', user.id).order('nome'),
+  ])
 
-  if (!contrato) redirect('/contratos')
-
-  const { data: perfil } = await supabase
-    .from('perfis')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  if (!contrato || contrato.usuario_id !== user.id) redirect('/contratos')
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <div style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
+      <div style={{ borderBottom: '1px solid #eeeeee', padding: '24px 32px', backgroundColor: '#fff' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)', flexShrink: 0 }} />
+          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: '#ff33cc', flexShrink: 0 }} />
           <div>
-            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
-              Contrato
+            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#111827', margin: 0 }}>
+              {contrato.cliente_nome ?? 'Contrato'}
             </h1>
-            <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '14px', margin: 0 }}>
-              {contrato.cliente_nome || 'Aguardando dados do cliente'}
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0 }}>
+              {new Date(contrato.evento_data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+              {contrato.evento_local ? ` · ${contrato.evento_local}` : ''}
             </p>
           </div>
         </div>
       </div>
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 40px' }}>
-        <ContratoDetalhes contrato={contrato} perfil={perfil} />
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px 32px 80px' }}>
+        <ContratoDetalhes
+          contrato={contrato}
+          perfil={perfil ?? null}
+          usuarioId={user.id}
+          clientesIniciais={clientes ?? []}
+        />
       </div>
     </div>
   )

@@ -362,6 +362,30 @@ function ModalPedido({
                 ))}
               </div>
             )}
+
+            {/* Botão criar novo cliente quando não encontra */}
+            {mostrarSugestoes && buscaCliente.length >= 2 && clientesFiltrados.length === 0 && !form.cliente_id && (
+              <div style={{ marginTop: '6px', background: '#fafafa', border: '1px dashed #e8e8ec', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af' }}>
+                  Nenhum cliente com este nome
+                </span>
+                <button
+                  onMouseDown={async () => {
+                    const { data, error } = await supabase
+                      .from('clientes')
+                      .insert({ usuario_id: usuarioId, nome: buscaCliente.trim(), telefone: form.telefone_cliente || null })
+                      .select('id, nome, telefone, email')
+                      .single()
+                    if (!error && data) {
+                      selecionarCliente(data as Cliente)
+                    }
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '6px 12px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', flexShrink: 0 }}
+                >
+                  + Criar &ldquo;{buscaCliente.trim()}&rdquo;
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Telefone */}
