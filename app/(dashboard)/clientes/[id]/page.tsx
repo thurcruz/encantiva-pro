@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import PageHeader from '../../componentes/PageHeader'
 import ClienteDetalhes from './ClienteDetalhes'
 
 export default async function PaginaCliente({ params }: { params: Promise<{ id: string }> }) {
@@ -9,7 +10,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
   if (!user) redirect('/login')
 
   const { data: cliente } = await supabase
-    .from('listaClientes')
+    .from('clientes')
     .select('*')
     .eq('id', id)
     .eq('usuario_id', user.id)
@@ -17,31 +18,39 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
 
   if (!cliente) redirect('/clientes')
 
-  // Busca contratos do cliente pelo nome
-  const { data: contratos } = await supabase
-    .from('contratos')
-    .select('*')
-    .eq('usuario_id', user.id)
-    .ilike('cliente_nome', `%${cliente.nome}%`)
-    .order('criado_em', { ascending: false })
+  const [{ data: pedidosRaw }, { data: contratos }] = await Promise.all([
+    supabase
+      .from('pedidos')
+      .select('id, data_evento, valor_total, status, forma_pagamento, catalogo_temas!left(nome), catalogo_kits!left(nome)')
+      .eq('usuario_id', user.id)
+      .eq('cliente_id', id)
+      .order('data_evento', { ascending: false }),
+    supabase
+      .from('contratos')
+      .select('id, evento_data, evento_local, valor_total, status, itens')
+      .eq('usuario_id', user.id)
+      .eq('cliente_id', id)
+      .order('criado_em', { ascending: false }),
+  ])
+
+  // Normaliza joins que o Supabase retorna como array para objeto
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pedidos = (pedidosRaw ?? []).map((p: any) => ({
+    ...p,
+    catalogo_temas: Array.isArray(p.catalogo_temas) ? (p.catalogo_temas[0] ?? null) : p.catalogo_temas,
+    catalogo_kits:  Array.isArray(p.catalogo_kits)  ? (p.catalogo_kits[0]  ?? null) : p.catalogo_kits,
+  }))
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <div className="page-header" style={{ borderBottom: '1px solid #eeeeee', padding: '32px 40px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)', flexShrink: 0 }} />
-          <div>
-            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '28px', color: '#140033', letterSpacing: '-1px', margin: 0 }}>
-              {cliente.nome}
-            </h1>
-            <p style={{ color: '#00000055', fontFamily: 'Inter, sans-serif', fontSize: '14px', margin: 0 }}>
-              Cliente desde {new Date(cliente.criado_em).toLocaleDateString('pt-BR')}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="page-content" style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 40px' }}>
-        <ClienteDetalhes cliente={cliente} contratos={contratos ?? []} usuarioId={user.id} />
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
+      <PageHeader titulo={cliente.nome} subtitulo={`Cliente desde ${new Date(cliente.criado_em).toLocaleDateString('pt-BR')}`} />
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px 24px 80px' }}>
+        <ClienteDetalhes
+          cliente={cliente}
+          pedidos={pedidos ?? []}
+          contratos={contratos ?? []}
+          usuarioId={user.id}
+        />
       </div>
     </div>
   )
