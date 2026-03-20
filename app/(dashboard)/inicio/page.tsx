@@ -53,11 +53,7 @@ const IconAlert = () => (
     <path d="M7 6v3M7 10.5v.5"/>
   </svg>
 )
-const IconCheck = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2.5 7l3 3 6-6"/>
-  </svg>
-)
+
 const IconEmpty = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#d0d0d0" strokeWidth="1.5" strokeLinecap="round">
     <rect x="4" y="4" width="24" height="24" rx="4"/>

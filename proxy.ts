@@ -26,17 +26,15 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // ── Atualiza sessão em TODAS as requests (mantém login persistente) ──
   const { data: { user } } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
 
-  // ── Rotas do dashboard — redireciona para login se não autenticado ──
-  // NOTA: /planos e /cortador-de-paineis são públicos — NÃO estão nessa lista
+  // ── Rotas do dashboard (com sidebar) — sem /admin ──
   const rotasDashboard = [
     '/inicio', '/agenda', '/calculadora', '/catalogo', '/clientes',
     '/configuracoes', '/contratos', '/financeiro', '/gerenciar-plano',
-    '/materiais', '/paineis', '/acervo', '/admin',
+    '/materiais', '/paineis', '/acervo',
   ]
 
   const acessandoDashboard = rotasDashboard.some(rota =>
@@ -47,17 +45,22 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // ── Se já está logado e tenta acessar login/cadastro/raiz → vai pro início ──
-  const rotasAuth = ['/login', '/cadastro', '/']
-  if (rotasAuth.includes(pathname) && user) {
-    return NextResponse.redirect(new URL('/inicio', request.url))
-  }
-
-  // ── Admin ──
+  // ── Admin standalone (sem sidebar) — requer login + email admin ──
   if (pathname.startsWith('/admin')) {
-    if (user?.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    if (user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
       return NextResponse.redirect(new URL('/inicio', request.url))
     }
+  }
+
+  // ── Logado tentando acessar login/cadastro/raiz ──
+  const rotasAuth = ['/login', '/cadastro', '/']
+  if (rotasAuth.includes(pathname) && user) {
+    // Admin vai direto pro painel admin, usuário normal pro dashboard
+    const destino = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? '/admin' : '/inicio'
+    return NextResponse.redirect(new URL(destino, request.url))
   }
 
   return supabaseResponse

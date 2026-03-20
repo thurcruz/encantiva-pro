@@ -41,13 +41,11 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
     setSalvando(true); setErro(null)
 
     try {
-      // Upload arquivo original
       setProgresso('Enviando arquivo...')
       const nomeArquivo = `${Date.now()}-${arquivo.name.replace(/\s/g, '_')}`
       const { error: errArquivo } = await supabase.storage.from('materials').upload(nomeArquivo, arquivo)
       if (errArquivo) throw new Error('Erro ao enviar arquivo.')
 
-      // Upload preview
       let urlPreview = null
       if (preview) {
         setProgresso('Enviando preview...')
@@ -59,7 +57,6 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
         }
       }
 
-      // Salva no banco — sem url_arquivo_cortado
       setProgresso('Salvando no banco...')
       const { error: errDB } = await supabase.from('materiais').insert({
         titulo,
@@ -69,7 +66,7 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
         tipo_peca_id: tipoId || null,
         formato_id: formatoId || null,
         url_arquivo: nomeArquivo,
-        url_arquivo_cortado: null,  // nunca mais usado — cortador é client-side
+        url_arquivo_cortado: null,
         url_imagem_preview: urlPreview,
       })
       if (errDB) throw new Error(`Erro banco: ${errDB.message}`)
@@ -95,10 +92,7 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
     fontWeight: 600, color: '#ffffff55', marginBottom: '8px',
     letterSpacing: '1px', textTransform: 'uppercase' as const,
   }
-  const cardStyle = {
-    background: '#ffffff08', border: '1px solid #ffffff12',
-    borderRadius: '16px', padding: '24px',
-  }
+  const cardStyle = { background: '#ffffff08', border: '1px solid #ffffff12', borderRadius: '16px', padding: '24px' }
 
   return (
     <form onSubmit={handleSubmit}>
@@ -106,12 +100,8 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
 
         {/* Coluna principal */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-          {/* Informações básicas */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 20px' }}>
-              Informações básicas
-            </h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 20px' }}>Informações básicas</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={labelStyle}>Título *</label>
@@ -130,11 +120,8 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
             </div>
           </div>
 
-          {/* Categorização */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 20px' }}>
-              Categorização
-            </h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 20px' }}>Categorização</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={labelStyle}>Categoria</label>
@@ -157,26 +144,16 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
                   {formatos.map(f => <option key={f.id} value={f.id} style={{ background: '#1a0044' }}>{f.nome}</option>)}
                 </select>
               </div>
-
             </div>
           </div>
 
-          {/* Arquivo */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 8px' }}>
-              Arquivo do painel
-            </h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 8px' }}>Arquivo do painel</h2>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff44', margin: '0 0 20px' }}>
-              Envie o painel original (PNG ou JPG de alta resolução). As usuárias poderão baixar direto ou cortar pelo cortador.
+              Envie o painel original (PNG ou JPG de alta resolução).
             </p>
-            <div style={{
-              background: arquivo ? '#ff33cc08' : '#ffffff05',
-              border: `2px dashed ${arquivo ? '#ff33cc55' : '#ffffff18'}`,
-              borderRadius: '12px', padding: '32px', textAlign: 'center',
-              cursor: 'pointer', position: 'relative',
-            }}>
-              <input type="file" onChange={e => setArquivo(e.target.files?.[0] ?? null)}
-                accept=".pdf,.png,.jpg,.jpeg,.zip"
+            <div style={{ background: arquivo ? '#ff33cc08' : '#ffffff05', border: `2px dashed ${arquivo ? '#ff33cc55' : '#ffffff18'}`, borderRadius: '12px', padding: '32px', textAlign: 'center', cursor: 'pointer', position: 'relative' }}>
+              <input type="file" onChange={e => setArquivo(e.target.files?.[0] ?? null)} accept=".pdf,.png,.jpg,.jpeg,.zip"
                 style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
               <Upload size={28} style={{ color: arquivo ? '#ff33cc' : '#ffffff33', marginBottom: '10px' }} />
               <p style={{ fontFamily: 'Inter, sans-serif', color: arquivo ? '#ff33cc' : '#ffffff55', fontSize: '14px', margin: '0 0 4px', fontWeight: 600 }}>
@@ -191,14 +168,11 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
 
         {/* Coluna lateral */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-          {/* Preview */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 16px' }}>
-              Imagem de preview
-            </h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 16px' }}>Imagem de preview</h2>
             <div style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', background: 'linear-gradient(135deg, #9900ff22, #ff33cc11)', border: '1px solid #ffffff12', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <div style={{ textAlign: 'center' }}>
@@ -217,7 +191,6 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
             </div>
           </div>
 
-          {/* Botão salvar */}
           <div style={cardStyle}>
             {erro && (
               <div style={{ background: '#ff33cc11', border: '1px solid #ff33cc44', borderRadius: '10px', padding: '12px 16px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontSize: '13px', marginBottom: '16px' }}>
@@ -229,8 +202,7 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
                 {progresso}
               </div>
             )}
-            <button type="submit" disabled={salvando}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: salvando ? '#ffffff22' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', cursor: salvando ? 'not-allowed' : 'pointer', width: '100%' }}>
+            <button type="submit" disabled={salvando} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: salvando ? '#ffffff22' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', cursor: salvando ? 'not-allowed' : 'pointer', width: '100%' }}>
               <Upload size={16} />
               {salvando ? 'Enviando...' : 'Salvar material'}
             </button>
