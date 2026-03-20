@@ -85,9 +85,9 @@ export const LIMITES: Record<PlanoId, LimitesPlano> = {
   iniciante: {
     cortadorPaineis:          true,
     downloadMateriais:        'ilimitado',
-    contratosPoMes:           15,
+    contratosPoMes:           10,
     contratoPersonalizado:    false,
-    eventosPorMes:            15,
+    eventosPorMes:            10,
     calculadora:              true,
     salvarKits:               true,
     catalogo:                 true,

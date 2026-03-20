@@ -5,14 +5,12 @@ import { Lock, Printer } from 'lucide-react'
 import type { Material } from '@/types/database'
 import { createClient } from '@/lib/supabase/client'
 import ModalCortador from './ModalCortador'
-import Image from 'next/image'
 
 interface Props {
   material: Material
   podeDownload: boolean
 }
 
-// ── Ícones ───────────────────────────────────────────────
 const IconDownload  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 9V2M3.5 6.5l3 3 3-3"/><path d="M1.5 11h10"/></svg>
 const IconScissors  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="3" cy="3" r="1.5"/><circle cx="3" cy="10" r="1.5"/><path d="M4.5 4.5L10.5 10.5M4.5 8.5l6-6"/></svg>
 const IconChevDown  = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 4l3 3 3-3"/></svg>
@@ -54,7 +52,6 @@ export default function CardMaterial({ material, podeDownload }: Props) {
     if (!podeDownload) return
     setMenuAberto(false)
     try {
-      // Busca URL pública ou signed URL da imagem
       const { data, error } = await supabase.storage.from('materials').createSignedUrl(material.url_arquivo, 3600)
       if (error || !data) throw new Error('Erro ao carregar imagem.')
       setImagemOriginalUrl(data.signedUrl)
@@ -93,17 +90,23 @@ export default function CardMaterial({ material, podeDownload }: Props) {
 
       <div className="card-mat" style={{ background: '#fff', border: '1px solid #eeeeee', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', position: 'relative' }}>
 
-        {/* Imagem */}
+        {/* Imagem — usando img nativo para evitar restrições do next/image */}
         <div style={{ aspectRatio: '1', overflow: 'hidden', position: 'relative', background: 'linear-gradient(135deg, #fdf0ff, #fff5fd)' }}>
           {material.url_imagem_preview ? (
-            <Image className="mat-img" src={material.url_imagem_preview} alt={material.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              className="mat-img"
+              src={material.url_imagem_preview}
+              alt={material.titulo}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: '44px' }}>🎪</span>
             </div>
           )}
 
-          {/* Overlay com botão imprimir */}
+          {/* Overlay */}
           <div className="mat-overlay" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(20,0,51,0.7) 0%, rgba(20,0,51,0.1) 60%, transparent 100%)', opacity: 0, transition: 'opacity .2s', display: 'flex', alignItems: 'flex-end', padding: '14px', gap: '6px' }}>
             <button onClick={imprimir} title="Abrir para impressão"
               style={{ width: 34, height: 34, borderRadius: '999px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -136,7 +139,6 @@ export default function CardMaterial({ material, podeDownload }: Props) {
 
             {podeDownload ? (
               <div style={{ position: 'relative' }}>
-                {/* Botão com dropdown */}
                 <div style={{ display: 'flex', borderRadius: '999px', overflow: 'hidden' }}>
                   <button className="btn-dl" onClick={baixarOriginal} disabled={baixando}
                     style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#ff33cc', border: 'none', padding: '7px 12px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: baixando ? 'not-allowed' : 'pointer' }}>
@@ -191,7 +193,6 @@ export default function CardMaterial({ material, podeDownload }: Props) {
         </div>
       </div>
 
-      {/* Modal do cortador */}
       {modalCortador && imagemOriginalUrl && (
         <ModalCortador
           titulo={material.titulo}
