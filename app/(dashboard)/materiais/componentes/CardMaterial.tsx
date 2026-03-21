@@ -9,13 +9,14 @@ import ModalCortador from './ModalCortador'
 interface Props {
   material: Material
   podeDownload: boolean
+  isExclusivo?: boolean
 }
 
 const IconDownload  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 9V2M3.5 6.5l3 3 3-3"/><path d="M1.5 11h10"/></svg>
 const IconScissors  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="3" cy="3" r="1.5"/><circle cx="3" cy="10" r="1.5"/><path d="M4.5 4.5L10.5 10.5M4.5 8.5l6-6"/></svg>
 const IconChevDown  = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 4l3 3 3-3"/></svg>
 
-export default function CardMaterial({ material, podeDownload }: Props) {
+export default function CardMaterial({ material, podeDownload, isExclusivo }: Props) {
   const [baixando, setBaixando] = useState(false)
   const [menuAberto, setMenuAberto] = useState(false)
   const [modalCortador, setModalCortador] = useState(false)
@@ -117,6 +118,11 @@ export default function CardMaterial({ material, podeDownload }: Props) {
           {categoriaNome && (
             <span style={{ position: 'absolute', top: 10, left: 10, background: '#ff33cc', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '10px', padding: '3px 9px', borderRadius: '999px', letterSpacing: '0.3px' }}>
               {categoriaNome}
+            </span>
+          )}
+          {isExclusivo && (
+            <span style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(20,0,51,0.85)', backdropFilter: 'blur(4px)', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '10px', padding: '3px 9px', borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #ff33cc44' }}>
+              <Lock size={9} /> Exclusivo
             </span>
           )}
         </div>

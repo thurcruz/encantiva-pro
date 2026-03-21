@@ -9,7 +9,6 @@ export default async function PaginaNovoMaterial() {
   if (user?.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) redirect('/login')
 
   const [
-    { data: temas },
     { data: tipos },
     { data: formatos },
     { data: categorias },
@@ -35,7 +34,6 @@ export default async function PaginaNovoMaterial() {
       </div>
 
       <FormularioMaterial
-        temas={temas ?? []}
         tipos={tipos ?? []}
         formatos={formatos ?? []}
         categorias={categorias ?? []}
