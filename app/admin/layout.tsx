@@ -73,6 +73,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <SecaoLabel label="Materiais" />
           <NavItem href="/admin/materiais" icon={<Package size={16} />} label="Ver Materiais" />
           <NavItem href="/admin/materiais/novo" icon={<Upload size={16} />} label="Novo Material" />
+          <NavItem href="/admin/materiais/lote" icon={<Upload size={16} />} label="Upload em Lote" />
         </nav>
 
         {/* Rodapé */}

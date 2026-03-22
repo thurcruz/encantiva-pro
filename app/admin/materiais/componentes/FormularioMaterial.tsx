@@ -84,19 +84,22 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
   if (!novoTema.trim()) return
   setCriandoTema(true)
   const slug = gerarSlug(novoTema)
-  console.log('Inserindo:', { nome: novoTema.trim(), slug, ativo: true })
   const { data, error } = await supabase
     .from('temas')
     .insert({ nome: novoTema.trim(), slug, ativo: true })
     .select()
     .single()
   if (error) {
-    console.error('Erro completo:', error)
     alert('Erro: ' + error.message + ' | Code: ' + error.code + ' | Details: ' + error.details)
-  
+  } else if (data) {
+    const novo = data as Tema
+    setTemasLista(prev => [...prev, novo].sort((a, b) => a.nome.localeCompare(b.nome)))
+    setTemaId(novo.id)
+    if (!codigo) setCodigo(gerarCodigo(novo.nome))
+    setNovoTema('')
   }
+  setCriandoTema(false)
 }
-
   function extrairPreview(file: File): Promise<string | null> {
     return new Promise(resolve => {
       if (!file.type.startsWith('image/')) { resolve(null); return }
