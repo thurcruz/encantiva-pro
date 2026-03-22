@@ -18,10 +18,10 @@ interface Props {
 }
 
 const TAGS_DISPONIVEIS = [
-  'Anime', 'Super-heróis', 'Princesas', 'Disney', 'Jogos',
-  'Filmes', 'Séries', 'Infantil', 'Floral', 'Safari',
+  'Anime', 'Super-herois', 'Princesas', 'Disney', 'Jogos',
+  'Filmes', 'Series', 'Infantil', 'Floral', 'Safari',
   'Fazendinha', 'Circo', 'Astronauta', 'Dinossauro', 'Sereia',
-  'Unicórnio', 'Religioso', 'Esportes', 'Música', 'Neutro',
+  'Unicornio', 'Religioso', 'Esportes', 'Musica', 'Neutro',
 ]
 
 const inputStyle: React.CSSProperties = {
@@ -38,6 +38,13 @@ const lbl: React.CSSProperties = {
 const card: React.CSSProperties = {
   background: '#ffffff08', border: '1px solid #ffffff12',
   borderRadius: '16px', padding: '24px', marginBottom: '16px',
+}
+
+function gerarSlug(nome: string) {
+  return nome.trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 export default function FormularioMaterial({ temas, categorias, tipos, formatos }: Props) {
@@ -68,7 +75,6 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
     setTags(p => p.includes(tag) ? p.filter(t => t !== tag) : [...p, tag])
   }
 
-  // Gera código sugerido a partir do tema
   function gerarCodigo(nomeTema: string, num = '01') {
     const prefixo = nomeTema.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3)
     return prefixo + num.padStart(2, '0')
@@ -77,9 +83,10 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
   async function criarTema() {
     if (!novoTema.trim()) return
     setCriandoTema(true)
+    const slug = gerarSlug(novoTema)
     const { data, error } = await supabase
       .from('temas')
-      .insert({ nome: novoTema.trim(), ativo: true })
+      .insert({ nome: novoTema.trim(), slug, ativo: true })
       .select()
       .single()
     if (!error && data) {
@@ -88,6 +95,8 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
       setTemaId(novo.id)
       if (!codigo) setCodigo(gerarCodigo(novo.nome))
       setNovoTema('')
+    } else if (error) {
+      console.error('Erro ao criar tema:', error.message)
     }
     setCriandoTema(false)
   }
@@ -128,7 +137,7 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!arquivo) { setErro('Selecione o arquivo do painel.'); return }
-    if (!codigo.trim()) { setErro('Informe o código do material.'); return }
+    if (!codigo.trim()) { setErro('Informe o codigo do material.'); return }
     setSalvando(true); setErro(null)
 
     try {
@@ -187,37 +196,30 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px', alignItems: 'start' }}>
 
-        {/* ── Coluna principal ── */}
         <div>
-
-          {/* Identificação */}
           <div style={card}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 16px' }}>Identificação</h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 16px' }}>Identificacao</h2>
 
-            {/* Coleção (tema) */}
             <div style={{ marginBottom: '12px' }}>
-              <label style={lbl}>Coleção *</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <select
-                  value={temaId}
-                  onChange={e => {
-                    setTemaId(e.target.value)
-                    const tema = temasLista.find(t => t.id === e.target.value)
-                    if (tema && !codigo) setCodigo(gerarCodigo(tema.nome))
-                  }}
-                  style={{ ...inputStyle, flex: 1, cursor: 'pointer' }}
-                >
-                  <option value="" style={{ background: '#1a0044' }}>Selecionar coleção...</option>
-                  {temasLista.map(t => <option key={t.id} value={t.id} style={{ background: '#1a0044' }}>{t.nome}</option>)}
-                </select>
-              </div>
-              {/* Criar nova coleção inline */}
+              <label style={lbl}>Colecao *</label>
+              <select
+                value={temaId}
+                onChange={e => {
+                  setTemaId(e.target.value)
+                  const tema = temasLista.find(t => t.id === e.target.value)
+                  if (tema && !codigo) setCodigo(gerarCodigo(tema.nome))
+                }}
+                style={{ ...inputStyle, cursor: 'pointer' }}
+              >
+                <option value="" style={{ background: '#1a0044' }}>Selecionar colecao...</option>
+                {temasLista.map(t => <option key={t.id} value={t.id} style={{ background: '#1a0044' }}>{t.nome}</option>)}
+              </select>
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                 <input
                   value={novoTema}
                   onChange={e => setNovoTema(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), criarTema())}
-                  placeholder="Nova coleção... (ex: Moana)"
+                  placeholder="Nova colecao... (ex: Moana)"
                   style={{ ...inputStyle, flex: 1, fontSize: '13px', padding: '9px 14px' }}
                 />
                 <button
@@ -231,14 +233,13 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
                 </button>
               </div>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#ffffff33', margin: '4px 0 0' }}>
-                Coleções novas são salvas no banco e ficam disponíveis para próximos materiais
+                Colecoes novas sao salvas no banco e ficam disponiveis para proximos materiais
               </p>
             </div>
 
-            {/* Código + Título */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <div>
-                <label style={lbl}>Código *</label>
+                <label style={lbl}>Codigo *</label>
                 <input
                   style={{ ...inputStyle, fontFamily: 'monospace', letterSpacing: '2px' }}
                   placeholder="Ex: MOA01"
@@ -246,11 +247,11 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
                   onChange={e => setCodigo(e.target.value.toUpperCase())}
                 />
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#ffffff33', margin: '4px 0 0' }}>
-                  3 letras + 2 números. Ex: MOA01, MOA02
+                  3 letras + 2 numeros. Ex: MOA01, MOA02
                 </p>
               </div>
               <div>
-                <label style={lbl}>Título (opcional)</label>
+                <label style={lbl}>Titulo (opcional)</label>
                 <input
                   style={inputStyle}
                   placeholder="Ex: Painel Moana Fundo do Mar"
@@ -261,19 +262,18 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
             </div>
           </div>
 
-          {/* Categorização */}
           <div style={card}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 16px' }}>Categorização</h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 16px' }}>Categorizacao</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={lbl}>Ocasião</label>
+                <label style={lbl}>Ocasiao</label>
                 <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
                   <option value="" style={{ background: '#1a0044' }}>Selecionar</option>
                   {categorias.map(c => <option key={c.id} value={c.id} style={{ background: '#1a0044' }}>{c.nome}</option>)}
                 </select>
               </div>
               <div>
-                <label style={lbl}>Tipo de peça</label>
+                <label style={lbl}>Tipo de peca</label>
                 <select value={tipoId} onChange={e => setTipoId(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
                   <option value="" style={{ background: '#1a0044' }}>Selecionar</option>
                   {tipos.map(t => <option key={t.id} value={t.id} style={{ background: '#1a0044' }}>{t.nome}</option>)}
@@ -289,11 +289,10 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
             </div>
           </div>
 
-          {/* Tags */}
           <div style={card}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 6px' }}>Tags de tema</h2>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff44', margin: '0 0 14px' }}>
-              Selecione todas que se aplicam — usadas nos filtros de busca
+              Selecione todas que se aplicam
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {TAGS_DISPONIVEIS.map(tag => {
@@ -308,23 +307,21 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
             </div>
           </div>
 
-          {/* Descrição */}
           <div style={card}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 12px' }}>Descrição</h2>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 12px' }}>Descricao</h2>
             <textarea
               value={descricao}
               onChange={e => setDescricao(e.target.value)}
               rows={3}
-              placeholder="Descrição opcional do material..."
+              placeholder="Descricao opcional do material..."
               style={{ ...inputStyle, resize: 'vertical' }}
             />
           </div>
 
-          {/* Arquivo */}
           <div style={card}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 4px' }}>Arquivo do painel *</h2>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff44', margin: '0 0 16px' }}>
-              PNG ou JPG — o preview será gerado automaticamente
+              PNG ou JPG - o preview sera gerado automaticamente
             </p>
             <div style={{ background: arquivo ? '#ff33cc08' : '#ffffff05', border: `2px dashed ${arquivo ? '#ff33cc55' : '#ffffff18'}`, borderRadius: '12px', padding: '28px', textAlign: 'center', cursor: 'pointer', position: 'relative' }}>
               <input type="file" onChange={handleArquivoChange} accept=".png,.jpg,.jpeg,.pdf,.zip"
@@ -334,16 +331,13 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
                 {arquivo ? arquivo.name : 'Clique ou arraste o arquivo aqui'}
               </p>
               <p style={{ fontFamily: 'Inter, sans-serif', color: '#ffffff33', fontSize: '12px', margin: 0 }}>
-                {arquivo ? `${(arquivo.size / 1024 / 1024).toFixed(2)} MB` : 'PNG ou JPG recomendado — mínimo 3000×3000px'}
+                {arquivo ? `${(arquivo.size / 1024 / 1024).toFixed(2)} MB` : 'PNG ou JPG recomendado - minimo 3000x3000px'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* ── Coluna lateral ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-          {/* Preview */}
           <div style={card}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 12px' }}>Preview</h2>
             <div style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: 'linear-gradient(135deg, #9900ff22, #ff33cc11)', border: '1px solid #ffffff12', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -361,7 +355,6 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
             </div>
           </div>
 
-          {/* Acesso */}
           <div style={card}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 12px' }}>Acesso</h2>
             <button
@@ -374,7 +367,7 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
                   {exclusivo ? 'Exclusivo (planos pagos)' : 'Gratuito (todos)'}
                 </p>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff33', margin: 0 }}>
-                  {exclusivo ? 'Free vê bloqueado, pagos têm acesso' : 'Disponível para todos os planos'}
+                  {exclusivo ? 'Free ve bloqueado, pagos tem acesso' : 'Disponivel para todos os planos'}
                 </p>
               </div>
               <div style={{ width: 40, height: 22, borderRadius: '999px', background: exclusivo ? '#ff33cc' : '#ffffff18', position: 'relative', flexShrink: 0, transition: 'background .2s' }}>
@@ -383,7 +376,6 @@ export default function FormularioMaterial({ temas, categorias, tipos, formatos 
             </button>
           </div>
 
-          {/* Erros e botão */}
           <div style={card}>
             {erro && (
               <div style={{ background: '#ff33cc11', border: '1px solid #ff33cc44', borderRadius: '10px', padding: '10px 14px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontSize: '12px', marginBottom: '12px' }}>

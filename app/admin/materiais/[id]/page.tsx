@@ -12,11 +12,13 @@ export default async function PaginaEditarMaterial({ params }: { params: Promise
   const [
     { data: material },
     { data: temas },
+    { data: categorias },
     { data: tipos },
     { data: formatos },
   ] = await Promise.all([
-    supabase.from('materiais').select('*, temas(*), tipos_peca(*), formatos(*)').eq('id', id).single(),
+    supabase.from('materiais').select('*, temas(*), categorias(*), tipos_peca(*), formatos(*)').eq('id', id).single(),
     supabase.from('temas').select('*').eq('ativo', true).order('nome'),
+    supabase.from('categorias').select('*').eq('ativo', true).order('nome'),
     supabase.from('tipos_peca').select('*').order('nome'),
     supabase.from('formatos').select('*').order('nome'),
   ])
@@ -24,7 +26,7 @@ export default async function PaginaEditarMaterial({ params }: { params: Promise
   if (!material) redirect('/admin/materiais')
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#140033', padding: '40px' }}>
+    <div style={{ padding: '40px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
         <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)', flexShrink: 0 }} />
         <div>
@@ -40,6 +42,7 @@ export default async function PaginaEditarMaterial({ params }: { params: Promise
       <FormularioEditar
         material={material}
         temas={temas ?? []}
+        categorias={categorias ?? []}
         tipos={tipos ?? []}
         formatos={formatos ?? []}
       />
