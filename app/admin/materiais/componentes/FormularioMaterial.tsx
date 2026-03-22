@@ -3,13 +3,18 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { TipoPeca, Formato, Categoria } from '@/types/database'
-import { Upload, ImageIcon } from 'lucide-react'
+import { Upload, ImageIcon, Plus } from 'lucide-react'
+
+interface Tema      { id: string; nome: string }
+interface Categoria { id: string; nome: string }
+interface TipoPeca  { id: string; nome: string }
+interface Formato   { id: string; nome: string }
 
 interface Props {
-  tipos: TipoPeca[]
-  formatos: Formato[]
+  temas:      Tema[]
   categorias: Categoria[]
+  tipos:      TipoPeca[]
+  formatos:   Formato[]
 }
 
 const TAGS_DISPONIVEIS = [
@@ -35,14 +40,16 @@ const card: React.CSSProperties = {
   borderRadius: '16px', padding: '24px', marginBottom: '16px',
 }
 
-export default function FormularioMaterial({ tipos, formatos, categorias }: Props) {
+export default function FormularioMaterial({ temas, categorias, tipos, formatos }: Props) {
   const router = useRouter()
   const supabase = createClient()
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // Campos básicos
   const [codigo, setCodigo] = useState('')
-  const [colecao, setColecao] = useState('')
+  const [temaId, setTemaId] = useState('')
+  const [novoTema, setNovoTema] = useState('')
+  const [criandoTema, setCriandoTema] = useState(false)
+  const [temasLista, setTemasLista] = useState<Tema[]>(temas)
   const [titulo, setTitulo] = useState('')
   const [descricao, setDescricao] = useState('')
   const [categoriaId, setCategoriaId] = useState('')
@@ -51,7 +58,6 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
   const [tags, setTags] = useState<string[]>([])
   const [exclusivo, setExclusivo] = useState(false)
 
-  // Arquivo
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -62,7 +68,30 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
     setTags(p => p.includes(tag) ? p.filter(t => t !== tag) : [...p, tag])
   }
 
-  // Extrai preview automaticamente do arquivo PNG/JPG
+  // Gera código sugerido a partir do tema
+  function gerarCodigo(nomeTema: string, num = '01') {
+    const prefixo = nomeTema.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3)
+    return prefixo + num.padStart(2, '0')
+  }
+
+  async function criarTema() {
+    if (!novoTema.trim()) return
+    setCriandoTema(true)
+    const { data, error } = await supabase
+      .from('temas')
+      .insert({ nome: novoTema.trim(), ativo: true })
+      .select()
+      .single()
+    if (!error && data) {
+      const novo = data as Tema
+      setTemasLista(prev => [...prev, novo].sort((a, b) => a.nome.localeCompare(b.nome)))
+      setTemaId(novo.id)
+      if (!codigo) setCodigo(gerarCodigo(novo.nome))
+      setNovoTema('')
+    }
+    setCriandoTema(false)
+  }
+
   function extrairPreview(file: File): Promise<string | null> {
     return new Promise(resolve => {
       if (!file.type.startsWith('image/')) { resolve(null); return }
@@ -73,10 +102,8 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
           const canvas = canvasRef.current
           if (!canvas) { resolve(null); return }
           const size = 800
-          canvas.width = size
-          canvas.height = size
+          canvas.width = size; canvas.height = size
           const ctx = canvas.getContext('2d')!
-          // Crop centralizado quadrado
           const menor = Math.min(img.width, img.height)
           const sx = (img.width - menor) / 2
           const sy = (img.height - menor) / 2
@@ -94,16 +121,8 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
     setArquivo(file)
     setPreviewUrl(null)
     if (file && file.type.startsWith('image/')) {
-      const url = URL.createObjectURL(file)
-      setPreviewUrl(url)
+      setPreviewUrl(URL.createObjectURL(file))
     }
-  }
-
-  // Gera código sugerido a partir da coleção
-  function gerarCodigo(col: string, num: string) {
-    const prefixo = col.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3)
-    const n = num.padStart(2, '0')
-    return prefixo + n
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -113,13 +132,11 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
     setSalvando(true); setErro(null)
 
     try {
-      // 1. Upload do arquivo principal
       setProgresso('Enviando arquivo...')
       const nomeArquivo = `${codigo.trim()}-${Date.now()}.${arquivo.name.split('.').pop()}`
       const { error: errArquivo } = await supabase.storage.from('materials').upload(nomeArquivo, arquivo)
       if (errArquivo) throw new Error('Erro ao enviar arquivo: ' + errArquivo.message)
 
-      // 2. Extrai e faz upload do preview automaticamente
       let urlPreview: string | null = null
       if (arquivo.type.startsWith('image/')) {
         setProgresso('Gerando preview...')
@@ -135,20 +152,20 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
         }
       }
 
-      // 3. Salva no banco
       setProgresso('Salvando no banco...')
       const { error: errDB } = await supabase.from('materiais').insert({
-        titulo: titulo.trim() || codigo.trim(),
-        descricao: descricao || null,
-        codigo: codigo.trim(),
-        colecao: colecao.trim() || null,
+        titulo:           titulo.trim() || codigo.trim(),
+        descricao:        descricao || null,
+        codigo:           codigo.trim(),
+        colecao:          temasLista.find(t => t.id === temaId)?.nome ?? null,
         tags,
-        categoria_id: categoriaId || null,
-        tipo_peca_id: tipoId || null,
-        formato_id: formatoId || null,
-        url_arquivo: nomeArquivo,
+        tema_id:          temaId || null,
+        categoria_id:     categoriaId || null,
+        tipo_peca_id:     tipoId || null,
+        formato_id:       formatoId || null,
+        url_arquivo:      nomeArquivo,
         url_arquivo_cortado: null,
-        url_imagem_preview: urlPreview,
+        url_imagem_preview:  urlPreview,
         exclusivo,
         ativo: true,
       })
@@ -166,7 +183,6 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Canvas oculto para extração de preview */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px', alignItems: 'start' }}>
@@ -177,47 +193,71 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
           {/* Identificação */}
           <div style={card}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 16px' }}>Identificação</h2>
+
+            {/* Coleção (tema) */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={lbl}>Coleção *</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <select
+                  value={temaId}
+                  onChange={e => {
+                    setTemaId(e.target.value)
+                    const tema = temasLista.find(t => t.id === e.target.value)
+                    if (tema && !codigo) setCodigo(gerarCodigo(tema.nome))
+                  }}
+                  style={{ ...inputStyle, flex: 1, cursor: 'pointer' }}
+                >
+                  <option value="" style={{ background: '#1a0044' }}>Selecionar coleção...</option>
+                  {temasLista.map(t => <option key={t.id} value={t.id} style={{ background: '#1a0044' }}>{t.nome}</option>)}
+                </select>
+              </div>
+              {/* Criar nova coleção inline */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <input
+                  value={novoTema}
+                  onChange={e => setNovoTema(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), criarTema())}
+                  placeholder="Nova coleção... (ex: Moana)"
+                  style={{ ...inputStyle, flex: 1, fontSize: '13px', padding: '9px 14px' }}
+                />
+                <button
+                  type="button"
+                  onClick={criarTema}
+                  disabled={criandoTema || !novoTema.trim()}
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px', background: novoTema.trim() ? '#ff33cc' : '#ffffff18', border: 'none', borderRadius: '10px', padding: '9px 14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: novoTema.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}
+                >
+                  <Plus size={13} />
+                  {criandoTema ? 'Criando...' : 'Criar'}
+                </button>
+              </div>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#ffffff33', margin: '4px 0 0' }}>
+                Coleções novas são salvas no banco e ficam disponíveis para próximos materiais
+              </p>
+            </div>
+
+            {/* Código + Título */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <div>
-                <label style={lbl}>Coleção (tema)</label>
-                <input style={inputStyle} placeholder="Ex: Moana, Homem-Aranha..." value={colecao}
-                  onChange={e => {
-                    setColecao(e.target.value)
-                    if (!codigo) setCodigo(gerarCodigo(e.target.value, '01'))
-                  }} />
-              </div>
-              <div>
                 <label style={lbl}>Código *</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input style={{ ...inputStyle, flex: 1, fontFamily: 'monospace', letterSpacing: '2px' }}
-                    placeholder="Ex: MOA01" value={codigo}
-                    onChange={e => setCodigo(e.target.value.toUpperCase())} />
-                </div>
+                <input
+                  style={{ ...inputStyle, fontFamily: 'monospace', letterSpacing: '2px' }}
+                  placeholder="Ex: MOA01"
+                  value={codigo}
+                  onChange={e => setCodigo(e.target.value.toUpperCase())}
+                />
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#ffffff33', margin: '4px 0 0' }}>
                   3 letras + 2 números. Ex: MOA01, MOA02
                 </p>
               </div>
-            </div>
-            <div>
-              <label style={lbl}>Título (opcional — usa o código se vazio)</label>
-              <input style={inputStyle} placeholder="Ex: Painel Moana Fundo do Mar" value={titulo} onChange={e => setTitulo(e.target.value)} />
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div style={card}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 6px' }}>Tags de gênero</h2>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff44', margin: '0 0 14px' }}>Selecione todas que se aplicam — usadas nos filtros de busca</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {TAGS_DISPONIVEIS.map(tag => {
-                const sel = tags.includes(tag)
-                return (
-                  <button key={tag} type="button" onClick={() => toggleTag(tag)}
-                    style={{ padding: '5px 12px', borderRadius: '999px', border: `1.5px solid ${sel ? '#ff33cc' : '#ffffff20'}`, background: sel ? '#ff33cc22' : 'transparent', color: sel ? '#ff33cc' : '#ffffff66', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer', transition: 'all .12s' }}>
-                    {tag}
-                  </button>
-                )
-              })}
+              <div>
+                <label style={lbl}>Título (opcional)</label>
+                <input
+                  style={inputStyle}
+                  placeholder="Ex: Painel Moana Fundo do Mar"
+                  value={titulo}
+                  onChange={e => setTitulo(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -226,7 +266,7 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 16px' }}>Categorização</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={lbl}>Categoria</label>
+                <label style={lbl}>Ocasião</label>
                 <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
                   <option value="" style={{ background: '#1a0044' }}>Selecionar</option>
                   {categorias.map(c => <option key={c.id} value={c.id} style={{ background: '#1a0044' }}>{c.nome}</option>)}
@@ -249,18 +289,42 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
             </div>
           </div>
 
+          {/* Tags */}
+          <div style={card}>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 6px' }}>Tags de tema</h2>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff44', margin: '0 0 14px' }}>
+              Selecione todas que se aplicam — usadas nos filtros de busca
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {TAGS_DISPONIVEIS.map(tag => {
+                const sel = tags.includes(tag)
+                return (
+                  <button key={tag} type="button" onClick={() => toggleTag(tag)}
+                    style={{ padding: '5px 12px', borderRadius: '999px', border: `1.5px solid ${sel ? '#ff33cc' : '#ffffff20'}`, background: sel ? '#ff33cc22' : 'transparent', color: sel ? '#ff33cc' : '#ffffff66', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer', transition: 'all .12s' }}>
+                    {tag}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Descrição */}
           <div style={card}>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 16px' }}>Descrição</h2>
-            <textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={3}
-              placeholder="Descrição opcional do material..." style={{ ...inputStyle, resize: 'vertical' }} />
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 12px' }}>Descrição</h2>
+            <textarea
+              value={descricao}
+              onChange={e => setDescricao(e.target.value)}
+              rows={3}
+              placeholder="Descrição opcional do material..."
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
           </div>
 
           {/* Arquivo */}
           <div style={card}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 4px' }}>Arquivo do painel *</h2>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff44', margin: '0 0 16px' }}>
-              PNG ou JPG — o preview será gerado automaticamente a partir da imagem
+              PNG ou JPG — o preview será gerado automaticamente
             </p>
             <div style={{ background: arquivo ? '#ff33cc08' : '#ffffff05', border: `2px dashed ${arquivo ? '#ff33cc55' : '#ffffff18'}`, borderRadius: '12px', padding: '28px', textAlign: 'center', cursor: 'pointer', position: 'relative' }}>
               <input type="file" onChange={handleArquivoChange} accept=".png,.jpg,.jpeg,.pdf,.zip"
@@ -279,7 +343,7 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
         {/* ── Coluna lateral ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-          {/* Preview auto */}
+          {/* Preview */}
           <div style={card}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 12px' }}>Preview</h2>
             <div style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: 'linear-gradient(135deg, #9900ff22, #ff33cc11)', border: '1px solid #ffffff12', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -290,7 +354,7 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                   <ImageIcon size={28} style={{ color: '#ffffff22', marginBottom: '8px' }} />
                   <p style={{ fontFamily: 'Inter, sans-serif', color: '#ffffff33', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>
-                    Gerado automaticamente ao selecionar um PNG ou JPG
+                    Gerado automaticamente ao selecionar PNG ou JPG
                   </p>
                 </div>
               )}
@@ -300,8 +364,11 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
           {/* Acesso */}
           <div style={card}>
             <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', margin: '0 0 12px' }}>Acesso</h2>
-            <button type="button" onClick={() => setExclusivo(!exclusivo)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: exclusivo ? '#ff33cc15' : '#ffffff08', border: `1.5px solid ${exclusivo ? '#ff33cc55' : '#ffffff18'}`, borderRadius: '12px', padding: '14px 16px', cursor: 'pointer', transition: 'all .15s' }}>
+            <button
+              type="button"
+              onClick={() => setExclusivo(!exclusivo)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: exclusivo ? '#ff33cc15' : '#ffffff08', border: `1.5px solid ${exclusivo ? '#ff33cc55' : '#ffffff18'}`, borderRadius: '12px', padding: '14px 16px', cursor: 'pointer', transition: 'all .15s' }}
+            >
               <div style={{ textAlign: 'left' }}>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: exclusivo ? '#ff33cc' : '#ffffff88', margin: '0 0 2px' }}>
                   {exclusivo ? 'Exclusivo (planos pagos)' : 'Gratuito (todos)'}
@@ -328,8 +395,11 @@ export default function FormularioMaterial({ tipos, formatos, categorias }: Prop
                 {progresso}
               </div>
             )}
-            <button type="submit" disabled={salvando}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: salvando ? '#ffffff22' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: salvando ? 'not-allowed' : 'pointer', width: '100%' }}>
+            <button
+              type="submit"
+              disabled={salvando}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: salvando ? '#ffffff22' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: salvando ? 'not-allowed' : 'pointer', width: '100%' }}
+            >
               <Upload size={15} />
               {salvando ? 'Enviando...' : 'Salvar material'}
             </button>

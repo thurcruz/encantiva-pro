@@ -9,18 +9,19 @@ export default async function PaginaNovoMaterial() {
   if (user?.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) redirect('/login')
 
   const [
+    { data: temas },
+    { data: categorias },
     { data: tipos },
     { data: formatos },
-    { data: categorias },
   ] = await Promise.all([
     supabase.from('temas').select('*').eq('ativo', true).order('nome'),
+    supabase.from('categorias').select('*').eq('ativo', true).order('nome'),
     supabase.from('tipos_peca').select('*').order('nome'),
     supabase.from('formatos').select('*').order('nome'),
-    supabase.from('categorias').select('*').eq('ativo', true).order('nome'),
   ])
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#140033', padding: '40px' }}>
+    <div style={{ padding: '40px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
         <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)', flexShrink: 0 }} />
         <div>
@@ -34,9 +35,10 @@ export default async function PaginaNovoMaterial() {
       </div>
 
       <FormularioMaterial
+        temas={temas ?? []}
+        categorias={categorias ?? []}
         tipos={tipos ?? []}
         formatos={formatos ?? []}
-        categorias={categorias ?? []}
       />
     </div>
   )
