@@ -269,6 +269,26 @@ export default function Calculadora({ acervo }: Props) {
     if (editandoId === id) { setEditandoId(null); setNomeKit('') }
   }
 
+  async function duplicarKit(kit: Kit) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data, error } = await supabase.from('kits').insert({
+      usuario_id: user.id,
+      nome: kit.nome + ' (cópia)',
+      itens: kit.itens,
+      consumiveis: kit.consumiveis,
+      locacoes: kit.locacoes,
+      multiplicador: kit.multiplicador,
+      lucro: kit.lucro,
+      frete: kit.frete ?? 0,
+      custo_vida: kit.custo_vida ?? 0,
+      festas_kit_mes: kit.festas_kit_mes ?? 16,
+    }).select().single()
+    if (!error && data) {
+      setKits(p => [data as Kit, ...p])
+    }
+  }
+
   function abrirModalExportar(kit: Kit) {
     const custoAcervoK = (kit.itens ?? []).reduce((acc, i) => {
       const festas = (i as ItemAcervoKit).festasParaDiluir ?? kit.locacoes ?? 4
@@ -321,11 +341,14 @@ export default function Calculadora({ acervo }: Props) {
   const custoTotalAcervo = itens.reduce((acc, i) => acc + i.custo, 0)
   const margemParaAlvo = precoAlvo > 0 && custoComExtras > 0 ? Math.round(((precoAlvo - custoComExtras) / custoComExtras) * 100) : null
 
-  const margemStatus = lucro < 100
-    ? { cor: '#dc2626', texto: 'Abaixo do mínimo recomendado: 100%', icone: '✕' }
-    : lucro < 150
-    ? { cor: '#f59e0b', texto: 'Recomendado: 150%–200%', icone: '!' }
-    : { cor: '#10b981', texto: 'Boa margem', icone: '+' }
+  const margemStatus =
+    lucro < 30
+      ? { cor: '#dc2626', texto: 'Margem muito baixa — risco de prejuízo', icone: '✕' }
+    : lucro < 100
+      ? { cor: '#f59e0b', texto: 'Recomendado: 100%–200%', icone: '!' }
+    : lucro < 200
+      ? { cor: '#10b981', texto: 'Boa margem', icone: '+' }
+      : { cor: '#10b981', texto: 'Excelente margem', icone: '+' }
 
   // ── ESTILOS ──
   const inputStyle: React.CSSProperties = {
@@ -657,11 +680,50 @@ export default function Calculadora({ acervo }: Props) {
               style={{ width: '100%', background: '#f9f9f9', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '14px 16px', color: '#140033', fontFamily: 'Inter, sans-serif', fontSize: '15px', outline: 'none', boxSizing: 'border-box', marginBottom: '8px' }} />
             {erroSalvar && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#dc2626', margin: '0 0 12px', fontWeight: 600 }}>{erroSalvar}</p>}
             <div style={{ height: '8px' }} />
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setModalSalvar(false)} style={{ flex: 1, padding: '12px', background: '#f5f5f5', border: 'none', borderRadius: '999px', color: '#00000066', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={() => void salvarKit()} disabled={!nomeKit.trim() || salvando} style={{ flex: 2, padding: '12px', background: nomeKit.trim() && !salvando ? '#ff33cc' : '#f0f0f0', border: 'none', borderRadius: '999px', color: nomeKit.trim() && !salvando ? '#fff' : '#00000033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: nomeKit.trim() && !salvando ? 'pointer' : 'not-allowed' }}>
-                {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Salvar'}
-              </button>
+            <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+              {editandoId ? (
+                <>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={() => setModalSalvar(false)} style={{ flex: 1, padding: '12px', background: '#f5f5f5', border: 'none', borderRadius: '999px', color: '#00000066', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Cancelar</button>
+                    <button onClick={() => void salvarKit()} disabled={!nomeKit.trim() || salvando}
+                      style={{ flex: 2, padding: '12px', background: nomeKit.trim() && !salvando ? '#ff33cc' : '#f0f0f0', border: 'none', borderRadius: '999px', color: nomeKit.trim() && !salvando ? '#fff' : '#00000033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: nomeKit.trim() && !salvando ? 'pointer' : 'not-allowed' }}>
+                      {salvando ? 'Salvando...' : 'Atualizar kit'}
+                    </button>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!nomeKit.trim()) return
+                      setSalvando(true); setErroSalvar('')
+                      try {
+                        const { data: { user } } = await supabase.auth.getUser()
+                        if (!user) return
+                        const { error } = await supabase.from('kits').insert({
+                          usuario_id: user.id,
+                          nome: nomeKit.trim(),
+                          itens, consumiveis,
+                          locacoes: 1, multiplicador, lucro, frete,
+                          custo_vida: 0, festas_kit_mes: 16,
+                        })
+                        if (error) { setErroSalvar('Erro: ' + error.message); return }
+                        await carregarKits()
+                        setEditandoId(null)
+                        setModalSalvar(false)
+                      } finally { setSalvando(false) }
+                    }}
+                    disabled={!nomeKit.trim() || salvando}
+                    style={{ width: '100%', padding: '12px', background: '#fff', border: '1.5px solid #ff33cc', borderRadius: '999px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: nomeKit.trim() && !salvando ? 'pointer' : 'not-allowed', opacity: !nomeKit.trim() ? 0.5 : 1 }}>
+                    {salvando ? 'Salvando...' : 'Salvar como novo kit'}
+                  </button>
+                </>
+              ) : (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => setModalSalvar(false)} style={{ flex: 1, padding: '12px', background: '#f5f5f5', border: 'none', borderRadius: '999px', color: '#00000066', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Cancelar</button>
+                  <button onClick={() => void salvarKit()} disabled={!nomeKit.trim() || salvando}
+                    style={{ flex: 2, padding: '12px', background: nomeKit.trim() && !salvando ? '#ff33cc' : '#f0f0f0', border: 'none', borderRadius: '999px', color: nomeKit.trim() && !salvando ? '#fff' : '#00000033', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: nomeKit.trim() && !salvando ? 'pointer' : 'not-allowed' }}>
+                    {salvando ? 'Salvando...' : 'Salvar kit'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -699,6 +761,9 @@ export default function Calculadora({ acervo }: Props) {
                       <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                         <button onClick={() => carregarKit(kit)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '8px 12px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>
                           <Pencil size={12} /> Carregar
+                        </button>
+                        <button onClick={() => void duplicarKit(kit)} title="Duplicar kit" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f5f0ff', border: '1.5px solid #e9d5ff', borderRadius: '999px', padding: '8px 10px', color: '#7c3aed', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>
+                          <Plus size={12} /> Duplicar
                         </button>
                         <button onClick={() => { abrirModalExportar(kit); setModalKits(false) }} disabled={exportando} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fff', border: '1.5px solid #ff33cc', borderRadius: '999px', padding: '8px 10px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer', opacity: exportando ? 0.6 : 1 }}>
                           <ChevronUp size={12} /> Catálogo
