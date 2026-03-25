@@ -12,19 +12,21 @@ export default async function PaginaAdmin() {
   const [
     { count: totalMateriais },
     { count: totalDownloads },
-    { count: totalUsuarios },
+    { count: totalProfiles },
+    { count: totalPerfis },
     { data: assinaturasData },
   ] = await Promise.all([
     supabase.from('materiais').select('*', { count: 'exact', head: true }).eq('ativo', true),
     supabase.from('historico_downloads').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
-    supabase
-      .from('assinaturas')
-      .select('plano, status, trial_expira_em, is_beta'),
+    supabase.from('perfis').select('*', { count: 'exact', head: true }),
+    supabase.from('assinaturas').select('plano, status, trial_expira_em, is_beta'),
   ])
 
-  const agora = new Date()
+  // Usa o maior entre as duas tabelas como total real de usuários
+  const totalUsuarios = Math.max(totalProfiles ?? 0, totalPerfis ?? 0)
 
+  const agora = new Date()
   const assinaturas = assinaturasData ?? []
 
   const totalAssinantes = assinaturas.filter(
@@ -47,8 +49,6 @@ export default async function PaginaAdmin() {
     elite:     assinaturas.filter(a => a.status === 'active' && a.plano === 'elite').length,
   }
 
-  const totalFree = (totalUsuarios ?? 0) - totalAssinantes - totalTrial
-
   const cards: {
     label: string
     valor: number
@@ -58,8 +58,9 @@ export default async function PaginaAdmin() {
     href: string | null
   }[] = [
     {
-      label: 'Usuários totais',
-      valor: totalUsuarios ?? 0,
+      label: 'Usuários cadastrados',
+      valor: totalUsuarios,
+      sub: `profiles: ${totalProfiles ?? 0}  ·  perfis: ${totalPerfis ?? 0}`,
       icon: <Users size={20} />,
       cor: '#cc66ff',
       href: '/admin/usuarios',
@@ -81,11 +82,11 @@ export default async function PaginaAdmin() {
       href: '/admin/usuarios',
     },
     {
-      label: 'Plano free / sem assinatura',
-      valor: Math.max(0, totalFree),
-      sub: `${totalBeta} beta${totalBeta !== 1 ? 's' : ''}`,
+      label: 'Beta',
+      valor: totalBeta,
+      sub: 'Acesso especial',
       icon: <Users size={20} />,
-      cor: '#ffffff55',
+      cor: '#ff33cc',
       href: '/admin/usuarios',
     },
     {
@@ -130,7 +131,6 @@ export default async function PaginaAdmin() {
               padding: '20px 24px',
               height: '100%',
               boxSizing: 'border-box',
-              transition: 'border-color .15s',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
                 <div style={{
@@ -178,41 +178,56 @@ export default async function PaginaAdmin() {
         <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 16px' }}>
           Assinantes por plano
         </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {[
-            { label: 'Iniciante', valor: porPlano.iniciante, cor: '#00ccff', total: totalAssinantes },
-            { label: 'Avançado',  valor: porPlano.avancado,  cor: '#ff33cc', total: totalAssinantes },
-            { label: 'Elite',     valor: porPlano.elite,     cor: '#ffcc00', total: totalAssinantes },
-          ].map(p => {
-            const pct = totalAssinantes > 0 ? Math.round((p.valor / totalAssinantes) * 100) : 0
-            return (
-              <div key={p.label}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffffcc' }}>{p.label}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff55' }}>
-                      {p.valor} usuário{p.valor !== 1 ? 's' : ''}
-                    </span>
-                    <span style={{
-                      fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700,
-                      color: p.cor, background: p.cor + '22',
-                      borderRadius: '6px', padding: '2px 8px',
-                    }}>
-                      {pct}%
-                    </span>
+        {totalAssinantes === 0 ? (
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff33', margin: 0 }}>
+            Nenhum assinante ativo ainda.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {[
+              { label: 'Iniciante', valor: porPlano.iniciante, cor: '#00ccff' },
+              { label: 'Avançado',  valor: porPlano.avancado,  cor: '#ff33cc' },
+              { label: 'Elite',     valor: porPlano.elite,     cor: '#ffcc00' },
+            ].map(p => {
+              const pct = totalAssinantes > 0 ? Math.round((p.valor / totalAssinantes) * 100) : 0
+              return (
+                <div key={p.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffffcc' }}>{p.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff55' }}>
+                        {p.valor} usuário{p.valor !== 1 ? 's' : ''}
+                      </span>
+                      <span style={{
+                        fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700,
+                        color: p.cor, background: p.cor + '22',
+                        borderRadius: '6px', padding: '2px 8px',
+                      }}>
+                        {pct}%
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ height: '6px', background: '#ffffff10', borderRadius: '999px', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: p.cor, borderRadius: '999px' }} />
                   </div>
                 </div>
-                <div style={{ height: '6px', background: '#ffffff10', borderRadius: '999px', overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${pct}%`, height: '100%',
-                    background: p.cor, borderRadius: '999px',
-                    transition: 'width .4s ease',
-                  }} />
-                </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Debug — remova após confirmar os números */}
+      <div style={{
+        background: '#ffffff05', border: '1px solid #ffffff10',
+        borderRadius: '12px', padding: '16px', marginBottom: '24px',
+        fontFamily: 'monospace', fontSize: '12px', color: '#ffffff44',
+      }}>
+        <p style={{ margin: '0 0 6px', color: '#ffffff66', fontWeight: 700 }}>Debug — contagens brutas</p>
+        <p style={{ margin: '0 0 2px' }}>tabela profiles: {totalProfiles ?? 'erro / sem acesso'}</p>
+        <p style={{ margin: '0 0 2px' }}>tabela perfis: {totalPerfis ?? 'erro / sem acesso'}</p>
+        <p style={{ margin: '0 0 2px' }}>tabela assinaturas (total rows): {assinaturas.length}</p>
+        <p style={{ margin: 0 }}>status únicos: {[...new Set(assinaturas.map(a => a.status))].join(', ') || 'nenhum'}</p>
       </div>
 
       {/* Ações rápidas */}
