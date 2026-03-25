@@ -1,140 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import crypto from 'crypto'
 
-function getAsaasConfig() {
-  const key = process.env.ASAAS_API_KEY
-  if (!key) throw new Error('ASAAS_API_KEY não configurada')
-
-  const url = process.env.ASAAS_SANDBOX === 'true'
-    ? 'https://sandbox.asaas.com/api/v3'
-    : 'https://api.asaas.com/v3'
-
-  return { key, url }
+const STATUS_MAP: Record<string, string> = {
+  PAYMENT_CONFIRMED:    'active',
+  PAYMENT_RECEIVED:     'active',
+  PAYMENT_OVERDUE:      'overdue',
+  PAYMENT_DELETED:      'canceled',
+  PAYMENT_REFUNDED:     'canceled',
+  SUBSCRIPTION_DELETED: 'canceled',
 }
 
-const PLANOS: Record<string, { nome: string; valor: number; descricao: string }> = {
-  iniciante: { nome: 'Encantiva Pro — Iniciante', valor: 19.90, descricao: 'Plano Iniciante — acesso mensal' },
-  avancado:  { nome: 'Encantiva Pro — Avançado',  valor: 34.90, descricao: 'Plano Avançado — acesso mensal'  },
-  elite:     { nome: 'Encantiva Pro — Elite',      valor: 54.90, descricao: 'Plano Elite — acesso mensal'     },
-}
-
-const URL_SUCESSO = 'https://encantivapro.com.br/pagamento/sucesso'
-
-async function buscarOuCriarCliente(email: string, nome: string, cpfCnpj: string): Promise<string> {
-  const { key, url } = getAsaasConfig()
-
-  const busca = await fetch(`${url}/customers?email=${encodeURIComponent(email)}`, {
-    headers: { accept: 'application/json', access_token: key },
-  })
-  const buscaJson = await busca.json()
-
-  if (buscaJson?.data?.length > 0) {
-    const clienteExistente = buscaJson.data[0]
-    await fetch(`${url}/customers/${clienteExistente.id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
-      body: JSON.stringify({ name: nome, email, cpfCnpj }),
-    })
-    return clienteExistente.id
+function verificarToken(token: string): boolean {
+  const secret = process.env.ASAAS_WEBHOOK_TOKEN
+  if (!secret) return true
+  try {
+    return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(secret))
+  } catch {
+    return false
   }
-
-  const criacao = await fetch(`${url}/customers`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
-    body: JSON.stringify({ name: nome, email, cpfCnpj }),
-  })
-  const cliente = await criacao.json()
-  if (!cliente.id) throw new Error(`Erro ao criar cliente Asaas: ${JSON.stringify(cliente)}`)
-  return cliente.id
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ erro: 'Não autenticado' }, { status: 401 })
+    const body = await req.text()
+    const token = req.headers.get('asaas-access-token') ?? ''
 
-    const { plano, cpfCnpj } = await req.json()
-    const config = PLANOS[plano]
-    if (!config) return NextResponse.json({ erro: 'Plano inválido' }, { status: 400 })
-    if (!cpfCnpj) return NextResponse.json({ erro: 'CPF/CNPJ obrigatório' }, { status: 400 })
-
-    // Verifica se já tem assinatura ativa
-    const { data: assinaturaExistente } = await supabase
-      .from('assinaturas')
-      .select('asaas_subscription_id, status')
-      .eq('usuario_id', user.id)
-      .single()
-
-    if (assinaturaExistente?.status === 'active') {
-      return NextResponse.json({ erro: 'Você já possui uma assinatura ativa.' }, { status: 400 })
+    if (!verificarToken(token)) {
+      return NextResponse.json({ erro: 'Token inválido' }, { status: 401 })
     }
 
-    const { data: perfil } = await supabase
-      .from('perfis')
-      .select('nome_loja, asaas_customer_id')
-      .eq('id', user.id)
-      .single()
+    const payload = JSON.parse(body)
+    const evento: string = payload.event
+    console.log('[asaas-webhook] evento:', evento)
 
-    const nomeCliente = perfil?.nome_loja || user.email!.split('@')[0]
+    const supabase = createAdminClient()
 
-    let customerId = perfil?.asaas_customer_id as string | null
-    if (!customerId) {
-      customerId = await buscarOuCriarCliente(user.email!, nomeCliente, cpfCnpj)
-      await supabase.from('perfis').upsert({ id: user.id, asaas_customer_id: customerId })
-    } else {
-      await buscarOuCriarCliente(user.email!, nomeCliente, cpfCnpj)
+    // ── Eventos de cobrança ──────────────────────────────
+    if (evento.startsWith('PAYMENT_')) {
+      const payment = payload.payment
+      const subscriptionId: string | null = payment?.subscription ?? null
+      if (!subscriptionId) return NextResponse.json({ ok: true })
+
+      const novoStatus = STATUS_MAP[evento]
+      if (!novoStatus) return NextResponse.json({ ok: true })
+
+      const extRef: string = payment.externalReference ?? ''
+      const [userId, plano] = extRef.split('::')
+
+      console.log('[asaas-webhook] userId:', userId, '| plano:', plano, '| novoStatus:', novoStatus)
+
+      if (userId) {
+        const patch: Record<string, string | null> = {
+          status:        novoStatus,
+          atualizado_em: new Date().toISOString(),
+        }
+
+        // Limpa o trial quando ativa
+        if (novoStatus === 'active') {
+          patch.trial_expira_em = null
+          if (plano) patch.plano = plano
+        }
+
+        const { data, error } = await supabase
+          .from('assinaturas')
+          .update(patch)
+          .eq('usuario_id', userId)
+          .select()
+
+        console.log('[asaas-webhook] update resultado:', JSON.stringify({ data, error }))
+
+        // Se não atualizou (linha não existe), faz upsert
+        if (error || !data?.length) {
+          console.log('[asaas-webhook] nenhuma linha atualizada, tentando upsert...')
+          const { data: data2, error: error2 } = await supabase
+            .from('assinaturas')
+            .upsert(
+              { usuario_id: userId, asaas_subscription_id: subscriptionId, ...patch },
+              { onConflict: 'usuario_id' }
+            )
+          console.log('[asaas-webhook] upsert resultado:', JSON.stringify({ data2, error2 }))
+        }
+      }
     }
 
-    const { key, url } = getAsaasConfig()
+    // ── Assinatura cancelada ─────────────────────────────
+    if (evento === 'SUBSCRIPTION_DELETED') {
+      const sub = payload.subscription
+      if (sub?.id) {
+        await supabase
+          .from('assinaturas')
+          .update({ status: 'canceled', atualizado_em: new Date().toISOString() })
+          .eq('asaas_subscription_id', sub.id)
+      }
+    }
 
-    const proximoVencimento = new Date()
-    proximoVencimento.setDate(proximoVencimento.getDate() + 1)
-    const nextDueDate = proximoVencimento.toISOString().split('T')[0]
-
-    // Cria a assinatura com callback de sucesso
-    const subRes = await fetch(`${url}/subscriptions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
-      body: JSON.stringify({
-        customer:          customerId,
-        billingType:       'UNDEFINED',
-        nextDueDate,
-        value:             config.valor,
-        cycle:             'MONTHLY',
-        description:       config.descricao,
-        externalReference: `${user.id}::${plano}`,
-        callback: {
-          successUrl:   URL_SUCESSO,
-          autoRedirect: true,
-        },
-      }),
-    })
-
-    const sub = await subRes.json()
-    if (!sub.id) throw new Error(`Erro Asaas: ${JSON.stringify(sub)}`)
-
-    await supabase.from('assinaturas').upsert({
-      usuario_id:            user.id,
-      status:                'pending',
-      plano,
-      asaas_subscription_id: sub.id,
-      asaas_customer_id:     customerId,
-      atualizado_em:         new Date().toISOString(),
-    }, { onConflict: 'usuario_id' })
-
-    // Busca a primeira cobrança gerada pela assinatura para obter o invoiceUrl
-    const cobrancasRes = await fetch(`${url}/payments?subscription=${sub.id}`, {
-      headers: { accept: 'application/json', access_token: key },
-    })
-    const cobrancas = await cobrancasRes.json()
-    const primeiraCobranca = cobrancas?.data?.[0]
-    const checkoutUrl = primeiraCobranca?.invoiceUrl ?? sub.paymentLink ?? null
-
-    return NextResponse.json({ checkoutUrl, subscriptionId: sub.id })
+    return NextResponse.json({ ok: true })
 
   } catch (err) {
-    console.error('[criar-assinatura]', err)
+    console.error('[asaas-webhook]', err)
     return NextResponse.json({ erro: String(err) }, { status: 500 })
   }
 }
