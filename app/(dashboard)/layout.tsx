@@ -79,7 +79,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : 0
 
   const assinaturaAtiva = isAdmin || assinatura?.status === 'active' || isTrial
-  const temAcervo = isAdmin || isBeta || assinatura?.plano === 'elite'
+  const temAcervo = true
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>

@@ -104,8 +104,15 @@ export default async function PaginaMateriais({
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginTop: '14px' }}>
             {materiais.map(material => (
-              <CardMaterial key={material.id} material={material as Material} podeDownload={true} />
-            ))}
+              <CardMaterial
+                key={material.id}
+                material={material as Material}
+                podeDownload={true}
+                isExclusivo={(material as unknown as { exclusivo?: boolean }).exclusivo ?? false}
+                limiteDownloads={limites.downloadMateriais}
+                planoId={planoId}
+              />      
+      ))}
           </div>
         )}
 
