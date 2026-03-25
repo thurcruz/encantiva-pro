@@ -11,21 +11,97 @@ export default async function PaginaAdmin() {
 
   const [
     { count: totalMateriais },
-    { count: totalAssinantes },
     { count: totalDownloads },
     { count: totalUsuarios },
+    { data: assinaturasData },
   ] = await Promise.all([
-    supabase.from('materiais').select('*', { count: 'exact', head: true }),
-    supabase.from('assinaturas').select('*', { count: 'exact', head: true }).eq('status', 'active').in('plano', ['iniciante', 'avancado', 'elite']),
+    supabase.from('materiais').select('*', { count: 'exact', head: true }).eq('ativo', true),
     supabase.from('historico_downloads').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase
+      .from('assinaturas')
+      .select('plano, status, trial_expira_em, is_beta'),
   ])
 
-  const cards: { label: string; valor: number; icon: React.ReactNode; cor: string; href: string | null }[] = [
-    { label: 'Usuários',         valor: totalUsuarios   ?? 0, icon: <Users size={20} />,   cor: '#cc66ff', href: '/admin/usuarios'  },
-    { label: 'Assinantes ativos',valor: totalAssinantes ?? 0, icon: <Users size={20} />,   cor: '#00ff88', href: '/admin/usuarios'  },
-    { label: 'Materiais',        valor: totalMateriais  ?? 0, icon: <Package size={20} />, cor: '#ff33cc', href: '/admin/materiais' },
-    { label: 'Downloads totais', valor: totalDownloads  ?? 0, icon: <Upload size={20} />,  cor: '#9900ff', href: null              },
+  const agora = new Date()
+
+  const assinaturas = assinaturasData ?? []
+
+  const totalAssinantes = assinaturas.filter(
+    a => a.status === 'active' && ['iniciante', 'avancado', 'elite'].includes(a.plano)
+  ).length
+
+  const totalTrial = assinaturas.filter(
+    a => a.status === 'trial' && a.trial_expira_em && new Date(a.trial_expira_em) > agora
+  ).length
+
+  const totalTrialExpirado = assinaturas.filter(
+    a => a.status === 'trial' && a.trial_expira_em && new Date(a.trial_expira_em) <= agora
+  ).length
+
+  const totalBeta = assinaturas.filter(a => a.is_beta).length
+
+  const porPlano = {
+    iniciante: assinaturas.filter(a => a.status === 'active' && a.plano === 'iniciante').length,
+    avancado:  assinaturas.filter(a => a.status === 'active' && a.plano === 'avancado').length,
+    elite:     assinaturas.filter(a => a.status === 'active' && a.plano === 'elite').length,
+  }
+
+  const totalFree = (totalUsuarios ?? 0) - totalAssinantes - totalTrial
+
+  const cards: {
+    label: string
+    valor: number
+    sub?: string
+    icon: React.ReactNode
+    cor: string
+    href: string | null
+  }[] = [
+    {
+      label: 'Usuários totais',
+      valor: totalUsuarios ?? 0,
+      icon: <Users size={20} />,
+      cor: '#cc66ff',
+      href: '/admin/usuarios',
+    },
+    {
+      label: 'Assinantes ativos',
+      valor: totalAssinantes,
+      sub: `Inic: ${porPlano.iniciante}  ·  Av: ${porPlano.avancado}  ·  Elite: ${porPlano.elite}`,
+      icon: <Users size={20} />,
+      cor: '#00ff88',
+      href: '/admin/usuarios',
+    },
+    {
+      label: 'Em trial ativo',
+      valor: totalTrial,
+      sub: `${totalTrialExpirado} expirado${totalTrialExpirado !== 1 ? 's' : ''}`,
+      icon: <Users size={20} />,
+      cor: '#ffcc00',
+      href: '/admin/usuarios',
+    },
+    {
+      label: 'Plano free / sem assinatura',
+      valor: Math.max(0, totalFree),
+      sub: `${totalBeta} beta${totalBeta !== 1 ? 's' : ''}`,
+      icon: <Users size={20} />,
+      cor: '#ffffff55',
+      href: '/admin/usuarios',
+    },
+    {
+      label: 'Materiais publicados',
+      valor: totalMateriais ?? 0,
+      icon: <Package size={20} />,
+      cor: '#ff33cc',
+      href: '/admin/materiais',
+    },
+    {
+      label: 'Downloads totais',
+      valor: totalDownloads ?? 0,
+      icon: <Upload size={20} />,
+      cor: '#9900ff',
+      href: null,
+    },
   ]
 
   return (
@@ -43,20 +119,44 @@ export default async function PaginaAdmin() {
         </div>
       </div>
 
-      {/* Cards — clicáveis quando têm href */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+      {/* Cards de métricas */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginBottom: '32px' }}>
         {cards.map(card => {
           const inner = (
-            <div style={{ background: '#ffffff08', border: `1px solid ${card.cor}22`, borderRadius: '16px', padding: '24px', transition: 'border-color .15s', height: '100%', boxSizing: 'border-box' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: card.cor + '22', border: `1px solid ${card.cor}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.cor }}>
+            <div style={{
+              background: '#ffffff08',
+              border: `1px solid ${card.cor}22`,
+              borderRadius: '16px',
+              padding: '20px 24px',
+              height: '100%',
+              boxSizing: 'border-box',
+              transition: 'border-color .15s',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '10px',
+                  background: card.cor + '22',
+                  border: `1px solid ${card.cor}44`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: card.cor,
+                }}>
                   {card.icon}
                 </div>
-                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff66' }}>{card.label}</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff66' }}>
+                  {card.label}
+                </span>
               </div>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '36px', color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-                {card.valor}
+              <p style={{
+                fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '36px',
+                color: '#fff', margin: '0 0 4px', letterSpacing: '-1px',
+              }}>
+                {card.valor.toLocaleString('pt-BR')}
               </p>
+              {card.sub && (
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ffffff44', margin: 0 }}>
+                  {card.sub}
+                </p>
+              )}
             </div>
           )
 
@@ -70,9 +170,54 @@ export default async function PaginaAdmin() {
         })}
       </div>
 
+      {/* Breakdown por plano */}
+      <div style={{
+        background: '#ffffff08', border: '1px solid #ffffff12',
+        borderRadius: '16px', padding: '24px', marginBottom: '24px',
+      }}>
+        <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 16px' }}>
+          Assinantes por plano
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {[
+            { label: 'Iniciante', valor: porPlano.iniciante, cor: '#00ccff', total: totalAssinantes },
+            { label: 'Avançado',  valor: porPlano.avancado,  cor: '#ff33cc', total: totalAssinantes },
+            { label: 'Elite',     valor: porPlano.elite,     cor: '#ffcc00', total: totalAssinantes },
+          ].map(p => {
+            const pct = totalAssinantes > 0 ? Math.round((p.valor / totalAssinantes) * 100) : 0
+            return (
+              <div key={p.label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffffcc' }}>{p.label}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff55' }}>
+                      {p.valor} usuário{p.valor !== 1 ? 's' : ''}
+                    </span>
+                    <span style={{
+                      fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700,
+                      color: p.cor, background: p.cor + '22',
+                      borderRadius: '6px', padding: '2px 8px',
+                    }}>
+                      {pct}%
+                    </span>
+                  </div>
+                </div>
+                <div style={{ height: '6px', background: '#ffffff10', borderRadius: '999px', overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${pct}%`, height: '100%',
+                    background: p.cor, borderRadius: '999px',
+                    transition: 'width .4s ease',
+                  }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Ações rápidas */}
       <div style={{ background: '#ffffff08', border: '1px solid #ffffff12', borderRadius: '16px', padding: '24px' }}>
-        <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#fff', margin: '0 0 16px 0' }}>
+        <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff', margin: '0 0 16px' }}>
           Ações rápidas
         </h2>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -83,6 +228,10 @@ export default async function PaginaAdmin() {
           <Link href="/admin/materiais/novo" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '12px', padding: '12px 20px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
             <Upload size={16} />
             Novo Material
+          </Link>
+          <Link href="/admin/materiais/lote" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#ff33cc22', border: '1px solid #ff33cc55', borderRadius: '12px', padding: '12px 20px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+            <Upload size={16} />
+            Upload em Lote
           </Link>
           <Link href="/admin/materiais" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff0d', border: '1px solid #ffffff18', borderRadius: '12px', padding: '12px 20px', color: '#ffffffcc', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
             <Package size={16} />
