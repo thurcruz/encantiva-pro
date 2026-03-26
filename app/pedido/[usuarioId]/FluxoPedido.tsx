@@ -1,8 +1,8 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import NextImage from 'next/image'
 
 const FORMAS_PAGAMENTO = ['PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Transferência']
 
@@ -10,6 +10,7 @@ const IconChevRight = () => <svg width="16" height="16" viewBox="0 0 16 16" fill
 const IconChevLeft  = () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 4L6 8l4 4"/></svg>
 const IconCheck     = () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l4.5 4.5L15 5"/></svg>
 const IconCheckSm   = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 5.5l2.5 2.5L9 3"/></svg>
+const IconSearch    = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="6" cy="6" r="4"/><path d="M10 10l3 3"/></svg>
 const IconWA        = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
 
 interface Tema      { id: string; nome: string; categoria: string; categorias: string[]; foto_url: string | null }
@@ -53,43 +54,89 @@ const lbl: React.CSSProperties = {
   letterSpacing: '0.6px', textTransform: 'uppercase',
 }
 
+// ── Rodapé fixo com total ────────────────────────────────
+function RodapeTotal({
+  valorTotal, kitSelecionado, adicionaisSel, etapa,
+}: {
+  valorTotal: number
+  kitSelecionado: Kit | null
+  adicionaisSel: Adicional[]
+  etapa: number
+}) {
+  if (valorTotal === 0) return null
+  return (
+    <div style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+      background: '#fff', borderTop: '1px solid #f3f4f6',
+      padding: '12px 20px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+      boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+    }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#9ca3af', letterSpacing: '0.6px', textTransform: 'uppercase', margin: '0 0 2px' }}>
+            Total estimado
+          </p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#ff33cc', margin: 0, letterSpacing: '-0.5px' }}>
+              R$ {valorTotal.toFixed(2).replace('.', ',')}
+            </p>
+          </div>
+          {kitSelecionado && (
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {kitSelecionado.nome}
+              {adicionaisSel.length > 0 && ` + ${adicionaisSel.length} adicional${adicionaisSel.length > 1 ? 'is' : ''}`}
+            </p>
+          )}
+        </div>
+        <div style={{ background: '#fff0fb', border: '1px solid #ffd6f5', borderRadius: '10px', padding: '6px 12px', flexShrink: 0 }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#ff33cc', margin: '0 0 1px', letterSpacing: '0.3px' }}>Etapa {etapa}</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: 0 }}>Preço pode variar</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLoja, telefone, vagasPadrao }: Props) {
   const supabase = createClient()
   const temKits     = kits.length > 0
-  const totalEtapas = temKits ? 4 : 3  // ocasião → tema → dados → confirmação
+  const totalEtapas = temKits ? 4 : 3
 
-  const [etapa, setEtapa]           = useState(1)
-  const [enviando, setEnviando]     = useState(false)
+  const [etapa, setEtapa]             = useState(1)
+  const [enviando, setEnviando]       = useState(false)
   const [pedidoFeito, setPedidoFeito] = useState(false)
-  const [erroEnvio, setErroEnvio]   = useState<string | null>(null)
+  const [erroEnvio, setErroEnvio]     = useState<string | null>(null)
 
-  // Etapa 1 — ocasião
-  const [ocasiao, setOcasiao]       = useState('')
-  // Etapa 2 — tema
+  const [ocasiao, setOcasiao]         = useState('')
   const [temaSelecionado, setTemaSelecionado] = useState<Tema | null>(null)
-  const [temaLivre, setTemaLivre]   = useState('')
+  const [temaLivre, setTemaLivre]     = useState('')
   const [mostrarTemaLivre, setMostrarTemaLivre] = useState(false)
-  // Etapa 3 — kit
+  const [buscaTema, setBuscaTema]     = useState('')
   const [kitSelecionado, setKitSelecionado] = useState<Kit | null>(null)
   const [adicionaisSel, setAdicionaisSel] = useState<Adicional[]>([])
-  // Etapa 4 — dados
   const [form, setForm] = useState({ nome_cliente: '', telefone_cliente: '', data_evento: '', forma_pagamento: '', observacoes: '' })
-  // Vagas
-  const [vagasInfo, setVagasInfo]   = useState<{ total: number; usadas: number } | null>(null)
+  const [vagasInfo, setVagasInfo]     = useState<{ total: number; usadas: number } | null>(null)
   const [verificandoVagas, setVerificandoVagas] = useState(false)
 
-  // Ocasiões únicas de todos os temas
   const todasCategorias = [...new Set(
     temas.flatMap(t => t.categorias?.length > 0 ? t.categorias : (t.categoria ? [t.categoria] : []))
   )].filter(Boolean).sort()
 
-  // Temas filtrados pela ocasião selecionada
-  const temasFiltrados = ocasiao
-    ? temas.filter(t => {
-        const cats = t.categorias?.length > 0 ? t.categorias : (t.categoria ? [t.categoria] : [])
-        return cats.includes(ocasiao)
-      })
-    : temas
+  const temasFiltrados = (() => {
+    let lista = ocasiao
+      ? temas.filter(t => {
+          const cats = t.categorias?.length > 0 ? t.categorias : (t.categoria ? [t.categoria] : [])
+          return cats.includes(ocasiao)
+        })
+      : temas
+    if (buscaTema.trim()) {
+      lista = lista.filter(t => t.nome.toLowerCase().includes(buscaTema.toLowerCase()))
+    }
+    return lista
+  })()
+
+  // Verifica se algum tema tem foto
+  const temasTemFoto = temas.some(t => !!t.foto_url)
 
   const valorAdicionais = adicionaisSel.reduce((s, a) => s + a.preco, 0)
   const valorTotal = (kitSelecionado?.preco ?? 0) + valorAdicionais
@@ -98,51 +145,30 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
     setAdicionaisSel(p => p.find(x => x.id === a.id) ? p.filter(x => x.id !== a.id) : [...p, a])
   }
 
-  // Verificar vagas ao selecionar data
   async function verificarVagas(data: string) {
     if (!data) return
-    setVerificandoVagas(true)
-    setVagasInfo(null)
-
-    // Busca vagas específicas da data ou usa o padrão
-    const { data: vagasDia } = await supabase
-      .from('vagas_dia')
-      .select('vagas_total')
-      .eq('usuario_id', usuarioId)
-      .eq('data', data)
-      .single()
-
+    setVerificandoVagas(true); setVagasInfo(null)
+    const { data: vagasDia } = await supabase.from('vagas_dia').select('vagas_total').eq('usuario_id', usuarioId).eq('data', data).single()
     const total = vagasDia?.vagas_total ?? vagasPadrao
-
-    // Conta pedidos existentes nessa data
-    const { count } = await supabase
-      .from('pedidos')
-      .select('id', { count: 'exact', head: true })
-      .eq('usuario_id', usuarioId)
-      .eq('data_evento', data)
-      .not('status', 'eq', 'cancelado')
-
+    const { count } = await supabase.from('pedidos').select('id', { count: 'exact', head: true }).eq('usuario_id', usuarioId).eq('data_evento', data).not('status', 'eq', 'cancelado')
     setVagasInfo({ total, usadas: count ?? 0 })
     setVerificandoVagas(false)
   }
 
   function etapaAnterior() {
-    if (etapa === 3 && !temKits) setEtapa(2)
-    else if (etapa === 4 && !temKits) setEtapa(2)  // sem kits: dados → tema
+    if (etapa === 4 && !temKits) setEtapa(2)
     else setEtapa(e => e - 1)
   }
   function proximaEtapa() {
-    if (etapa === 2 && !temKits) setEtapa(4)  // sem kits pula kit
+    if (etapa === 2 && !temKits) setEtapa(4)
     else setEtapa(e => e + 1)
   }
 
-  // Monta mensagem WhatsApp
   function montarMensagemWA(): string {
     const tema = mostrarTemaLivre ? temaLivre : (temaSelecionado?.nome ?? '')
     const data = form.data_evento ? new Date(form.data_evento + 'T00:00:00').toLocaleDateString('pt-BR') : ''
     const linhas = [
-      `*Novo pedido via ${nomeLoja ?? 'site'}*`,
-      ``,
+      `*Novo pedido via ${nomeLoja ?? 'site'}*`, ``,
       `👤 *Cliente:* ${form.nome_cliente}`,
       form.telefone_cliente ? `📱 *WhatsApp:* ${form.telefone_cliente}` : null,
       tema ? `🎨 *Tema:* ${tema}` : null,
@@ -160,9 +186,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
   async function enviarPedido() {
     if (!form.nome_cliente || !form.data_evento) return
     setEnviando(true); setErroEnvio(null)
-
     const nomeTemaMostrar = mostrarTemaLivre && temaLivre ? temaLivre : (temaSelecionado?.nome ?? null)
-
     const { error } = await supabase.from('pedidos').insert({
       usuario_id: usuarioId,
       tema_id: mostrarTemaLivre ? null : (temaSelecionado?.id ?? null),
@@ -180,31 +204,24 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
       valor_total: valorTotal,
       status: 'pendente',
     })
-
     if (error) { setErroEnvio(`Erro ao enviar: ${error.message}`); setEnviando(false); return }
-
-    // Envia resumo pelo WhatsApp se tiver telefone
     if (telefone) {
       const msg = encodeURIComponent(montarMensagemWA())
       const tel = telefone.replace(/\D/g, '')
       window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank')
     }
-
-    setPedidoFeito(true)
-    setEnviando(false)
+    setPedidoFeito(true); setEnviando(false)
   }
 
   const vagasDisponiveis = vagasInfo ? vagasInfo.total - vagasInfo.usadas : null
   const dataEsgotada = vagasDisponiveis !== null && vagasDisponiveis <= 0
 
-  // ── Sucesso ─────────────────────────────────────────
+  // ── Sucesso ──────────────────────────────────────────────
   if (pedidoFeito) {
     return (
       <div style={{ minHeight: '100vh', background: '#f6f6f8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <div style={{ background: '#fff', borderRadius: '24px', padding: '40px 28px', maxWidth: '400px', width: '100%', textAlign: 'center', border: '1px solid #e8e8ec' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#fff' }}>
-            <IconCheck />
-          </div>
+          <div style={{ width: 64, height: 64, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#fff' }}><IconCheck /></div>
           <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#111827', margin: '0 0 10px' }}>Pedido enviado!</h1>
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#6b7280', margin: '0 0 24px', lineHeight: 1.6 }}>
             {nomeLoja ? `${nomeLoja} entrará` : 'Entraremos'} em contato para confirmar os detalhes.
@@ -229,11 +246,9 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
             )}
           </div>
           {telefone && (
-            <a
-              href={`https://wa.me/55${telefone.replace(/\D/g, '')}?text=${encodeURIComponent(montarMensagemWA())}`}
+            <a href={`https://wa.me/55${telefone.replace(/\D/g, '')}?text=${encodeURIComponent(montarMensagemWA())}`}
               target="_blank" rel="noopener noreferrer"
-              style={{ ...btnPrimario(), background: '#25D366', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-            >
+              style={{ ...btnPrimario(), background: '#25D366', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
               <IconWA /> Confirmar pelo WhatsApp
             </a>
           )}
@@ -243,7 +258,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f6f6f8' }}>
+    <div style={{ minHeight: '100vh', background: '#f6f6f8', paddingBottom: valorTotal > 0 ? '90px' : '0' }}>
       {/* Header */}
       <div style={{ background: '#ff33cc', padding: '20px 24px' }}>
         <div style={{ maxWidth: '480px', margin: '0 auto' }}>
@@ -255,25 +270,21 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
         <div style={{ height: '100%', width: `${(etapa / totalEtapas) * 100}%`, background: '#ff33cc', transition: 'width .3s ease' }} />
       </div>
 
-      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '24px 20px 80px' }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '24px 20px 32px' }}>
 
         {/* ════ ETAPA 1 — OCASIÃO ════ */}
         {etapa === 1 && (
           <div>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '20px', color: '#111827', margin: '0 0 4px' }}>Qual é a ocasião?</p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: '0 0 20px' }}>Isso vai filtrar os temas certos para você</p>
-
             {todasCategorias.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
                 {todasCategorias.map(cat => (
-                  <button key={cat} onClick={() => setOcasiao(cat)}
-                    style={{ padding: '16px 12px', background: ocasiao === cat ? '#fff0fb' : '#fff', border: `2px solid ${ocasiao === cat ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '14px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: ocasiao === cat ? '#ff33cc' : '#374151', textAlign: 'center', transition: 'all .12s', position: 'relative' }}
-                  >
+                  <button key={cat} onClick={() => setOcasiao(cat === ocasiao ? '' : cat)}
+                    style={{ padding: '16px 12px', background: ocasiao === cat ? '#fff0fb' : '#fff', border: `2px solid ${ocasiao === cat ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '14px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: ocasiao === cat ? '#ff33cc' : '#374151', textAlign: 'center', transition: 'all .12s', position: 'relative' }}>
                     {cat}
                     {ocasiao === cat && (
-                      <span style={{ position: 'absolute', top: 8, right: 8, width: 18, height: 18, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-                        <IconCheckSm />
-                      </span>
+                      <span style={{ position: 'absolute', top: 8, right: 8, width: 18, height: 18, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><IconCheckSm /></span>
                     )}
                   </button>
                 ))}
@@ -283,10 +294,12 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0 }}>Prossiga para escolher o tema</p>
               </div>
             )}
-
-            <button onClick={() => setEtapa(2)} style={btnPrimario()}>
-              {ocasiao ? `${ocasiao} →` : 'Pular este passo'} <IconChevRight />
-            </button>
+            {/* Botão fixo */}
+            <div style={{ position: 'sticky', bottom: 16, zIndex: 10 }}>
+              <button onClick={() => setEtapa(2)} style={btnPrimario()}>
+                {ocasiao ? `${ocasiao} →` : 'Pular este passo'} <IconChevRight />
+              </button>
+            </div>
           </div>
         )}
 
@@ -294,40 +307,69 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
         {etapa === 2 && (
           <div>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '20px', color: '#111827', margin: '0 0 4px' }}>Escolha o tema</p>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: '0 0 20px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: '0 0 16px' }}>
               {ocasiao ? `Mostrando temas para: ${ocasiao}` : 'Todos os temas disponíveis'}
             </p>
 
             {temas.length > 0 && !mostrarTemaLivre && (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '12px' }}>
-                  {temasFiltrados.map(tema => {
-                    const sel = temaSelecionado?.id === tema.id
-                    return (
-                      <button key={tema.id} onClick={() => setTemaSelecionado(sel ? null : tema)}
-                        style={{ background: sel ? '#fff0fb' : '#fff', border: `2px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '14px', cursor: 'pointer', overflow: 'hidden', padding: 0, textAlign: 'left', transition: 'border-color .12s' }}
-                      >
-                        <div style={{ height: '80px', background: '#f5f0ff', position: 'relative', overflow: 'hidden' }}>
-                          {tema.foto_url
-                            ? <NextImage src={tema.foto_url} fill style={{ objectFit: 'cover' }} alt={tema.nome} unoptimized />
-                            : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' }}>🎨</div>
-                          }
-                          {sel && <div style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><IconCheckSm /></div>}
-                        </div>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: sel ? '#ff33cc' : '#111827', margin: 0, padding: '9px 12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tema.nome}</p>
-                      </button>
-                    )
-                  })}
-                  {temasFiltrados.length === 0 && (
-                    <div style={{ gridColumn: '1/-1', background: '#fafafa', borderRadius: '14px', padding: '24px', textAlign: 'center' }}>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0 }}>Nenhum tema cadastrado para esta ocasião</p>
-                    </div>
-                  )}
+                {/* Campo de busca rápida */}
+                <div style={{ position: 'relative', marginBottom: '12px' }}>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', display: 'flex', pointerEvents: 'none' }}><IconSearch /></span>
+                  <input
+                    style={{ ...input, paddingLeft: '36px' }}
+                    placeholder="Buscar tema..."
+                    value={buscaTema}
+                    onChange={e => setBuscaTema(e.target.value)}
+                    onFocus={e => (e.target.style.borderColor = '#ff33cc')}
+                    onBlur={e => (e.target.style.borderColor = '#e8e8ec')}
+                  />
                 </div>
-                <button onClick={() => { setMostrarTemaLivre(true); setTemaSelecionado(null) }}
-                  style={{ width: '100%', background: 'transparent', border: '1.5px dashed #ffd6f5', borderRadius: '12px', padding: '12px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', cursor: 'pointer', marginBottom: '16px' }}>
-                  Não encontrei meu tema
-                </button>
+
+                {/* Grade com foto OU lista sem foto */}
+                {temasTemFoto ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '12px' }}>
+                    {temasFiltrados.map(tema => {
+                      const sel = temaSelecionado?.id === tema.id
+                      return (
+                        <button key={tema.id} onClick={() => setTemaSelecionado(sel ? null : tema)}
+                          style={{ background: sel ? '#fff0fb' : '#fff', border: `2px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '14px', cursor: 'pointer', overflow: 'hidden', padding: 0, textAlign: 'left', transition: 'border-color .12s' }}>
+                          <div style={{ height: '80px', background: '#f5f0ff', position: 'relative', overflow: 'hidden' }}>
+                            {tema.foto_url
+                              ?
+              <img src={tema.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={tema.nome} />
+                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' }}>🎨</div>}
+                            {sel && <div style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><IconCheckSm /></div>}
+                          </div>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: sel ? '#ff33cc' : '#111827', margin: 0, padding: '9px 12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tema.nome}</p>
+                        </button>
+                      )
+                    })}
+                    {temasFiltrados.length === 0 && (
+                      <div style={{ gridColumn: '1/-1', background: '#fafafa', borderRadius: '14px', padding: '24px', textAlign: 'center' }}>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0 }}>Nenhum tema encontrado</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Lista sem foto
+                  <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', marginBottom: '12px' }}>
+                    {temasFiltrados.length === 0 ? (
+                      <div style={{ padding: '24px', textAlign: 'center' }}>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0 }}>Nenhum tema encontrado</p>
+                      </div>
+                    ) : temasFiltrados.map((tema, idx) => {
+                      const sel = temaSelecionado?.id === tema.id
+                      return (
+                        <button key={tema.id} onClick={() => setTemaSelecionado(sel ? null : tema)}
+                          style={{ width: '100%', padding: '13px 16px', background: sel ? '#fff0fb' : 'transparent', border: 'none', borderBottom: idx < temasFiltrados.length - 1 ? '1px solid #f3f4f6' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', transition: 'background .1s' }}>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', color: sel ? '#ff33cc' : '#111827', margin: 0, textAlign: 'left' }}>{tema.nome}</p>
+                          {sel && <div style={{ width: 20, height: 20, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}><IconCheckSm /></div>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </>
             )}
 
@@ -345,12 +387,22 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={etapaAnterior} style={btnGhost}><IconChevLeft /></button>
-              <button onClick={proximaEtapa} disabled={temas.length > 0 && !mostrarTemaLivre && !temaSelecionado}
-                style={{ ...btnPrimario(temas.length > 0 && !mostrarTemaLivre && !temaSelecionado), flex: 1 }}>
-                Próximo <IconChevRight />
-              </button>
+            {/* Botões fixos no rodapé — "Não achei" + "Próximo" */}
+            <div style={{ position: 'sticky', bottom: 16, zIndex: 10, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {temas.length > 0 && !mostrarTemaLivre && (
+                <button onClick={() => { setMostrarTemaLivre(true); setTemaSelecionado(null) }}
+                  style={{ width: '100%', background: '#fff', border: '1.5px dashed #ffd6f5', borderRadius: '12px', padding: '12px', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                  Não encontrei meu tema
+                </button>
+              )}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={etapaAnterior} style={btnGhost}><IconChevLeft /></button>
+                <button onClick={proximaEtapa}
+                  disabled={temas.length > 0 && !mostrarTemaLivre && !temaSelecionado}
+                  style={{ ...btnPrimario(temas.length > 0 && !mostrarTemaLivre && !temaSelecionado), flex: 1 }}>
+                  Próximo <IconChevRight />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -367,11 +419,10 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                 const sel = kitSelecionado?.id === kit.id
                 return (
                   <button key={kit.id} onClick={() => setKitSelecionado(sel ? null : kit)}
-                    style={{ background: sel ? '#fff0fb' : '#fff', border: `2px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '16px', padding: '16px', cursor: 'pointer', textAlign: 'left', display: 'flex', gap: '12px', transition: 'border-color .12s' }}
-                  >
+                    style={{ background: sel ? '#fff0fb' : '#fff', border: `2px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '16px', padding: '16px', cursor: 'pointer', textAlign: 'left', display: 'flex', gap: '12px', transition: 'border-color .12s' }}>
                     {kit.foto_url && (
                       <div style={{ width: 56, height: 56, borderRadius: '10px', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
-                        <NextImage src={kit.foto_url} fill style={{ objectFit: 'cover' }} alt={kit.nome} unoptimized />
+              <img src={kit.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={kit.nome} />
                       </div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -391,6 +442,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                 )
               })}
             </div>
+
             {adicionais.length > 0 && (
               <>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 10px' }}>Adicionais <span style={{ color: '#9ca3af', fontWeight: 400 }}>— opcional</span></p>
@@ -399,9 +451,13 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                     const sel = !!adicionaisSel.find(x => x.id === a.id)
                     return (
                       <button key={a.id} onClick={() => toggleAdicional(a)}
-                        style={{ background: sel ? '#fff0fb' : '#fff', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '12px', padding: '12px 14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color .12s' }}
-                      >
+                        style={{ background: sel ? '#fff0fb' : '#fff', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '12px', padding: '12px 14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color .12s' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {a.foto_url && (
+                            <div style={{ width: 36, height: 36, borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+              <img src={a.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={a.nome} />
+                            </div>
+                          )}
                           <div style={{ width: 20, height: 20, borderRadius: '999px', background: sel ? '#ff33cc' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff' }}>{sel && <IconCheckSm />}</div>
                           <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0 }}>{a.nome}</p>
                         </div>
@@ -412,7 +468,8 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                 </div>
               </>
             )}
-            <div style={{ display: 'flex', gap: '10px' }}>
+
+            <div style={{ position: 'sticky', bottom: 16, zIndex: 10, display: 'flex', gap: '10px' }}>
               <button onClick={etapaAnterior} style={btnGhost}><IconChevLeft /></button>
               <button onClick={proximaEtapa} disabled={!kitSelecionado} style={{ ...btnPrimario(!kitSelecionado), flex: 1 }}>Próximo <IconChevRight /></button>
             </div>
@@ -437,26 +494,17 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
               </div>
               <div>
                 <label style={lbl}>Data do evento *</label>
-                <input type="date" style={{ ...input, borderColor: dataEsgotada ? '#ef4444' : '#e8e8ec' }}
-                  value={form.data_evento}
+                <input type="date" style={{ ...input, borderColor: dataEsgotada ? '#ef4444' : '#e8e8ec' }} value={form.data_evento}
                   onChange={e => { setForm(p => ({ ...p, data_evento: e.target.value })); verificarVagas(e.target.value) }}
-                  onFocus={e => (e.target.style.borderColor = '#ff33cc')} onBlur={e => (e.target.style.borderColor = dataEsgotada ? '#ef4444' : '#e8e8ec')}
-                />
-                {/* Indicador de vagas */}
+                  onFocus={e => (e.target.style.borderColor = '#ff33cc')} onBlur={e => (e.target.style.borderColor = dataEsgotada ? '#ef4444' : '#e8e8ec')} />
                 {form.data_evento && (
                   <div style={{ marginTop: '6px' }}>
                     {verificandoVagas ? (
                       <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>Verificando disponibilidade...</p>
                     ) : vagasInfo ? (
-                      dataEsgotada ? (
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ef4444', fontWeight: 700, margin: 0 }}>
-                          ❌ Data esgotada — não há vagas disponíveis
-                        </p>
-                      ) : (
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: vagasDisponiveis! <= 1 ? '#f59e0b' : '#10b981', fontWeight: 600, margin: 0 }}>
-                          {vagasDisponiveis! <= 1 ? '⚠️' : '✅'} {vagasDisponiveis} vaga{vagasDisponiveis !== 1 ? 's' : ''} disponível{vagasDisponiveis !== 1 ? 'veis' : ''} nesta data
-                        </p>
-                      )
+                      dataEsgotada
+                        ? <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#ef4444', fontWeight: 700, margin: 0 }}>❌ Data esgotada — não há vagas disponíveis</p>
+                        : <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: vagasDisponiveis! <= 1 ? '#f59e0b' : '#10b981', fontWeight: 600, margin: 0 }}>{vagasDisponiveis! <= 1 ? '⚠️' : '✅'} {vagasDisponiveis} vaga{vagasDisponiveis !== 1 ? 's' : ''} disponível{vagasDisponiveis !== 1 ? 'veis' : ''}</p>
                     ) : null}
                   </div>
                 )}
@@ -474,7 +522,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                   onFocus={e => (e.target.style.borderColor = '#ff33cc')} onBlur={e => (e.target.style.borderColor = '#e8e8ec')} />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+            <div style={{ position: 'sticky', bottom: 16, zIndex: 10, display: 'flex', gap: '10px', marginTop: '20px' }}>
               <button onClick={etapaAnterior} style={btnGhost}><IconChevLeft /></button>
               <button onClick={() => setEtapa(5)} disabled={!form.nome_cliente || !form.data_evento || dataEsgotada}
                 style={{ ...btnPrimario(!form.nome_cliente || !form.data_evento || dataEsgotada), flex: 1 }}>
@@ -492,14 +540,14 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
             <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '16px', padding: '18px', marginBottom: '14px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
-                  { label: 'Ocasião', value: ocasiao, show: !!ocasiao },
-                  { label: 'Tema', value: mostrarTemaLivre ? temaLivre : temaSelecionado?.nome, show: !!(mostrarTemaLivre ? temaLivre : temaSelecionado) },
-                  { label: 'Kit', value: kitSelecionado?.nome, show: !!kitSelecionado },
-                  { label: 'Nome', value: form.nome_cliente, show: true },
-                  { label: 'Data', value: new Date(form.data_evento + 'T00:00:00').toLocaleDateString('pt-BR'), show: true },
-                  { label: 'WhatsApp', value: form.telefone_cliente, show: !!form.telefone_cliente },
-                  { label: 'Pagamento', value: form.forma_pagamento, show: !!form.forma_pagamento },
-                  { label: 'Adicionais', value: adicionaisSel.map(a => a.nome).join(', '), show: adicionaisSel.length > 0 },
+                  { label: 'Ocasião',    value: ocasiao,                                          show: !!ocasiao },
+                  { label: 'Tema',       value: mostrarTemaLivre ? temaLivre : temaSelecionado?.nome, show: !!(mostrarTemaLivre ? temaLivre : temaSelecionado) },
+                  { label: 'Kit',        value: kitSelecionado?.nome,                             show: !!kitSelecionado },
+                  { label: 'Nome',       value: form.nome_cliente,                                show: true },
+                  { label: 'Data',       value: new Date(form.data_evento + 'T00:00:00').toLocaleDateString('pt-BR'), show: true },
+                  { label: 'WhatsApp',   value: form.telefone_cliente,                            show: !!form.telefone_cliente },
+                  { label: 'Pagamento',  value: form.forma_pagamento,                             show: !!form.forma_pagamento },
+                  { label: 'Adicionais', value: adicionaisSel.map(a => a.nome).join(', '),        show: adicionaisSel.length > 0 },
                 ].filter(i => i.show).map((item, idx) => (
                   <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
                     <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', flexShrink: 0 }}>{item.label}</span>
@@ -519,15 +567,24 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#dc2626', margin: 0 }}>{erroEnvio}</p>
               </div>
             )}
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ position: 'sticky', bottom: 16, zIndex: 10, display: 'flex', gap: '10px' }}>
               <button onClick={() => setEtapa(4)} style={btnGhost}><IconChevLeft /></button>
-              <button onClick={enviarPedido} disabled={enviando} style={{ ...btnPrimario(enviando), flex: 1, background: enviando ? '#f3f4f6' : '#25D366' }}>
+              <button onClick={enviarPedido} disabled={enviando}
+                style={{ ...btnPrimario(enviando), flex: 1, background: enviando ? '#f3f4f6' : '#25D366' }}>
                 {enviando ? 'Enviando...' : <><IconWA /> Enviar pedido</>}
               </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* ── Rodapé fixo com total ── */}
+      <RodapeTotal
+        valorTotal={valorTotal}
+        kitSelecionado={kitSelecionado}
+        adicionaisSel={adicionaisSel}
+        etapa={etapa}
+      />
     </div>
   )
 }
