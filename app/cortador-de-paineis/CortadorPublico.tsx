@@ -139,15 +139,20 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
         canvas.height = orientacao === 'paisagem' ? 825  : 1169
         const ctx = canvas.getContext('2d')
         if (!ctx) { reject(new Error('Canvas não suportado')); return }
-        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
+        // Fundo branco + margem de 1cm (~38px) para colagem
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        const m = 38
+        ctx.drawImage(img, m, m, canvas.width - m * 2, canvas.height - m * 2)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
       }
       img.onerror = () => reject(new Error('Erro ao processar fatia'))
       img.src = fatia
     })
   }
-
+  
   async function aoFazerLogin() {
     setModalLogin(false)
     const { data: { user } } = await supabase.auth.getUser()

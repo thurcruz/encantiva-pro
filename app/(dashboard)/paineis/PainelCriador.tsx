@@ -139,7 +139,11 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
         const ctx = canvas.getContext('2d')!
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        // Fundo branco + margem de 1cm (~38px) para colagem
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        const m = 38
+        ctx.drawImage(img, m, m, canvas.width - m * 2, canvas.height - m * 2)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
       }
       img.src = fatia
