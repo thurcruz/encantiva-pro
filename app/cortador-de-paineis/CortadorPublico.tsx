@@ -64,7 +64,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
   const [pdfBaixado, setPdfBaixado]     = useState(false)
   const [orientacao, setOrientacao]     = useState<Orientacao>('paisagem')
   const [dragOver, setDragOver]         = useState(false)
-  const [comMargem, setComMargem] = useState(false)
+  const [comMargem, setComMargem] = useState(true)
 
   // Comunidade
   const [abaAtiva, setAbaAtiva]               = useState<'cortador' | 'comunidade'>('cortador')

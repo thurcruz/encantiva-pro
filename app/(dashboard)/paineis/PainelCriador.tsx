@@ -62,7 +62,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
   const [publicando, setPublicando]   = useState<string | null>(null)
   const [orientacao, setOrientacao]   = useState<Orientacao>('paisagem')
   const [dragOver, setDragOver]       = useState(false)
-  const [comMargem, setComMargem] = useState(false)
+  const [comMargem, setComMargem] = useState(true)
 
   const COLS = orientacao === 'paisagem' ? 2 : 3
   const ROWS = orientacao === 'paisagem' ? 3 : 2

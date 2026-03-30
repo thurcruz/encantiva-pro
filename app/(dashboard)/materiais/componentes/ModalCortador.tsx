@@ -22,7 +22,7 @@ export default function ModalCortador({ titulo, imagemUrl, onClose }: Props) {
   const [gerando, setGerando]       = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro]             = useState<string | null>(null)
-  const [comMargem, setComMargem]   = useState(false)
+  const [comMargem, setComMargem]   = useState(true)
 
   const COLS = orientacao === 'paisagem' ? 2 : 3
   const ROWS = orientacao === 'paisagem' ? 3 : 2
