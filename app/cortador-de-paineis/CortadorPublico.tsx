@@ -64,7 +64,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
   const [pdfBaixado, setPdfBaixado]     = useState(false)
   const [orientacao, setOrientacao]     = useState<Orientacao>('paisagem')
   const [dragOver, setDragOver]         = useState(false)
-  const [comMargem, setComMargem] = useState(true)
+  const [comMargem, setComMargem] = useState(false)
 
   // Comunidade
   const [abaAtiva, setAbaAtiva]               = useState<'cortador' | 'comunidade'>('cortador')
@@ -144,6 +144,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
         ctx.imageSmoothingQuality = 'high'
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
+        // SEM margem = 50x50cm exatos; COM margem = painel maior
         const m = comMargem ? 38 : 0
         ctx.drawImage(img, m, m, canvas.width - m * 2, canvas.height - m * 2)
         resolve(canvas.toDataURL('image/jpeg', 0.95))

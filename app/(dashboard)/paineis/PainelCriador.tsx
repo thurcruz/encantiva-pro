@@ -62,7 +62,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
   const [publicando, setPublicando]   = useState<string | null>(null)
   const [orientacao, setOrientacao]   = useState<Orientacao>('paisagem')
   const [dragOver, setDragOver]       = useState(false)
-  const [comMargem, setComMargem] = useState(true)
+  const [comMargem, setComMargem] = useState(false)
 
   const COLS = orientacao === 'paisagem' ? 2 : 3
   const ROWS = orientacao === 'paisagem' ? 3 : 2
@@ -142,6 +142,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
         ctx.imageSmoothingQuality = 'high'
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
+        // SEM margem = 50x50cm exatos; COM margem = painel maior
         const m = comMargem ? 38 : 0
         ctx.drawImage(img, m, m, canvas.width - m * 2, canvas.height - m * 2)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
