@@ -62,7 +62,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
   const [publicando, setPublicando]   = useState<string | null>(null)
   const [orientacao, setOrientacao]   = useState<Orientacao>('paisagem')
   const [dragOver, setDragOver]       = useState(false)
-  const [comMargem, setComMargem]     = useState(false)
+  const [comMargem, setComMargem] = useState(true)
 
   const COLS = orientacao === 'paisagem' ? 2 : 3
   const ROWS = orientacao === 'paisagem' ? 3 : 2
@@ -140,10 +140,9 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
         const ctx = canvas.getContext('2d')!
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
-        // Fundo branco + margem de 1cm (~38px) para colagem
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
-        const m = 38
+        const m = comMargem ? 38 : 0
         ctx.drawImage(img, m, m, canvas.width - m * 2, canvas.height - m * 2)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
       }
