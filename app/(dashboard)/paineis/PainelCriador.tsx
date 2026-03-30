@@ -62,6 +62,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
   const [publicando, setPublicando]   = useState<string | null>(null)
   const [orientacao, setOrientacao]   = useState<Orientacao>('paisagem')
   const [dragOver, setDragOver]       = useState(false)
+  const [comMargem, setComMargem]     = useState(false)
 
   const COLS = orientacao === 'paisagem' ? 2 : 3
   const ROWS = orientacao === 'paisagem' ? 3 : 2
@@ -310,6 +311,15 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                 ))}
               </div>
               <OrientacaoToggle value={orientacao} onChange={setOrientacao} />
+            <button
+              type="button"
+              onClick={() => setComMargem(!comMargem)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: comMargem ? '#fff0fb' : '#ffffff05', border: `1.5px solid ${comMargem ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '999px', padding: '7px 12px', color: comMargem ? '#ff33cc' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', transition: 'all .15s', flexShrink: 0 }}
+              title="Adiciona 1cm de margem em volta de cada folha para facilitar a colagem"
+            >
+              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: comMargem ? '#ff33cc' : '#d1d5db', flexShrink: 0 }} />
+              Margem 1cm
+            </button>
             </div>
           </div>
 

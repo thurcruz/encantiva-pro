@@ -52,21 +52,22 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
   const supabase = createClient()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const [imagem, setImagem]           = useState<HTMLImageElement | null>(null)
-  const [imagemFile, setImagemFile]   = useState<File | null>(null)
-  const [nome, setNome]               = useState('')
-  const [gerando, setGerando]         = useState(false)
+  const [imagem, setImagem]             = useState<HTMLImageElement | null>(null)
+  const [imagemFile, setImagemFile]     = useState<File | null>(null)
+  const [nome, setNome]                 = useState('')
+  const [gerando, setGerando]           = useState(false)
   const [previewAtivo, setPreviewAtivo] = useState<number | null>(null)
-  const [fatias, setFatias]           = useState<string[]>([])
-  const [modalLogin, setModalLogin]   = useState(false)
-  const [logado, setLogado]           = useState(usuarioLogado)
-  const [uid, setUid]                 = useState<string | null>(usuarioId)
-  const [pdfBaixado, setPdfBaixado]   = useState(false)
-  const [orientacao, setOrientacao]   = useState<Orientacao>('paisagem')
-  const [dragOver, setDragOver]       = useState(false)
+  const [fatias, setFatias]             = useState<string[]>([])
+  const [modalLogin, setModalLogin]     = useState(false)
+  const [logado, setLogado]             = useState(usuarioLogado)
+  const [uid, setUid]                   = useState<string | null>(usuarioId)
+  const [pdfBaixado, setPdfBaixado]     = useState(false)
+  const [orientacao, setOrientacao]     = useState<Orientacao>('paisagem')
+  const [dragOver, setDragOver]         = useState(false)
+  const [comMargem, setComMargem]       = useState(false)
 
   // Comunidade
-  const [abaAtiva, setAbaAtiva]       = useState<'cortador' | 'comunidade'>('cortador')
+  const [abaAtiva, setAbaAtiva]               = useState<'cortador' | 'comunidade'>('cortador')
   const [paineisComunidade, setPaineisComunidade] = useState<PainelComunidade[]>([])
   const [carregandoComunidade, setCarregandoComunidade] = useState(false)
 
@@ -141,10 +142,10 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
         if (!ctx) { reject(new Error('Canvas não suportado')); return }
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
-        // Fundo branco + margem de 1cm (~38px) para colagem
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
-        const m = 38
+        // Margem de 1cm (~38px) opcional para facilitar colagem
+        const m = comMargem ? 38 : 0
         ctx.drawImage(img, m, m, canvas.width - m * 2, canvas.height - m * 2)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
       }
@@ -152,7 +153,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
       img.src = fatia
     })
   }
-  
+
   async function aoFazerLogin() {
     setModalLogin(false)
     const { data: { user } } = await supabase.auth.getUser()
@@ -223,22 +224,11 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
       {/* ── Abas ── */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
         {[
-          { key: 'cortador',  label: 'Cortador' },
+          { key: 'cortador',   label: 'Cortador' },
           { key: 'comunidade', label: 'Comunidade' },
         ].map(aba => (
-          <button
-            key={aba.key}
-            onClick={() => setAbaAtiva(aba.key as 'cortador' | 'comunidade')}
-            style={{
-              flex: 1, padding: '10px 16px',
-              background: abaAtiva === aba.key ? '#ff33cc' : '#fff',
-              border: `1.5px solid ${abaAtiva === aba.key ? 'transparent' : '#e8e8ec'}`,
-              borderRadius: '999px', cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
-              color: abaAtiva === aba.key ? '#fff' : '#6b7280',
-              transition: 'all .15s',
-            }}
-          >
+          <button key={aba.key} onClick={() => setAbaAtiva(aba.key as 'cortador' | 'comunidade')}
+            style={{ flex: 1, padding: '10px 16px', background: abaAtiva === aba.key ? '#ff33cc' : '#fff', border: `1.5px solid ${abaAtiva === aba.key ? 'transparent' : '#e8e8ec'}`, borderRadius: '999px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: abaAtiva === aba.key ? '#fff' : '#6b7280', transition: 'all .15s' }}>
             {aba.label}
           </button>
         ))}
@@ -278,7 +268,7 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
             </div>
           )}
 
-          {/* Orientação */}
+          {/* Orientação + Margem */}
           <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <div>
               <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>Orientação das folhas</p>
@@ -286,41 +276,34 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
                 {orientacao === 'paisagem' ? '2 colunas × 3 linhas — folha deitada' : '3 colunas × 2 linhas — folha em pé'}
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-                gridTemplateRows: `repeat(${ROWS}, 1fr)`,
-                gap: '3px',
-                width: orientacao === 'paisagem' ? '60px' : '45px',
-                height: orientacao === 'paisagem' ? '45px' : '60px',
-                flexShrink: 0,
-              }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)`, gap: '3px', width: orientacao === 'paisagem' ? '60px' : '45px', height: orientacao === 'paisagem' ? '45px' : '60px', flexShrink: 0 }}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} style={{ background: '#fff0fb', border: '1.5px solid #ffd6f5', borderRadius: '3px' }} />
                 ))}
               </div>
               <OrientacaoToggle value={orientacao} onChange={setOrientacao} />
+              {/* Toggle de margem */}
+              <button
+                type="button"
+                onClick={() => setComMargem(!comMargem)}
+                title="Adiciona 1cm de margem em volta de cada folha para facilitar a colagem"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: comMargem ? '#fff0fb' : '#fafafa', border: `1.5px solid ${comMargem ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '999px', padding: '7px 12px', color: comMargem ? '#ff33cc' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', transition: 'all .15s', flexShrink: 0 }}
+              >
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: comMargem ? '#ff33cc' : '#d1d5db', flexShrink: 0, transition: 'background .15s' }} />
+                Margem 1cm
+              </button>
             </div>
           </div>
 
-          {/* Upload — bloco completo, embaixo da orientação */}
+          {/* Upload */}
           <div
             className="cp-upload"
             onClick={() => inputRef.current?.click()}
             onDragOver={e => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
-            style={{
-              background: dragOver ? '#fff0fb' : imagem ? '#fff0fb' : '#fafafa',
-              border: `2px dashed ${dragOver || imagem ? '#ff33cc' : '#e8e8ec'}`,
-              borderRadius: '14px', cursor: 'pointer',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              gap: '10px', padding: '28px 20px',
-              marginBottom: '12px',
-              transition: 'all .2s', boxSizing: 'border-box',
-            }}
+            style={{ background: dragOver ? '#fff0fb' : imagem ? '#fff0fb' : '#fafafa', border: `2px dashed ${dragOver || imagem ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '14px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '28px 20px', marginBottom: '12px', transition: 'all .2s', boxSizing: 'border-box' }}
           >
             {imagem ? (
               <>
@@ -359,12 +342,20 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
                   <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>Preview — Grade {COLS}×{ROWS}</p>
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>Clique em uma fatia para ampliar</p>
                 </div>
-                <span style={{ background: '#fff0fb', color: '#ff33cc', borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700 }}>6 folhas A4</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {comMargem && (
+                    <span style={{ background: '#fff0fb', color: '#ff33cc', borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700 }}>
+                      + margem 1cm
+                    </span>
+                  )}
+                  <span style={{ background: '#fff0fb', color: '#ff33cc', borderRadius: '999px', padding: '3px 10px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700 }}>6 folhas A4</span>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: '6px', marginBottom: '14px' }}>
                 {fatias.map((fatia, idx) => (
-                  <div key={idx} className="cp-fatia" onClick={() => setPreviewAtivo(previewAtivo === idx ? null : idx)} style={{ position: 'relative', border: `2px solid ${previewAtivo === idx ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '10px', overflow: 'hidden' }}>
+                  <div key={idx} className="cp-fatia" onClick={() => setPreviewAtivo(previewAtivo === idx ? null : idx)}
+                    style={{ position: 'relative', border: `2px solid ${previewAtivo === idx ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '10px', overflow: 'hidden' }}>
                     <NextImage src={fatia} width={300} height={300} style={{ width: '100%', height: 'auto', display: 'block' }} alt={`Fatia ${idx + 1}`} unoptimized />
                     <div style={{ position: 'absolute', bottom: '5px', right: '5px', background: previewAtivo === idx ? '#ff33cc' : 'rgba(0,0,0,0.55)', borderRadius: '6px', padding: '2px 7px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#fff' }}>
                       {idx + 1}/6
@@ -382,11 +373,8 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
                 </div>
               )}
 
-              <button
-                onClick={handleBotaoDownload}
-                disabled={botaoDesabilitado}
-                style={{ width: '100%', border: 'none', borderRadius: '999px', padding: '14px', background: botaoDesabilitado ? '#f3f4f6' : '#ff33cc', color: botaoDesabilitado ? '#9ca3af' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: botaoDesabilitado ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background .2s' }}
-              >
+              <button onClick={handleBotaoDownload} disabled={botaoDesabilitado}
+                style={{ width: '100%', border: 'none', borderRadius: '999px', padding: '14px', background: botaoDesabilitado ? '#f3f4f6' : '#ff33cc', color: botaoDesabilitado ? '#9ca3af' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: botaoDesabilitado ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background .2s' }}>
                 <Download size={15} />
                 {gerando ? 'Gerando PDF...' : !nome.trim() ? 'Dê um nome ao painel' : logado ? `Gerar PDF — ${orientacao === 'paisagem' ? 'Paisagem' : 'Retrato'}` : 'Entre para baixar o PDF'}
               </button>
@@ -410,26 +398,18 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
                 <Lock size={18} style={{ color: '#fff' }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>
-                  Crie uma conta grátis para baixar
-                </p>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>
-                  Acesso gratuito a painéis da comunidade com conta Encantiva.
-                </p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>Crie uma conta grátis para baixar</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Acesso gratuito a painéis da comunidade com conta Encantiva.</p>
               </div>
-              <button
-                onClick={() => setModalLogin(true)}
-                style={{ background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '8px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', flexShrink: 0 }}
-              >
+              <button onClick={() => setModalLogin(true)}
+                style={{ background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '8px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', flexShrink: 0 }}>
                 Criar conta
               </button>
             </div>
           )}
 
           {carregandoComunidade ? (
-            <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af' }}>
-              Carregando painéis...
-            </div>
+            <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af' }}>Carregando painéis...</div>
           ) : paineisComunidade.length === 0 ? (
             <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', textAlign: 'center', padding: '60px 24px' }}>
               <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum painel na comunidade ainda</p>
@@ -452,10 +432,8 @@ export default function CortadorPublico({ usuarioLogado, usuarioId }: Props) {
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af' }}>{painel.downloads} downloads</span>
-                      <button
-                        onClick={() => baixarDaComunidade(painel)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: logado ? '#ff33cc' : '#f3f4f6', border: 'none', borderRadius: '999px', padding: '6px 12px', color: logado ? '#fff' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}
-                      >
+                      <button onClick={() => baixarDaComunidade(painel)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: logado ? '#ff33cc' : '#f3f4f6', border: 'none', borderRadius: '999px', padding: '6px 12px', color: logado ? '#fff' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>
                         {logado ? <Download size={11} /> : <Lock size={11} />}
                         {logado ? 'Baixar PDF' : 'Entrar'}
                       </button>
