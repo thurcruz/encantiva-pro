@@ -16,20 +16,23 @@ export interface LimitesPlano {
   // Agenda
   eventosPorMes: number | 'ilimitado'
 
-  // Ferramentas básicas
+  // Calculadora
   calculadora: boolean
   salvarKits: boolean
+  lancarKitsCatalogo: boolean
+
+  // Catálogo
   catalogo: boolean
-  adicionarKitsCatalogo: boolean
+  catalogoInteligente: boolean
+  gestorPedidos: boolean
 
   // Comunidade
   comunidade: boolean
   lancarPaineisComunidade: boolean
 
-  // Ferramentas avançadas
-  listaClientes: boolean
-  catalogoInteligente: boolean
-  gestorPedidos: boolean
+  // Clientes
+  listaClientes: boolean          // acesso somente leitura (clientes dos contratos)
+  gerenciarClientes: boolean      // adicionar, editar, excluir, vincular
 
   // Elite
   financeiro: boolean
@@ -42,19 +45,20 @@ export interface LimitesPlano {
 export const LIMITES: Record<PlanoId, LimitesPlano> = {
   free: {
     cortadorPaineis:          true,
-    downloadMateriais:        10,
+    downloadMateriais:        5,
     contratosPoMes:           5,
     contratoPersonalizado:    false,
     eventosPorMes:            5,
     calculadora:              false,
     salvarKits:               false,
+    lancarKitsCatalogo:       false,
     catalogo:                 false,
-    adicionarKitsCatalogo:    false,
-    comunidade:               false,
-    lancarPaineisComunidade:  false,
-    listaClientes:            false,
     catalogoInteligente:      false,
     gestorPedidos:            false,
+    comunidade:               false,
+    lancarPaineisComunidade:  false,
+    listaClientes:            true,   // somente leitura
+    gerenciarClientes:        false,
     financeiro:               false,
     controleEstoque:          false,
     cartaoFidelidade:         false,
@@ -64,22 +68,23 @@ export const LIMITES: Record<PlanoId, LimitesPlano> = {
   trial: {
     cortadorPaineis:          true,
     downloadMateriais:        10,
-    contratosPoMes:           5,
-    contratoPersonalizado:    true,
-    eventosPorMes:            5,
+    contratosPoMes:           10,
+    contratoPersonalizado:    false,
+    eventosPorMes:            10,
     calculadora:              true,
-    salvarKits:               false,
+    salvarKits:               true,
+    lancarKitsCatalogo:       true,
     catalogo:                 true,
-    adicionarKitsCatalogo:    false,
-    comunidade:               true,
-    lancarPaineisComunidade:  false,
-    listaClientes:            true,
     catalogoInteligente:      true,
     gestorPedidos:            true,
+    comunidade:               true,
+    lancarPaineisComunidade:  true,
+    listaClientes:            true,
+    gerenciarClientes:        true,
     financeiro:               true,
     controleEstoque:          true,
     cartaoFidelidade:         true,
-    acessoAntecipado:         true,
+    acessoAntecipado:         false,  // exclusivo assinante Elite
     checklistPedidos:         true,
   },
   iniciante: {
@@ -88,15 +93,16 @@ export const LIMITES: Record<PlanoId, LimitesPlano> = {
     contratosPoMes:           10,
     contratoPersonalizado:    false,
     eventosPorMes:            10,
-    calculadora:              false,
-    salvarKits:               false,
-    catalogo:                 true,
-    adicionarKitsCatalogo:    false,
-    comunidade:               true,
-    lancarPaineisComunidade:  true,
-    listaClientes:            false,
+    calculadora:              true,
+    salvarKits:               true,
+    lancarKitsCatalogo:       false,
+    catalogo:                 false,
     catalogoInteligente:      false,
     gestorPedidos:            false,
+    comunidade:               true,
+    lancarPaineisComunidade:  true,
+    listaClientes:            true,   // somente leitura
+    gerenciarClientes:        false,
     financeiro:               false,
     controleEstoque:          false,
     cartaoFidelidade:         false,
@@ -107,17 +113,18 @@ export const LIMITES: Record<PlanoId, LimitesPlano> = {
     cortadorPaineis:          true,
     downloadMateriais:        'ilimitado',
     contratosPoMes:           'ilimitado',
-    contratoPersonalizado:    true,
+    contratoPersonalizado:    false,
     eventosPorMes:            'ilimitado',
     calculadora:              true,
     salvarKits:               true,
+    lancarKitsCatalogo:       true,
     catalogo:                 true,
-    adicionarKitsCatalogo:    true,
+    catalogoInteligente:      true,
+    gestorPedidos:            true,
     comunidade:               true,
     lancarPaineisComunidade:  true,
     listaClientes:            true,
-    catalogoInteligente:      true,
-    gestorPedidos:            true,
+    gerenciarClientes:        true,
     financeiro:               false,
     controleEstoque:          false,
     cartaoFidelidade:         false,
@@ -132,13 +139,14 @@ export const LIMITES: Record<PlanoId, LimitesPlano> = {
     eventosPorMes:            'ilimitado',
     calculadora:              true,
     salvarKits:               true,
+    lancarKitsCatalogo:       true,
     catalogo:                 true,
-    adicionarKitsCatalogo:    true,
+    catalogoInteligente:      true,
+    gestorPedidos:            true,
     comunidade:               true,
     lancarPaineisComunidade:  true,
     listaClientes:            true,
-    catalogoInteligente:      true,
-    gestorPedidos:            true,
+    gerenciarClientes:        true,
     financeiro:               true,
     controleEstoque:          true,
     cartaoFidelidade:         true,
@@ -153,13 +161,14 @@ export const LIMITES: Record<PlanoId, LimitesPlano> = {
     eventosPorMes:            'ilimitado',
     calculadora:              true,
     salvarKits:               true,
+    lancarKitsCatalogo:       true,
     catalogo:                 true,
-    adicionarKitsCatalogo:    true,
+    catalogoInteligente:      true,
+    gestorPedidos:            true,
     comunidade:               true,
     lancarPaineisComunidade:  true,
     listaClientes:            true,
-    catalogoInteligente:      true,
-    gestorPedidos:            true,
+    gerenciarClientes:        true,
     financeiro:               true,
     controleEstoque:          true,
     cartaoFidelidade:         true,
@@ -175,21 +184,14 @@ export function getPlanoId(
   isAdmin: boolean,
 ): PlanoId {
   if (isAdmin) return 'admin'
-
   const planoNorm = plano?.toLowerCase().trim()
-
-  // Assinatura paga ativa
   if (status === 'active' || status === 'ativo' || status === 'cancelando') {
     if (planoNorm === 'iniciante') return 'iniciante'
-    if (planoNorm === 'avancado') return 'avancado'
-    if (planoNorm === 'elite') return 'elite'
+    if (planoNorm === 'avancado')  return 'avancado'
+    if (planoNorm === 'elite')     return 'elite'
   }
-
-  // Trial ativo — acesso Elite completo
   const trialAtivo = trialExpiraEm ? new Date(trialExpiraEm) > new Date() : false
   if (status === 'trial' && trialAtivo) return 'trial'
-
-  // Free (trial expirado ou sem assinatura)
   return 'free'
 }
 
@@ -206,7 +208,6 @@ export function temAcesso(
   if (isAdmin || isBeta) return true
   const valor = limites[feature]
   if (typeof valor === 'boolean') return valor
-  // number | 'ilimitado' — controle de quantidade implementar depois
   return true
 }
 
@@ -229,17 +230,18 @@ export const PLANO_MINIMO: Record<keyof LimitesPlano, PlanoId | null> = {
   cortadorPaineis:          null,
   downloadMateriais:        null,
   contratosPoMes:           null,
-  contratoPersonalizado:    'avancado',
+  contratoPersonalizado:    'elite',
   eventosPorMes:            null,
   calculadora:              'iniciante',
   salvarKits:               'iniciante',
-  catalogo:                 'iniciante',
-  adicionarKitsCatalogo:    'iniciante',
-  comunidade:               'iniciante',
-  lancarPaineisComunidade:  'iniciante',
-  listaClientes:            'avancado',
+  lancarKitsCatalogo:       'avancado',
+  catalogo:                 'avancado',
   catalogoInteligente:      'avancado',
   gestorPedidos:            'avancado',
+  comunidade:               'iniciante',
+  lancarPaineisComunidade:  'iniciante',
+  listaClientes:            null,
+  gerenciarClientes:        'avancado',
   financeiro:               'elite',
   controleEstoque:          'elite',
   cartaoFidelidade:         'elite',

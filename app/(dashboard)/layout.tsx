@@ -51,11 +51,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!assinatura) {
     const trialExpira = new Date()
     trialExpira.setDate(trialExpira.getDate() + 7)
-    await supabase.from('assinaturas').insert({
+
+    const { error: errInsert } = await supabase.from('assinaturas').insert({
       usuario_id:      user.id,
       status:          'trial',
       trial_expira_em: trialExpira.toISOString(),
     })
+
+    if (errInsert) {
+      // RLS ou outro erro — tenta via service role ou usa o admin client
+      console.error('[layout] Erro ao criar trial:', errInsert.message)
+    }
+
+    // Mesmo que o insert falhe, deixa a sessão continuar como trial
+    // para não bloquear o acesso da usuária
     assinatura = {
       status:          'trial',
       trial_expira_em: trialExpira.toISOString(),
@@ -78,8 +87,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ? Math.ceil((new Date(assinatura!.trial_expira_em!).getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
     : 0
 
-  const assinaturaAtiva = isAdmin || assinatura?.status === 'active' || isTrial
-  const temAcervo = true
+  const temAcervo = isAdmin || isBeta || assinatura?.plano === 'elite'
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -221,23 +229,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         )}
 
-        {/* Bloqueio pós-trial */}
-        {trialExpirado && !isAdmin && !assinaturaAtiva ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: '40px 24px', textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '24px', color: '#140033', margin: '0 0 8px 0' }}>
-              Seu teste gratuito expirou
-            </h2>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '15px', color: '#00000055', margin: '0 0 24px 0', maxWidth: 400 }}>
-              Escolha um plano para continuar usando a Encantiva Pro sem interrupções.
-            </p>
-            <Link href="/planos" style={{ background: '#ff33cc', borderRadius: '999px', padding: '14px 32px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', textDecoration: 'none' }}>
-              Ver planos →
-            </Link>
-          </div>
-        ) : (
-          children
-        )}
+        {children}
       </main>
 
       {/* ── BOTTOM NAV ── */}

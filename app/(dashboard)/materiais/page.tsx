@@ -30,8 +30,29 @@ export default async function PaginaMateriais({
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
+  // Contar downloads do mês atual
+  const inicioMes = new Date()
+  inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0)
+
+  const { count: downloadsNoMes } = await supabase
+    .from('historico_downloads')
+    .select('*', { count: 'exact', head: true })
+    .eq('usuario_id', user.id)
+    .gte('baixado_em', inicioMes.toISOString())
+
+  const downloadsMes = downloadsNoMes ?? 0
+  const limiteDownloads = limites.downloadMateriais
+  const limiteNumerico = typeof limiteDownloads === 'number' ? limiteDownloads : null
+  const limiteAtingido = limiteNumerico !== null && downloadsMes >= limiteNumerico && !isAdmin && !isBeta
+
   if (!temAcesso('downloadMateriais', limites, isBeta, isAdmin)) {
-    return <ModuloBloqueado titulo="Materiais para Download" descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas." planoMinimo="iniciante" icone="🎨" planoAtual={planoId} />
+    return <ModuloBloqueado
+      titulo="Materiais para Download"
+      descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas."
+      planoMinimo="iniciante"
+      icone="🎨"
+      planoAtual={planoId}
+    />
   }
 
   const [{ data: categorias }, { data: tipos }, { data: formatos }] = await Promise.all([
@@ -52,7 +73,6 @@ export default async function PaginaMateriais({
   if (busca) query = query.ilike('titulo', `%${busca}%`)
 
   const { data: materiais } = await query
-
   const vazio = !materiais || materiais.length === 0
 
   return (
@@ -60,17 +80,47 @@ export default async function PaginaMateriais({
       <PageHeader titulo="Materiais para Download" subtitulo="Painéis, totens e muito mais prontos para imprimir" maxWidth="1200px" />
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 24px 80px' }}>
 
+        {/* ── Uso mensal de downloads ── */}
+        {limiteNumerico !== null && !isAdmin && !isBeta && (
+          <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '16px 20px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
+              <div style={{ flexShrink: 0 }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 3px' }}>
+                  Downloads este mês
+                </p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: limiteAtingido ? '#dc2626' : '#111827', fontWeight: 700, margin: 0 }}>
+                  {downloadsMes} de {limiteNumerico} usados
+                </p>
+              </div>
+              <div style={{ flex: 1, minWidth: '80px' }}>
+                <div style={{ background: '#f3f4f6', borderRadius: '999px', height: '6px', overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${Math.min(100, (downloadsMes / limiteNumerico) * 100)}%`,
+                    height: '100%',
+                    background: limiteAtingido ? '#dc2626' : downloadsMes / limiteNumerico >= 0.7 ? '#f59e0b' : '#10b981',
+                    borderRadius: '999px',
+                    transition: 'width .4s',
+                  }} />
+                </div>
+              </div>
+            </div>
+            {limiteAtingido && (
+              <a href="/planos" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', borderRadius: '999px', padding: '8px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', textDecoration: 'none', flexShrink: 0 }}>
+                Fazer upgrade →
+              </a>
+            )}
+          </div>
+        )}
+
         {/* ── Banner de novidades ── */}
         <div style={{ background: 'linear-gradient(135deg, #fff0fb, #f5f0ff)', border: '1px solid #ffd6f5', borderRadius: '16px', padding: '20px 24px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ width: 44, height: 44, borderRadius: '12px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '22px' }}>
-            🎨
-          </div>
+          <div style={{ width: 44, height: 44, borderRadius: '12px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '22px' }}>🎨</div>
           <div>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#111827', margin: '0 0 4px' }}>
               Novos painéis chegando!
             </p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
-              Estamos adicionando os painéis à plataforma. Em breve você poderá baixar o original ou usar o cortador automático para gerar as folhas A4 prontas para impressão caseira.
+              Estamos adicionando os painéis à plataforma. Em breve você poderá baixar o original ou usar o cortador automático.
             </p>
           </div>
         </div>
@@ -94,11 +144,9 @@ export default async function PaginaMateriais({
         {vazio ? (
           <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '16px', textAlign: 'center', padding: '72px 24px', marginTop: '16px' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎪</div>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#374151', margin: '0 0 8px' }}>
-              Em breve aqui!
-            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#374151', margin: '0 0 8px' }}>Em breve aqui!</p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0, maxWidth: '360px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
-              Os painéis estão sendo preparados com carinho. Fique de olho — novos materiais serão adicionados em breve.
+              Os painéis estão sendo preparados com carinho.
             </p>
           </div>
         ) : (
@@ -107,15 +155,15 @@ export default async function PaginaMateriais({
               <CardMaterial
                 key={material.id}
                 material={material as Material}
-                podeDownload={true}
+                podeDownload={!limiteAtingido}
                 isExclusivo={(material as unknown as { exclusivo?: boolean }).exclusivo ?? false}
-                limiteDownloads={limites.downloadMateriais}
+                limiteDownloads={limiteDownloads}
+                downloadsMes={downloadsMes}
                 planoId={planoId}
-              />      
-      ))}
+              />
+            ))}
           </div>
         )}
-
       </div>
     </div>
   )

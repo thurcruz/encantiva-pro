@@ -1,5 +1,6 @@
 export interface Assinatura {
   id: string
+  usuario_id?: string
   plano: string
   status: string
   expira_em: string | null
@@ -14,7 +15,7 @@ export interface Assinatura {
 export interface Usuario {
   id: string
   email: string
-  role: string
+  nome_loja?: string | null
   criado_em: string
   assinaturas: Assinatura[]
 }

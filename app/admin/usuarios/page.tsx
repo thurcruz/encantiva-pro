@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import TabelaUsuarios from './TabelaUsuarios'
 
@@ -8,31 +9,37 @@ export default async function PaginaUsuarios() {
 
   if (user?.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) redirect('/login')
 
-  const { data: usuarios } = await supabase
-    .from('profiles')
-    .select(`
-      id,
-      email,
-      role,
-      criado_em,
-      assinaturas (
-        id,
-        plano,
-        status,
-        expira_em,
-        trial_expira_em,
-        is_beta,
-        asaas_subscription_id,
-        asaas_customer_id,
-        criado_em,
-        atualizado_em
-      )
-    `)
+  const admin = createAdminClient()
+
+  // Busca todos os usuários do auth
+  const { data: authUsers } = await admin.auth.admin.listUsers({ perPage: 1000 })
+
+  // Busca todas as assinaturas
+  const { data: assinaturas } = await supabase
+    .from('assinaturas')
+    .select('*')
     .order('criado_em', { ascending: false })
+
+  // Busca perfis para nome da loja
+  const { data: perfis } = await supabase
+    .from('perfis')
+    .select('id, nome_loja')
+
+  // Monta lista combinada
+  const lista = (authUsers?.users ?? []).map(u => {
+    const assinatura = assinaturas?.filter(a => a.usuario_id === u.id) ?? []
+    const perfil = perfis?.find(p => p.id === u.id)
+    return {
+      id: u.id,
+      email: u.email ?? u.id,
+      nome_loja: perfil?.nome_loja ?? null,
+      criado_em: u.created_at,
+      assinaturas: assinatura,
+    }
+  }).sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#140033', padding: '40px' }}>
-
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '4px', height: '32px', borderRadius: '4px', background: 'linear-gradient(180deg, #ff33cc, #9900ff)' }} />
@@ -41,7 +48,7 @@ export default async function PaginaUsuarios() {
               Usuários
             </h1>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff55', margin: 0 }}>
-              {usuarios?.length ?? 0} cadastrados
+              {lista.length} cadastrados
             </p>
           </div>
         </div>
@@ -50,9 +57,7 @@ export default async function PaginaUsuarios() {
         </a>
       </div>
 
-      <div style={{ background: '#ffffff08', border: '1px solid #ffffff12', borderRadius: '16px', overflow: 'hidden' }}>
-        <TabelaUsuarios usuarios={(usuarios ?? []) as never} />
-      </div>
+      <TabelaUsuarios usuarios={lista as never} />
     </div>
   )
 }
