@@ -77,7 +77,7 @@ export const LIMITES: Record<PlanoId, LimitesPlano> = {
     catalogo:                 true,
     catalogoInteligente:      true,
     gestorPedidos:            true,
-    comunidade:               true,
+    comunidade:               false,
     lancarPaineisComunidade:  true,
     listaClientes:            true,
     gerenciarClientes:        true,
