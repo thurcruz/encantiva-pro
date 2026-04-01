@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation'
 import NavItem from './componentes/NavItem'
 import BotaoLogout from './componentes/BotaoLogout'
 import BottomNav from './componentes/BottomNav'
+import BannerTrial from './componentes/BannerTrial'
 import Image from 'next/image'
-import Link from 'next/link'
 import {
   Package, LayoutDashboard, Upload, Calculator, ShoppingBag,
   FileText, Settings, Users, LayoutTemplate, Home, TrendingUp,
@@ -209,27 +209,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* ── MAIN ── */}
       <main className="main-desktop">
 
-        {/* Banner trial */}
-        {isTrial && !isAdmin && (
-          <div style={{ background: '#ff33cc', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#fff', margin: 0 }}>
-              Você está no <strong>modo de teste</strong> — {diasRestantes} {diasRestantes === 1 ? 'dia restante' : 'dias restantes'}.{' '}
-              <Link href="/planos" style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>Assinar agora →</Link>
-            </p>
-          </div>
-        )}
+        {/* Banners de trial */}
+        {isTrial && !isAdmin && <BannerTrial tipo="trial" diasRestantes={diasRestantes} />}
+        {trialExpirado && !isAdmin && <BannerTrial tipo="expirado" />}
 
-        {/* Banner trial expirado */}
-        {trialExpirado && !isAdmin && (
-          <div style={{ background: 'rgba(255,0,0,0.1)', borderBottom: '1px solid rgba(255,0,0,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff99', margin: 0 }}>
-              Seu período de teste <strong style={{ color: '#ff5555' }}>expirou</strong>.{' '}
-              <Link href="/planos" style={{ color: '#ff5555', fontWeight: 700 }}>Escolha um plano para continuar →</Link>
-            </p>
-          </div>
-        )}
-
-        {children}
+        {/* Conteúdo com canto arredondado quando banner ativo */}
+        <div style={{
+          borderRadius: (isTrial || trialExpirado) && !isAdmin ? '16px 16px 0 0' : '0',
+          background: '#f6f6f8',
+          overflow: 'hidden',
+          minHeight: '100vh',
+        }}>
+          {children}
+        </div>
       </main>
 
       {/* ── BOTTOM NAV ── */}
