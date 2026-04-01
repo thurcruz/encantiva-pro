@@ -143,7 +143,7 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
         // SEM margem = 50x50cm exatos; COM margem = painel maior
-        const m = comMargem ? 38 : 0
+        const m = comMargem ? 0 : 38
         ctx.drawImage(img, m, m, canvas.width - m * 2, canvas.height - m * 2)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
       }
@@ -321,6 +321,15 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
               Margem 1cm
             </button>
             </div>
+          </div>
+
+          {/* Info margem */}
+          <div style={{ background: comMargem ? '#f9fafb' : '#fff0fb', border: `1px solid ${comMargem ? '#e8e8ec' : '#ffd6f5'}`, borderRadius: '10px', padding: '10px 14px', marginBottom: '12px' }}>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: comMargem ? '#6b7280' : '#9333ea', margin: 0, lineHeight: 1.5 }}>
+              {comMargem
+                ? '📏 Sem margem — imagem preenche a folha inteira, painel montado fica exatamente 50×50cm'
+                : '📐 Com margem — cada folha terá borda branca de ~1cm, painel montado fica maior que 50×50cm para facilitar a colagem'}
+            </p>
           </div>
 
           {/* Upload — agora em bloco separado, 100% de largura */}

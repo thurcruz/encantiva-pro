@@ -72,7 +72,7 @@ export default function ModalCortador({ titulo, imagemUrl, onClose }: Props) {
         ctx.imageSmoothingQuality = 'high'
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
-        const m = comMargem ? 38 : 0
+        const m = comMargem ? 0 : 38
         ctx.drawImage(img, m, m, canvas.width - m * 2, canvas.height - m * 2)
         resolve(canvas.toDataURL('image/jpeg', 0.95))
       }
