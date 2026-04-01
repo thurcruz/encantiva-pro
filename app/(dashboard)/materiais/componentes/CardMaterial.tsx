@@ -27,16 +27,35 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
   const [imagemOriginalUrl, setImagemOriginalUrl] = useState<string | null>(null)
   const supabase = createClient()
 
+  // Extrai o path relativo do arquivo — aceita tanto path relativo quanto URL completa
+  function extrairPath(urlOuPath: string): string {
+    try {
+      const url = new URL(urlOuPath)
+      // URL completa do Supabase: .../storage/v1/object/public/materials/PATH
+      const match = url.pathname.match(/\/storage\/v1\/object\/(?:public|sign)\/materials\/(.+)/)
+      if (match) return decodeURIComponent(match[1])
+    } catch {
+      // não é URL — já é um path relativo
+    }
+    return urlOuPath
+  }
+
   async function baixarOriginal() {
     if (!podeDownload) { setPopupLimite(true); return }
     setBaixando(true)
     setMenuAberto(false)
     try {
-      const { data, error } = await supabase.storage.from('materials').createSignedUrl(material.url_arquivo, 60)
-      if (error || !data) throw new Error('Erro ao gerar link.')
-      await supabase.from('historico_downloads').upsert({ material_id: material.id })
-      await supabase.rpc('incrementar_downloads', { material_id: material.id })
+      const path = extrairPath(material.url_arquivo)
+      const { data, error } = await supabase.storage.from('materials').createSignedUrl(path, 60)
+      if (error || !data?.signedUrl) throw new Error(error?.message ?? 'Erro ao gerar link.')
+      // Registrar download
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from('historico_downloads').insert({ material_id: material.id, usuario_id: user.id })
+        await supabase.rpc('incrementar_downloads', { material_id: material.id })
+      }
       const response = await fetch(data.signedUrl)
+      if (!response.ok) throw new Error('Falha ao baixar o arquivo.')
       const blob = await response.blob()
       const blobUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -46,31 +65,35 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(blobUrl)
-    } catch {
-      alert('Erro ao baixar o arquivo.')
+    } catch (e) {
+      alert('Erro ao baixar o arquivo. Tente novamente.')
+      console.error(e)
     } finally {
       setBaixando(false)
     }
   }
 
   async function abrirCortador() {
-    if (!podeDownload) return
+    if (!podeDownload) { setPopupLimite(true); return }
     setMenuAberto(false)
     try {
-      const { data, error } = await supabase.storage.from('materials').createSignedUrl(material.url_arquivo, 3600)
-      if (error || !data) throw new Error('Erro ao carregar imagem.')
+      const path = extrairPath(material.url_arquivo)
+      const { data, error } = await supabase.storage.from('materials').createSignedUrl(path, 3600)
+      if (error || !data?.signedUrl) throw new Error(error?.message ?? 'Erro ao carregar imagem.')
       setImagemOriginalUrl(data.signedUrl)
       setModalCortador(true)
-    } catch {
-      alert('Erro ao abrir o cortador.')
+    } catch (e) {
+      alert('Erro ao abrir o cortador. Verifique se o arquivo existe no storage.')
+      console.error(e)
     }
   }
 
   async function imprimir() {
-    if (!podeDownload) return
+    if (!podeDownload) { setPopupLimite(true); return }
     try {
-      const { data, error } = await supabase.storage.from('materials').createSignedUrl(material.url_arquivo, 60)
-      if (error || !data) throw new Error()
+      const path = extrairPath(material.url_arquivo)
+      const { data, error } = await supabase.storage.from('materials').createSignedUrl(path, 60)
+      if (error || !data?.signedUrl) throw new Error()
       window.open(data.signedUrl, '_blank')
     } catch {
       alert('Erro ao abrir arquivo.')
