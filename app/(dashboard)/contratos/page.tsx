@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getPlanoId, getLimites, temAcesso } from '@/lib/planos'
+import { getPlanoId, getLimites } from '@/lib/planos'
 import Link from 'next/link'
-import ModuloBloqueado from '../../components/ModuloBloqueado'
 import PageHeader from '../componentes/PageHeader'
 
 const IconPlus     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M7 2v10M2 7h10"/></svg>
@@ -31,11 +30,19 @@ export default async function PaginaContratos() {
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  if (!temAcesso('contratosPoMes', limites, isBeta, isAdmin)) {
-    return <ModuloBloqueado titulo="Contratos Digitais" descricao="Gere contratos profissionais e envie para seus clientes assinarem." planoMinimo="avancado" icone="📋" />
-  }
+  // Contar contratos criados este mês
+  const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0)
+  const { count: contratosMes } = await supabase
+    .from('contratos')
+    .select('*', { count: 'exact', head: true })
+    .eq('usuario_id', user.id)
+    .gte('criado_em', inicioMes.toISOString())
 
-  // ✅ Fix: filtro por usuario_id para não vazar contratos de outros usuários
+  const limiteContratos = limites.contratosPoMes
+  const limiteNumerico = typeof limiteContratos === 'number' ? limiteContratos : null
+  const contratosMesCount = contratosMes ?? 0
+  const limiteAtingido = limiteNumerico !== null && contratosMesCount >= limiteNumerico && !isAdmin && !isBeta
+
   const [{ data: contratos }, { data: perfil }] = await Promise.all([
     supabase.from('contratos').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
     supabase.from('perfis').select('*').eq('id', user.id).single(),
@@ -49,7 +56,7 @@ export default async function PaginaContratos() {
     cancelado: { label: 'Cancelado', color: '#dc2626', bg: '#fef2f2', dot: '#ef4444' },
   }
 
-  const total    = contratos?.length ?? 0
+  const total     = contratos?.length ?? 0
   const assinados = contratos?.filter(c => c.status === 'assinado').length ?? 0
   const pendentes = contratos?.filter(c => c.status === 'pendente').length ?? 0
 
@@ -59,13 +66,43 @@ export default async function PaginaContratos() {
         titulo="Contratos"
         subtitulo={`${total} contratos gerados`}
         action={
-          <Link href="/contratos/novo" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: '#ff33cc', borderRadius: '999px', padding: '10px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}>
-            <IconPlus /> Novo contrato
-          </Link>
+          limiteAtingido ? (
+            <a href="/planos" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: '#f3f4f6', borderRadius: '999px', padding: '10px 18px', color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', textDecoration: 'none', cursor: 'not-allowed' }}>
+              Limite atingido
+            </a>
+          ) : (
+            <Link href="/contratos/novo" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: '#ff33cc', borderRadius: '999px', padding: '10px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}>
+              <IconPlus /> Novo contrato
+            </Link>
+          )
         }
       />
 
       <div className="page-content" style={{ maxWidth: '900px', margin: '0 auto', padding: '24px 24px 60px' }}>
+
+        {/* Barra de uso mensal */}
+        {limiteNumerico !== null && !isAdmin && !isBeta && (
+          <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
+              <div>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 3px' }}>Contratos este mês</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: limiteAtingido ? '#dc2626' : '#111827', fontWeight: 700, margin: 0 }}>
+                  {contratosMesCount} de {limiteNumerico} usados
+                </p>
+              </div>
+              <div style={{ flex: 1, minWidth: '80px' }}>
+                <div style={{ background: '#f3f4f6', borderRadius: '999px', height: '6px', overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.min(100, (contratosMesCount / limiteNumerico) * 100)}%`, height: '100%', background: limiteAtingido ? '#dc2626' : contratosMesCount / limiteNumerico >= 0.7 ? '#f59e0b' : '#10b981', borderRadius: '999px', transition: 'width .4s' }} />
+                </div>
+              </div>
+            </div>
+            {limiteAtingido && (
+              <a href="/planos" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', borderRadius: '999px', padding: '8px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', textDecoration: 'none', flexShrink: 0 }}>
+                Fazer upgrade →
+              </a>
+            )}
+          </div>
+        )}
 
         {/* Aviso perfil incompleto */}
         {perfilIncompleto && (
@@ -141,9 +178,11 @@ export default async function PaginaContratos() {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}><IconEmpty /></div>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 6px' }}>Nenhum contrato ainda</p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 20px' }}>Crie seu primeiro contrato em segundos</p>
-            <Link href="/contratos/novo" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#fff', background: '#ff33cc', padding: '10px 20px', borderRadius: '999px', textDecoration: 'none' }}>
-              <IconPlus /> Criar contrato
-            </Link>
+            {!limiteAtingido && (
+              <Link href="/contratos/novo" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#fff', background: '#ff33cc', padding: '10px 20px', borderRadius: '999px', textDecoration: 'none' }}>
+                <IconPlus /> Criar contrato
+              </Link>
+            )}
           </div>
         )}
       </div>

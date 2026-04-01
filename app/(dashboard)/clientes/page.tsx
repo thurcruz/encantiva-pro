@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getPlanoId, getLimites, temAcesso } from '@/lib/planos'
+import { getPlanoId, getLimites } from '@/lib/planos'
 import PageHeader from '../componentes/PageHeader'
 import ModuloBloqueado from '../../components/ModuloBloqueado'
 import ClientesLista from './ClientesLista'
@@ -27,11 +27,11 @@ export default async function PaginaClientes({
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  // Clientes disponível a partir do plano avançado
-  const temAcessoClientes = isAdmin || isBeta || temAcesso('eventosPorMes', limites, isBeta, isAdmin)
+  const podeLer       = isAdmin || isBeta || limites.listaClientes
+  const podeGerenciar = isAdmin || isBeta || limites.gerenciarClientes
 
-  if (!temAcessoClientes) {
-    return <ModuloBloqueado titulo="Clientes" descricao="Cadastre e acompanhe todos os seus clientes em um só lugar." planoMinimo="avancado" icone="👥" />
+  if (!podeLer) {
+    return <ModuloBloqueado titulo="Clientes" descricao="Acompanhe todos os seus clientes em um so lugar." planoMinimo="avancado" icone="👥" planoAtual={planoId} />
   }
 
   let query = supabase
@@ -50,8 +50,24 @@ export default async function PaginaClientes({
         titulo="Clientes"
         subtitulo={`${clientes?.length ?? 0} cliente${(clientes?.length ?? 0) !== 1 ? 's' : ''} cadastrado${(clientes?.length ?? 0) !== 1 ? 's' : ''}`}
       />
+
+      {!podeGerenciar && (
+        <div style={{ background: '#fffbf0', borderBottom: '1px solid #fde68a', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#92400e', margin: 0 }}>
+            👁️ <strong>Somente leitura</strong> — você ve os clientes dos seus contratos. Upgrade para <strong>Avançado</strong> para gerenciar.
+          </p>
+          <a href="/planos" style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#d97706', whiteSpace: 'nowrap', textDecoration: 'none', border: '1px solid #fcd34d', borderRadius: '999px', padding: '4px 12px', background: '#fff' }}>
+            Ver planos →
+          </a>
+        </div>
+      )}
+
       <div style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 24px 80px' }}>
-        <ClientesLista clientes={clientes ?? []} usuarioId={user.id} buscaInicial={busca ?? ''} />
+        <ClientesLista
+          clientes={clientes ?? []}
+          usuarioId={user.id}
+          buscaInicial={busca ?? ''}
+        />
       </div>
     </div>
   )
