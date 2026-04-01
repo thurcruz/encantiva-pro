@@ -1,12 +1,38 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getPlanoId, getLimites } from '@/lib/planos'
 import AcervoCliente from './AcervoCliente'
+import ModuloBloqueado from '../../components/ModuloBloqueado'
 import PageHeader from '../componentes/PageHeader'
 
 export default async function PaginaAcervo() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
+  const { data: assinatura } = await supabase
+    .from('assinaturas')
+    .select('status, plano, trial_expira_em, is_beta')
+    .eq('usuario_id', user.id)
+    .single()
+
+  const isBeta = assinatura?.is_beta === true
+  const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
+  const limites = getLimites(planoId)
+
+  if (!limites.controleEstoque && !isBeta && !isAdmin) {
+    return (
+      <ModuloBloqueado
+        titulo="Acervo"
+        descricao="Controle os itens que você possui para montar kits e orçamentos."
+        planoMinimo="elite"
+        icone="📦"
+        planoAtual={planoId}
+      />
+    )
+  }
 
   const { data: acervo, error } = await supabase
     .from('acervo')
