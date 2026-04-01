@@ -87,7 +87,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ? Math.ceil((new Date(assinatura!.trial_expira_em!).getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
     : 0
 
-  const temAcervo = isAdmin || isBeta || assinatura?.plano === 'elite'
+  const temAcervo = true  // sempre visível; acesso controlado dentro da página /acervo
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
