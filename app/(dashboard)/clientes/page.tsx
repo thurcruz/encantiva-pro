@@ -67,6 +67,7 @@ export default async function PaginaClientes({
           clientes={clientes ?? []}
           usuarioId={user.id}
           buscaInicial={busca ?? ''}
+          somenteLeitura={!podeGerenciar}
         />
       </div>
     </div>

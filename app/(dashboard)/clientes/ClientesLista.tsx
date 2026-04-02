@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Eye } from 'lucide-react'
 
 interface Cliente {
   id: string
@@ -17,6 +18,7 @@ interface Props {
   clientes: Cliente[]
   usuarioId: string
   buscaInicial: string
+  somenteLeitura?: boolean
 }
 
 const IconSearch = () => <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l3 3"/></svg>
@@ -105,20 +107,34 @@ function ModalNovoCliente({ usuarioId, onClose, onSalvo }: {
   )
 }
 
-export default function ClientesLista({ clientes: clientesIniciais, usuarioId, buscaInicial }: Props) {
+export default function ClientesLista({ clientes: clientesIniciais, usuarioId, buscaInicial, somenteLeitura = false }: Props) {
   const [clientes, setClientes] = useState(clientesIniciais)
   const [busca, setBusca] = useState(buscaInicial)
   const [modalAberto, setModalAberto] = useState(false)
   const router = useRouter()
 
   const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-
   const clientesFiltrados = busca.trim()
     ? clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()))
     : clientes
 
   return (
     <div>
+      {/* Banner somente leitura */}
+      {somenteLeitura && (
+        <div style={{ background: '#fffbf0', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Eye size={14} style={{ color: '#d97706', flexShrink: 0 }} />
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#92400e', margin: 0 }}>
+              <strong>Somente leitura</strong> — você vê os clientes dos seus contratos. Faça upgrade para o plano <strong>Avançado</strong> para gerenciar.
+            </p>
+          </div>
+          <a href="/planos" style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#d97706', whiteSpace: 'nowrap', textDecoration: 'none', border: '1px solid #fcd34d', borderRadius: '999px', padding: '4px 12px', background: '#fff' }}>
+            Ver planos →
+          </a>
+        </div>
+      )}
+
       {/* Barra de ações */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
         <div style={{ flex: 1, position: 'relative' }}>
@@ -135,9 +151,11 @@ export default function ClientesLista({ clientes: clientesIniciais, usuarioId, b
             </button>
           )}
         </div>
-        <button onClick={() => setModalAberto(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '10px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer', flexShrink: 0 }}>
-          <IconPlus /> Novo cliente
-        </button>
+        {!somenteLeitura && (
+          <button onClick={() => setModalAberto(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '10px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer', flexShrink: 0 }}>
+            <IconPlus /> Novo cliente
+          </button>
+        )}
       </div>
 
       {/* Lista */}
@@ -151,8 +169,8 @@ export default function ClientesLista({ clientes: clientesIniciais, usuarioId, b
             return (
               <div
                 key={cliente.id}
-                onClick={() => router.push(`/clientes/${cliente.id}`)}
-                style={{ background: aniversarioHoje ? '#fff5fd' : '#fff', border: `1px solid ${aniversarioHoje ? '#ffd6f5' : '#e8e8ec'}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', transition: 'border-color .15s' }}
+                onClick={() => !somenteLeitura && router.push(`/clientes/${cliente.id}`)}
+                style={{ background: aniversarioHoje ? '#fff5fd' : '#fff', border: `1px solid ${aniversarioHoje ? '#ffd6f5' : '#e8e8ec'}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '14px', cursor: somenteLeitura ? 'default' : 'pointer', transition: 'border-color .15s' }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#fff0fb', border: '1px solid #ffd6f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '15px', color: '#ff33cc' }}>
@@ -181,7 +199,7 @@ export default function ClientesLista({ clientes: clientesIniciais, usuarioId, b
                     )}
                   </div>
                 </div>
-                <span style={{ color: '#d1d5db', flexShrink: 0 }}><IconChev /></span>
+                {!somenteLeitura && <span style={{ color: '#d1d5db', flexShrink: 0 }}><IconChev /></span>}
               </div>
             )
           })}
@@ -192,12 +210,12 @@ export default function ClientesLista({ clientes: clientesIniciais, usuarioId, b
             <IconUser />
           </div>
           <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>
-            {busca ? 'Nenhum cliente encontrado' : 'Nenhum cliente ainda'}
+            {busca ? 'Nenhum cliente encontrado' : somenteLeitura ? 'Nenhum cliente nos contratos' : 'Nenhum cliente ainda'}
           </p>
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: '0 0 20px' }}>
-            {busca ? 'Tente buscar por outro nome' : 'Cadastre seu primeiro cliente'}
+            {busca ? 'Tente buscar por outro nome' : somenteLeitura ? 'Os clientes dos seus contratos aparecerão aqui' : 'Cadastre seu primeiro cliente'}
           </p>
-          {!busca && (
+          {!busca && !somenteLeitura && (
             <button onClick={() => setModalAberto(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '10px 20px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
               <IconPlus /> Cadastrar cliente
             </button>
@@ -205,8 +223,8 @@ export default function ClientesLista({ clientes: clientesIniciais, usuarioId, b
         </div>
       )}
 
-      {/* Modal */}
-      {modalAberto && (
+      {/* Modal — só abre se não for somente leitura */}
+      {modalAberto && !somenteLeitura && (
         <ModalNovoCliente
           usuarioId={usuarioId}
           onClose={() => setModalAberto(false)}
