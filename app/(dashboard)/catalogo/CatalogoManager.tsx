@@ -165,8 +165,9 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
     setSalvando(false)
   }
   async function deletarKit(id: string) {
-    await supabase.from('catalogo_kits').delete().eq('id', id)
-    setKits(p => p.filter(k => k.id !== id))
+    const { error } = await supabase.from('catalogo_kits').delete().eq('id', id)
+    if (!error) setKits(p => p.filter(k => k.id !== id))
+    else alert('Erro ao deletar kit: ' + error.message)
   }
 
   // ── CRUD Adicionais ──
@@ -181,8 +182,9 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
     setSalvando(false)
   }
   async function deletarAdicional(id: string) {
-    await supabase.from('adicionais').delete().eq('id', id)
-    setAdicionais(p => p.filter(a => a.id !== id))
+    const { error } = await supabase.from('adicionais').delete().eq('id', id)
+    if (!error) setAdicionais(p => p.filter(a => a.id !== id))
+    else alert('Erro ao deletar adicional: ' + error.message)
   }
 
   // ── CRUD Temas ──
@@ -200,8 +202,9 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
     setSalvando(false)
   }
   async function deletarTema(id: string) {
-    await supabase.from('catalogo_temas').delete().eq('id', id)
-    setTemas(p => p.filter(t => t.id !== id))
+    const { error } = await supabase.from('catalogo_temas').delete().eq('id', id)
+    if (!error) setTemas(p => p.filter(t => t.id !== id))
+    else alert('Erro ao deletar tema: ' + error.message)
   }
 
   async function atualizarStatusPedido(id: string, status: string) {
