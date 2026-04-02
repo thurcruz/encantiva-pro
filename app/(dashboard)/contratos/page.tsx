@@ -80,7 +80,15 @@ export default async function PaginaContratos() {
 
       <div className="page-content" style={{ maxWidth: '900px', margin: '0 auto', padding: '24px 24px 60px' }}>
 
-        {/* Barra de uso mensal */}
+      {/* Aviso termo de responsabilidade */}
+      <div style={{ background: '#f9f9ff', border: '1px solid #e8e8ec', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+        <span style={{ fontSize: '14px', flexShrink: 0, marginTop: '1px' }}>ℹ️</span>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280', margin: 0, lineHeight: 1.6 }}>
+          Os <strong style={{ color: '#111827' }}>Contratos</strong> da Encantiva Pro são na prática <strong style={{ color: '#111827' }}>Termos de Responsabilidade</strong> digitais — úteis para registrar o combinado e ter a assinatura da cliente. Para contratos com validade jurídica plena, consulte um advogado.
+        </p>
+      </div>
+
+      {/* Barra de uso mensal */}
         {limiteNumerico !== null && !isAdmin && !isBeta && (
           <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
