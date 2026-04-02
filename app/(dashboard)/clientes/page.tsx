@@ -51,17 +51,7 @@ export default async function PaginaClientes({
         subtitulo={`${clientes?.length ?? 0} cliente${(clientes?.length ?? 0) !== 1 ? 's' : ''} cadastrado${(clientes?.length ?? 0) !== 1 ? 's' : ''}`}
       />
 
-      {!podeGerenciar && (
-        <div style={{ background: '#fffbf0', borderBottom: '1px solid #fde68a', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#92400e', margin: 0 }}>
-            👁️ <strong>Somente leitura</strong> — você ve os clientes dos seus contratos. Upgrade para <strong>Avançado</strong> para gerenciar.
-          </p>
-          <a href="/planos" style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#d97706', whiteSpace: 'nowrap', textDecoration: 'none', border: '1px solid #fcd34d', borderRadius: '999px', padding: '4px 12px', background: '#fff' }}>
-            Ver planos →
-          </a>
-        </div>
-      )}
-
+    
       <div style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 24px 80px' }}>
         <ClientesLista
           clientes={clientes ?? []}
