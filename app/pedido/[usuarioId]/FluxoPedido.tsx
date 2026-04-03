@@ -97,8 +97,9 @@ function RodapeTotal({
   )
 }
 
-export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLoja, telefone, vagasPadrao }: Props) {
+export default function FluxoPedido({ usuarioId, temas, kits: kitsProps, adicionais, nomeLoja, telefone, vagasPadrao }: Props) {
   const supabase = createClient()
+  const kits = kitsProps.filter(k => k.descricao !== 'Kit exportado da calculadora')
   const temKits      = kits.length > 0
   const temAdicionais = adicionais.length > 0
 
