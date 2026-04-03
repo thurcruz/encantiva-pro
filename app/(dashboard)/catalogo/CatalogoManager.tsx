@@ -15,18 +15,23 @@ const IconPackage = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="
 const IconTag     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1h5l5.5 5.5a1.5 1.5 0 0 1 0 2L8 12a1.5 1.5 0 0 1-2 0L1 6.5V1z"/><circle cx="3.5" cy="3.5" r="1"/></svg>
 const IconPalette = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="6.5" cy="6.5" r="5.5"/><circle cx="4" cy="5" r="1"/><circle cx="6.5" cy="3.5" r="1"/><circle cx="9" cy="5" r="1"/></svg>
 const IconOrders  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="1" width="11" height="11" rx="2"/><path d="M4 5h5M4 7h3M4 9h4"/></svg>
+const IconPencil  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 2l2 2-6.5 6.5L2 11l.5-2.5L9 2z"/></svg>
 
 const CATEGORIAS_DISPONIVEIS = [
   'Mesversário','Aniversário','Batizado','1ª Eucaristia',
   'Noivado','15 Anos','Casamento','Chá de Bebê',
   'Chá de Panela','Chá de Lingerie','Chá Revelação','Bodas',
 ]
-const ITENS_KIT = ['Decoração','Painel','Lembrançinhas','Balões','Bolo','Mesa Posta','Iluminação','Cenografia']
+const ITENS_KIT_SUGESTOES = ['Decoração','Painel','Lembrançinhas','Balões','Bolo','Mesa Posta','Iluminação','Cenografia']
+const CATEGORIAS_ADICIONAL = ['Itens avulsos','Consumíveis','Doce','Bebida','Locação','Serviço']
 
-interface Tema     { id: string; nome: string; categoria: string; categorias: string[]; foto_url: string | null; ativo: boolean }
-interface Kit      { id: string; usuario_id: string; nome: string; descricao: string | null; preco: number; itens: string[]; foto_url: string | null }
-interface Adicional{ id: string; usuario_id: string; nome: string; preco: number; foto_url: string | null }
-interface Pedido   { id: string; tema_id: string; catalogo_kit_id: string; nome_cliente: string; telefone_cliente: string | null; data_evento: string; forma_pagamento: string | null; adicionais: string[]; valor_total: number; status: string; observacoes: string | null; criado_em: string }
+interface Tema        { id: string; nome: string; categoria: string; categorias: string[]; foto_url: string | null; ativo: boolean }
+interface Kit         { id: string; usuario_id: string; nome: string; descricao: string | null; preco: number; itens: string[]; foto_url: string | null }
+interface Adicional   { id: string; usuario_id: string; nome: string; preco: number; categoria: string | null; foto_url: string | null }
+interface Pedido      { id: string; tema_id: string; catalogo_kit_id: string; nome_cliente: string; telefone_cliente: string | null; data_evento: string; forma_pagamento: string | null; adicionais: string[]; valor_total: number; status: string; observacoes: string | null; criado_em: string }
+interface EditKitForm { nome: string; descricao: string; preco: string; itens: string[]; foto_url: string | null }
+interface EditAdicionalForm { nome: string; preco: string; categoria: string | null; foto_url: string | null }
+interface EditTemaForm { nome: string; categorias: string[]; foto_url: string | null }
 
 interface Props {
   usuarioId: string
@@ -68,7 +73,7 @@ function FotoUpload({
   onChange: (url: string | null) => void
   label?: string
   usuarioId: string
-  pasta: string // 'kits' | 'adicionais' | 'temas'
+  pasta: string
 }) {
   const supabase = createClient()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -122,6 +127,75 @@ function FotoUpload({
   )
 }
 
+// ── Seletor de itens de kit (predefinidos + customizados) ────────────────────────
+function ItensKitSelector({
+  itens, onChange,
+}: {
+  itens: string[]
+  onChange: (itens: string[]) => void
+}) {
+  const [customInput, setCustomInput] = useState('')
+
+  function toggleItem(item: string) {
+    onChange(itens.includes(item) ? itens.filter(i => i !== item) : [...itens, item])
+  }
+  function addCustom() {
+    const val = customInput.trim()
+    if (!val || itens.includes(val)) return
+    onChange([...itens, val])
+    setCustomInput('')
+  }
+
+  const sugestoes = ITENS_KIT_SUGESTOES.filter(i => !itens.includes(i))
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* Itens selecionados */}
+      {itens.length > 0 && (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {itens.map(item => (
+            <button key={item} type="button"
+              onClick={() => toggleItem(item)}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '999px', border: '1.5px solid #ff33cc', background: '#fff0fb', color: '#ff33cc', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>
+              {item}
+              <span style={{ fontSize: '14px', lineHeight: 1, marginTop: '-1px' }}>×</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {/* Input para item customizado */}
+      <div style={{ display: 'flex', gap: '6px' }}>
+        <input
+          style={{ ...input, flex: 1 }}
+          placeholder="Adicionar item... (ex: Topo de bolo)"
+          value={customInput}
+          onChange={e => setCustomInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustom() } }}
+        />
+        <button type="button" onClick={addCustom}
+          disabled={!customInput.trim()}
+          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '9px 14px', background: customInput.trim() ? '#ff33cc' : '#f3f4f6', border: 'none', borderRadius: '10px', color: customInput.trim() ? '#fff' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: customInput.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
+          <IconPlus /> Adicionar
+        </button>
+      </div>
+      {/* Sugestões */}
+      {sugestoes.length > 0 && (
+        <div>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 6px', letterSpacing: '0.4px' }}>Sugestões:</p>
+          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+            {sugestoes.map(item => (
+              <button key={item} type="button" onClick={() => toggleItem(item)}
+                style={{ padding: '4px 10px', borderRadius: '999px', border: '1.5px dashed #e8e8ec', background: '#fafafa', color: '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>
+                + {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais, adicionaisIniciais, pedidosIniciais }: Props) {
   const supabase = createClient()
   const [temas, setTemas] = useState<Tema[]>(temasIniciais)
@@ -132,9 +206,18 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
   const [salvando, setSalvando] = useState(false)
   const [copiado, setCopiado] = useState(false)
 
+  // ── Estado de criação ──
   const [novoKit, setNovoKit] = useState({ nome: '', descricao: '', preco: '', itens: [] as string[], foto_url: null as string | null })
-  const [novoAdicional, setNovoAdicional] = useState({ nome: '', preco: '', foto_url: null as string | null })
+  const [novoAdicional, setNovoAdicional] = useState({ nome: '', preco: '', categoria: '', foto_url: null as string | null })
   const [novoTema, setNovoTema] = useState({ nome: '', categorias: [] as string[], foto_url: null as string | null })
+
+  // ── Estado de edição ──
+  const [editandoKit, setEditandoKit] = useState<string | null>(null)
+  const [editKit, setEditKit] = useState<EditKitForm>({ nome: '', descricao: '', preco: '', itens: [], foto_url: null })
+  const [editandoAdicional, setEditandoAdicional] = useState<string | null>(null)
+  const [editAdicional, setEditAdicional] = useState<EditAdicionalForm>({ nome: '', preco: '', categoria: null, foto_url: null })
+  const [editandoTema, setEditandoTema] = useState<string | null>(null)
+  const [editTema, setEditTema] = useState<EditTemaForm>({ nome: '', categorias: [], foto_url: null })
 
   const linkPublico = typeof window !== 'undefined'
     ? `${window.location.origin}/pedido/${usuarioId}`
@@ -152,6 +235,12 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
       categorias: p.categorias.includes(cat) ? p.categorias.filter(c => c !== cat) : [...p.categorias, cat],
     }))
   }
+  function toggleCategoriaEdit(cat: string) {
+    setEditTema(p => {
+      const cats = p.categorias ?? []
+      return { ...p, categorias: cats.includes(cat) ? cats.filter(c => c !== cat) : [...cats, cat] }
+    })
+  }
 
   // ── CRUD Kits ──
   async function criarKit() {
@@ -162,6 +251,18 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
       preco: parseFloat(novoKit.preco), itens: novoKit.itens, foto_url: novoKit.foto_url,
     }).select().single()
     if (!error && data) { setKits(p => [data, ...p]); setNovoKit({ nome: '', descricao: '', preco: '', itens: [], foto_url: null }) }
+    setSalvando(false)
+  }
+  async function salvarKit(id: string) {
+    if (!editKit.nome?.trim() || !editKit.preco) return
+    setSalvando(true)
+    const { data, error } = await supabase.from('catalogo_kits').update({
+      nome: editKit.nome, descricao: editKit.descricao || null,
+      preco: parseFloat(String(editKit.preco)), itens: editKit.itens ?? [],
+      foto_url: editKit.foto_url ?? null,
+    }).eq('id', id).select().single()
+    if (!error && data) { setKits(p => p.map(k => k.id === id ? data : k)); setEditandoKit(null) }
+    else if (error) alert('Erro ao salvar: ' + error.message)
     setSalvando(false)
   }
   async function deletarKit(id: string) {
@@ -176,9 +277,24 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
     setSalvando(true)
     const { data, error } = await supabase.from('adicionais').insert({
       usuario_id: usuarioId, nome: novoAdicional.nome,
-      preco: parseFloat(novoAdicional.preco), foto_url: novoAdicional.foto_url,
+      preco: parseFloat(novoAdicional.preco),
+      categoria: novoAdicional.categoria || null,
+      foto_url: novoAdicional.foto_url,
     }).select().single()
-    if (!error && data) { setAdicionais(p => [data, ...p]); setNovoAdicional({ nome: '', preco: '', foto_url: null }) }
+    if (!error && data) { setAdicionais(p => [data, ...p]); setNovoAdicional({ nome: '', preco: '', categoria: '', foto_url: null }) }
+    setSalvando(false)
+  }
+  async function salvarAdicional(id: string) {
+    if (!editAdicional.nome?.trim() || !editAdicional.preco) return
+    setSalvando(true)
+    const { data, error } = await supabase.from('adicionais').update({
+      nome: editAdicional.nome,
+      preco: parseFloat(String(editAdicional.preco)),
+      categoria: editAdicional.categoria || null,
+      foto_url: editAdicional.foto_url ?? null,
+    }).eq('id', id).select().single()
+    if (!error && data) { setAdicionais(p => p.map(a => a.id === id ? data : a)); setEditandoAdicional(null) }
+    else if (error) alert('Erro ao salvar: ' + error.message)
     setSalvando(false)
   }
   async function deletarAdicional(id: string) {
@@ -199,6 +315,20 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
       ativo: true,
     }).select().single()
     if (!error && data) { setTemas(p => [data, ...p]); setNovoTema({ nome: '', categorias: [], foto_url: null }) }
+    setSalvando(false)
+  }
+  async function salvarTema(id: string) {
+    if (!editTema.nome?.trim()) return
+    setSalvando(true)
+    const cats = editTema.categorias ?? []
+    const { data, error } = await supabase.from('catalogo_temas').update({
+      nome: editTema.nome,
+      categorias: cats,
+      categoria: cats[0] ?? null,
+      foto_url: editTema.foto_url ?? null,
+    }).eq('id', id).select().single()
+    if (!error && data) { setTemas(p => p.map(t => t.id === id ? data : t)); setEditandoTema(null) }
+    else if (error) alert('Erro ao salvar: ' + error.message)
     setSalvando(false)
   }
   async function deletarTema(id: string) {
@@ -256,7 +386,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                 <div><span style={lbl}>Nome do kit *</span><input style={input} placeholder="Ex: Kit Básico" value={novoKit.nome} onChange={e => setNovoKit(p => ({ ...p, nome: e.target.value }))} /></div>
                 <div><span style={lbl}>Preço (R$) *</span><input style={input} type="number" placeholder="0,00" value={novoKit.preco} onChange={e => setNovoKit(p => ({ ...p, preco: e.target.value }))} /></div>
               </div>
-              <div><span style={lbl}>Descrição</span><input style={input} placeholder="O que está incluso..." value={novoKit.descricao} onChange={e => setNovoKit(p => ({ ...p, descricao: e.target.value }))} /></div>
+              <div><span style={lbl}>Descrição</span><input style={input} placeholder="O que está incluso, diferenciais..." value={novoKit.descricao} onChange={e => setNovoKit(p => ({ ...p, descricao: e.target.value }))} /></div>
               <FotoUpload
                 label="Foto do kit (opcional)"
                 valor={novoKit.foto_url}
@@ -266,17 +396,7 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
               />
               <div>
                 <span style={lbl}>Itens inclusos</span>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {ITENS_KIT.map(item => {
-                    const sel = novoKit.itens.includes(item)
-                    return (
-                      <button key={item} type="button" onClick={() => setNovoKit(p => ({ ...p, itens: sel ? p.itens.filter(i => i !== item) : [...p.itens, item] }))}
-                        style={{ padding: '6px 12px', borderRadius: '999px', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, background: sel ? '#fff0fb' : '#fafafa', color: sel ? '#ff33cc' : '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>
-                        {item}
-                      </button>
-                    )
-                  })}
-                </div>
+                <ItensKitSelector itens={novoKit.itens} onChange={itens => setNovoKit(p => ({ ...p, itens }))} />
               </div>
               <button onClick={criarKit} disabled={salvando || !novoKit.nome.trim() || !novoKit.preco}
                 style={{ ...btnPrimario, width: '100%', padding: '12px', borderRadius: '999px', opacity: salvando || !novoKit.nome.trim() || !novoKit.preco ? 0.5 : 1 }}>
@@ -292,21 +412,64 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {kits.map(kit => (
-                <div key={kit.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', display: 'flex' }}>
-                  <div style={{ width: 80, flexShrink: 0, background: '#f5f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                    {kit.foto_url
-                      ?
-              <img src={kit.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={kit.nome} />
-                      : <span style={{ color: '#d8b4fe' }}><IconImage /></span>}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kit.nome}</p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{Array.isArray(kit.itens) && kit.itens.length > 0 ? kit.itens.join(' · ') : 'Sem itens'}</p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#ff33cc', margin: 0 }}>R$ {Number(kit.preco).toFixed(2).replace('.', ',')}</p>
+                <div key={kit.id}>
+                  {editandoKit === kit.id ? (
+                    /* ── Formulário de edição inline ── */
+                    <div style={{ background: '#fff', border: '2px solid #ff33cc', borderRadius: '14px', padding: '16px' }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#ff33cc', margin: '0 0 12px' }}>Editar kit</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          <div><span style={lbl}>Nome *</span><input style={input} value={editKit.nome ?? ''} onChange={e => setEditKit(p => ({ ...p, nome: e.target.value }))} /></div>
+                          <div><span style={lbl}>Preço (R$) *</span><input style={input} type="number" value={editKit.preco ?? ''} onChange={e => setEditKit(p => ({ ...p, preco: e.target.value }))} /></div>
+                        </div>
+                        <div><span style={lbl}>Descrição</span><input style={input} value={editKit.descricao ?? ''} onChange={e => setEditKit(p => ({ ...p, descricao: e.target.value }))} /></div>
+                        <FotoUpload
+                          label="Foto"
+                          valor={editKit.foto_url ?? null}
+                          onChange={url => setEditKit(p => ({ ...p, foto_url: url }))}
+                          usuarioId={usuarioId}
+                          pasta="kits"
+                        />
+                        <div>
+                          <span style={lbl}>Itens inclusos</span>
+                          <ItensKitSelector itens={editKit.itens ?? []} onChange={itens => setEditKit(p => ({ ...p, itens }))} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={() => salvarKit(kit.id)} disabled={salvando || !editKit.nome?.trim()}
+                            style={{ ...btnPrimario, flex: 1, padding: '10px', opacity: salvando || !editKit.nome?.trim() ? 0.5 : 1 }}>
+                            {salvando ? 'Salvando...' : 'Salvar'}
+                          </button>
+                          <button onClick={() => setEditandoKit(null)}
+                            style={{ padding: '10px 16px', background: '#fafafa', border: '1px solid #e8e8ec', borderRadius: '999px', color: '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <button onClick={() => deletarKit(kit.id)} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><IconTrash /></button>
-                  </div>
+                  ) : (
+                    /* ── Card normal ── */
+                    <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', display: 'flex' }}>
+                      <div style={{ width: 80, flexShrink: 0, background: '#f5f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                        {kit.foto_url
+                          ? <img src={kit.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={kit.nome} />
+                          : <span style={{ color: '#d8b4fe' }}><IconImage /></span>}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kit.nome}</p>
+                          {kit.descricao && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kit.descricao}</p>}
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{Array.isArray(kit.itens) && kit.itens.length > 0 ? kit.itens.join(' · ') : 'Sem itens'}</p>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#ff33cc', margin: 0 }}>R$ {Number(kit.preco).toFixed(2).replace('.', ',')}</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                          <button onClick={() => { setEditandoKit(kit.id); setEditKit({ nome: kit.nome, descricao: kit.descricao ?? '', preco: String(kit.preco), itens: kit.itens ?? [], foto_url: kit.foto_url }) }}
+                            style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconPencil /></button>
+                          <button onClick={() => deletarKit(kit.id)}
+                            style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconTrash /></button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -323,6 +486,22 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div><span style={lbl}>Nome *</span><input style={input} placeholder="Ex: Mesa Cavalete" value={novoAdicional.nome} onChange={e => setNovoAdicional(p => ({ ...p, nome: e.target.value }))} /></div>
                 <div><span style={lbl}>Preço (R$) *</span><input style={input} type="number" placeholder="0,00" value={novoAdicional.preco} onChange={e => setNovoAdicional(p => ({ ...p, preco: e.target.value }))} /></div>
+              </div>
+              <div>
+                <span style={lbl}>Categoria</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                  {CATEGORIAS_ADICIONAL.map(cat => {
+                    const sel = novoAdicional.categoria === cat
+                    return (
+                      <button key={cat} type="button"
+                        onClick={() => setNovoAdicional(p => ({ ...p, categoria: sel ? '' : cat }))}
+                        style={{ padding: '5px 11px', borderRadius: '999px', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, background: sel ? '#fff0fb' : '#fafafa', color: sel ? '#ff33cc' : '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>
+                        {cat}
+                      </button>
+                    )
+                  })}
+                </div>
+                <input style={{ ...input, marginTop: '8px' }} placeholder="Ou digite uma categoria personalizada..." value={novoAdicional.categoria} onChange={e => setNovoAdicional(p => ({ ...p, categoria: e.target.value }))} />
               </div>
               <FotoUpload
                 label="Foto (opcional)"
@@ -345,20 +524,72 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {adicionais.map(a => (
-                <div key={a.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', display: 'flex' }}>
-                  <div style={{ width: 64, flexShrink: 0, background: '#fff0fb', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                    {a.foto_url
-                      ?
-              <img src={a.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={a.nome} />
-                      : <span style={{ color: '#f9a8d4' }}><IconImage /></span>}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>{a.nome}</p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '13px', color: '#ff33cc', margin: 0 }}>R$ {Number(a.preco).toFixed(2).replace('.', ',')}</p>
+                <div key={a.id}>
+                  {editandoAdicional === a.id ? (
+                    <div style={{ background: '#fff', border: '2px solid #ff33cc', borderRadius: '14px', padding: '16px' }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#ff33cc', margin: '0 0 12px' }}>Editar adicional</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          <div><span style={lbl}>Nome *</span><input style={input} value={editAdicional.nome ?? ''} onChange={e => setEditAdicional(p => ({ ...p, nome: e.target.value }))} /></div>
+                          <div><span style={lbl}>Preço (R$) *</span><input style={input} type="number" value={editAdicional.preco ?? ''} onChange={e => setEditAdicional(p => ({ ...p, preco: e.target.value }))} /></div>
+                        </div>
+                        <div>
+                          <span style={lbl}>Categoria</span>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                            {CATEGORIAS_ADICIONAL.map(cat => {
+                              const sel = editAdicional.categoria === cat
+                              return (
+                                <button key={cat} type="button"
+                                  onClick={() => setEditAdicional(p => ({ ...p, categoria: sel ? null : cat }))}
+                                  style={{ padding: '5px 11px', borderRadius: '999px', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, background: sel ? '#fff0fb' : '#fafafa', color: sel ? '#ff33cc' : '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>
+                                  {cat}
+                                </button>
+                              )
+                            })}
+                          </div>
+                          <input style={{ ...input, marginTop: '8px' }} placeholder="Ou categoria personalizada..." value={editAdicional.categoria ?? ''} onChange={e => setEditAdicional(p => ({ ...p, categoria: e.target.value }))} />
+                        </div>
+                        <FotoUpload
+                          label="Foto"
+                          valor={editAdicional.foto_url ?? null}
+                          onChange={url => setEditAdicional(p => ({ ...p, foto_url: url }))}
+                          usuarioId={usuarioId}
+                          pasta="adicionais"
+                        />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={() => salvarAdicional(a.id)} disabled={salvando || !editAdicional.nome?.trim()}
+                            style={{ ...btnPrimario, flex: 1, padding: '10px', opacity: salvando || !editAdicional.nome?.trim() ? 0.5 : 1 }}>
+                            {salvando ? 'Salvando...' : 'Salvar'}
+                          </button>
+                          <button onClick={() => setEditandoAdicional(null)}
+                            style={{ padding: '10px 16px', background: '#fafafa', border: '1px solid #e8e8ec', borderRadius: '999px', color: '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <button onClick={() => deletarAdicional(a.id)} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><IconTrash /></button>
-                  </div>
+                  ) : (
+                    <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', display: 'flex' }}>
+                      <div style={{ width: 64, flexShrink: 0, background: '#fff0fb', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                        {a.foto_url
+                          ? <img src={a.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={a.nome} />
+                          : <span style={{ color: '#f9a8d4' }}><IconImage /></span>}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <div>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>{a.nome}</p>
+                          {a.categoria && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: '0 0 2px' }}>{a.categoria}</p>}
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '13px', color: '#ff33cc', margin: 0 }}>R$ {Number(a.preco).toFixed(2).replace('.', ',')}</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                          <button onClick={() => { setEditandoAdicional(a.id); setEditAdicional({ nome: a.nome, preco: String(a.preco), categoria: a.categoria, foto_url: a.foto_url }) }}
+                            style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconPencil /></button>
+                          <button onClick={() => deletarAdicional(a.id)}
+                            style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconTrash /></button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -419,12 +650,53 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
               {temas.map(tema => {
                 const cats = tema.categorias?.length > 0 ? tema.categorias : (tema.categoria ? [tema.categoria] : [])
+                if (editandoTema === tema.id) {
+                  const editCats = editTema.categorias ?? []
+                  return (
+                    <div key={tema.id} style={{ background: '#fff', border: '2px solid #ff33cc', borderRadius: '14px', padding: '14px', gridColumn: '1 / -1' }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#ff33cc', margin: '0 0 12px' }}>Editar tema</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div><span style={lbl}>Nome *</span><input style={input} value={editTema.nome ?? ''} onChange={e => setEditTema(p => ({ ...p, nome: e.target.value }))} /></div>
+                        <div>
+                          <span style={lbl}>Categorias</span>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                            {CATEGORIAS_DISPONIVEIS.map(cat => {
+                              const sel = editCats.includes(cat)
+                              return (
+                                <button key={cat} type="button" onClick={() => toggleCategoriaEdit(cat)}
+                                  style={{ padding: '5px 10px', borderRadius: '999px', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, background: sel ? '#fff0fb' : '#fafafa', color: sel ? '#ff33cc' : '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>
+                                  {cat}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                        <FotoUpload
+                          label="Foto"
+                          valor={editTema.foto_url ?? null}
+                          onChange={url => setEditTema(p => ({ ...p, foto_url: url }))}
+                          usuarioId={usuarioId}
+                          pasta="temas"
+                        />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={() => salvarTema(tema.id)} disabled={salvando || !editTema.nome?.trim()}
+                            style={{ ...btnPrimario, flex: 1, padding: '10px', opacity: salvando || !editTema.nome?.trim() ? 0.5 : 1 }}>
+                            {salvando ? 'Salvando...' : 'Salvar'}
+                          </button>
+                          <button onClick={() => setEditandoTema(null)}
+                            style={{ padding: '10px 16px', background: '#fafafa', border: '1px solid #e8e8ec', borderRadius: '999px', color: '#6b7280', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
                 return (
                   <div key={tema.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden' }}>
                     <div style={{ height: 90, background: '#f5f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                       {tema.foto_url
-                        ?
-              <img src={tema.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={tema.nome} />
+                        ? <img src={tema.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={tema.nome} />
                         : <span style={{ fontSize: '28px' }}>🎨</span>}
                     </div>
                     <div style={{ padding: '10px 12px' }}>
@@ -435,7 +707,12 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                         ))}
                         {cats.length > 2 && <span style={{ background: '#f3f4f6', color: '#9ca3af', borderRadius: '999px', padding: '1px 7px', fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 700 }}>+{cats.length - 2}</span>}
                       </div>
-                      <button onClick={() => deletarTema(tema.id)} style={{ width: '100%', height: 28, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconTrash /></button>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={() => { setEditandoTema(tema.id); setEditTema({ nome: tema.nome, categorias: cats, foto_url: tema.foto_url }) }}
+                          style={{ flex: 1, height: 28, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconPencil /></button>
+                        <button onClick={() => deletarTema(tema.id)}
+                          style={{ flex: 1, height: 28, borderRadius: '999px', border: '1px solid #fecdd3', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconTrash /></button>
+                      </div>
                     </div>
                   </div>
                 )

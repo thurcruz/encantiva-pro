@@ -15,7 +15,7 @@ const IconWA        = () => <svg width="16" height="16" viewBox="0 0 24 24" fill
 
 interface Tema      { id: string; nome: string; categoria: string; categorias: string[]; foto_url: string | null }
 interface Kit       { id: string; nome: string; descricao: string | null; preco: number; itens: string[]; foto_url?: string | null }
-interface Adicional { id: string; nome: string; preco: number; foto_url?: string | null }
+interface Adicional { id: string; nome: string; preco: number; categoria: string | null; foto_url?: string | null }
 
 interface Props {
   usuarioId: string
@@ -56,12 +56,12 @@ const lbl: React.CSSProperties = {
 
 // ── Rodapé fixo com total ────────────────────────────────
 function RodapeTotal({
-  valorTotal, kitSelecionado, adicionaisSel, etapa,
+  valorTotal, kitSelecionado, adicionaisSel, etapaDisplay,
 }: {
   valorTotal: number
   kitSelecionado: Kit | null
   adicionaisSel: Adicional[]
-  etapa: number
+  etapaDisplay: number
 }) {
   if (valorTotal === 0) return null
   return (
@@ -89,7 +89,7 @@ function RodapeTotal({
           )}
         </div>
         <div style={{ background: '#fff0fb', border: '1px solid #ffd6f5', borderRadius: '10px', padding: '6px 12px', flexShrink: 0 }}>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#ff33cc', margin: '0 0 1px', letterSpacing: '0.3px' }}>Etapa {etapa}</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#ff33cc', margin: '0 0 1px', letterSpacing: '0.3px' }}>Etapa {etapaDisplay}</p>
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: 0 }}>Preço pode variar</p>
         </div>
       </div>
@@ -99,8 +99,12 @@ function RodapeTotal({
 
 export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLoja, telefone, vagasPadrao }: Props) {
   const supabase = createClient()
-  const temKits     = kits.length > 0
-  const totalEtapas = temKits ? 4 : 3
+  const temKits      = kits.length > 0
+  const temAdicionais = adicionais.length > 0
+
+  // Sequência de etapas existentes (1=ocasião, 2=tema, 3=kit, 4=adicionais, 5=dados, 6=confirm)
+  const STEPS = [1, 2, ...(temKits ? [3] : []), ...(temAdicionais ? [4] : []), 5, 6]
+  const totalEtapas = STEPS.length
 
   const [etapa, setEtapa]             = useState(1)
   const [enviando, setEnviando]       = useState(false)
@@ -135,7 +139,6 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
     return lista
   })()
 
-  // Verifica se algum tema tem foto
   const temasTemFoto = temas.some(t => !!t.foto_url)
 
   const valorAdicionais = adicionaisSel.reduce((s, a) => s + a.preco, 0)
@@ -155,13 +158,16 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
     setVerificandoVagas(false)
   }
 
-  function etapaAnterior() {
-    if (etapa === 4 && !temKits) setEtapa(2)
-    else setEtapa(e => e - 1)
-  }
+  const etapaIdx = STEPS.indexOf(etapa)
+  const etapaDisplay = etapaIdx + 1
+
   function proximaEtapa() {
-    if (etapa === 2 && !temKits) setEtapa(4)
-    else setEtapa(e => e + 1)
+    const next = STEPS[etapaIdx + 1]
+    if (next) setEtapa(next)
+  }
+  function etapaAnterior() {
+    const prev = STEPS[etapaIdx - 1]
+    if (prev) setEtapa(prev)
   }
 
   function montarMensagemWA(): string {
@@ -216,6 +222,10 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
   const vagasDisponiveis = vagasInfo ? vagasInfo.total - vagasInfo.usadas : null
   const dataEsgotada = vagasDisponiveis !== null && vagasDisponiveis <= 0
 
+  // Adicionais agrupados por categoria
+  const categoriasAdicionais = [...new Set(adicionais.map(a => a.categoria).filter(Boolean))] as string[]
+  const adicionaisSemCategoria = adicionais.filter(a => !a.categoria)
+
   // ── Sucesso ──────────────────────────────────────────────
   if (pedidoFeito) {
     return (
@@ -263,11 +273,11 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
       <div style={{ background: '#ff33cc', padding: '20px 24px' }}>
         <div style={{ maxWidth: '480px', margin: '0 auto' }}>
           <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '16px', color: '#fff', margin: '0 0 2px' }}>{nomeLoja ?? 'Fazer pedido'}</p>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.8)', margin: 0 }}>Passo {etapa} de {totalEtapas}</p>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.8)', margin: 0 }}>Passo {etapaDisplay} de {totalEtapas}</p>
         </div>
       </div>
       <div style={{ height: '3px', background: '#ffd6f5' }}>
-        <div style={{ height: '100%', width: `${(etapa / totalEtapas) * 100}%`, background: '#ff33cc', transition: 'width .3s ease' }} />
+        <div style={{ height: '100%', width: `${(etapaDisplay / totalEtapas) * 100}%`, background: '#ff33cc', transition: 'width .3s ease' }} />
       </div>
 
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '24px 20px 32px' }}>
@@ -294,9 +304,8 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: 0 }}>Prossiga para escolher o tema</p>
               </div>
             )}
-            {/* Botão fixo */}
             <div style={{ position: 'sticky', bottom: 16, zIndex: 10 }}>
-              <button onClick={() => setEtapa(2)} style={btnPrimario()}>
+              <button onClick={proximaEtapa} style={btnPrimario()}>
                 {ocasiao ? `${ocasiao} →` : 'Pular este passo'} <IconChevRight />
               </button>
             </div>
@@ -313,7 +322,6 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
 
             {temas.length > 0 && !mostrarTemaLivre && (
               <>
-                {/* Campo de busca rápida */}
                 <div style={{ position: 'relative', marginBottom: '12px' }}>
                   <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', display: 'flex', pointerEvents: 'none' }}><IconSearch /></span>
                   <input
@@ -326,7 +334,6 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                   />
                 </div>
 
-                {/* Grade com foto OU lista sem foto */}
                 {temasTemFoto ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '12px' }}>
                     {temasFiltrados.map(tema => {
@@ -336,8 +343,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                           style={{ background: sel ? '#fff0fb' : '#fff', border: `2px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '14px', cursor: 'pointer', overflow: 'hidden', padding: 0, textAlign: 'left', transition: 'border-color .12s' }}>
                           <div style={{ height: '80px', background: '#f5f0ff', position: 'relative', overflow: 'hidden' }}>
                             {tema.foto_url
-                              ?
-              <img src={tema.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={tema.nome} />
+                              ? <img src={tema.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={tema.nome} />
                               : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' }}>🎨</div>}
                             {sel && <div style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><IconCheckSm /></div>}
                           </div>
@@ -352,7 +358,6 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                     )}
                   </div>
                 ) : (
-                  // Lista sem foto
                   <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', marginBottom: '12px' }}>
                     {temasFiltrados.length === 0 ? (
                       <div style={{ padding: '24px', textAlign: 'center' }}>
@@ -387,7 +392,6 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
               </div>
             )}
 
-            {/* Botões fixos no rodapé — "Não achei" + "Próximo" */}
             <div style={{ position: 'sticky', bottom: 16, zIndex: 10, display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {temas.length > 0 && !mostrarTemaLivre && (
                 <button onClick={() => { setMostrarTemaLivre(true); setTemaSelecionado(null) }}
@@ -422,11 +426,11 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
                     style={{ background: sel ? '#fff0fb' : '#fff', border: `2px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '16px', padding: '16px', cursor: 'pointer', textAlign: 'left', display: 'flex', gap: '12px', transition: 'border-color .12s' }}>
                     {kit.foto_url && (
                       <div style={{ width: 56, height: 56, borderRadius: '10px', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
-              <img src={kit.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={kit.nome} />
+                        <img src={kit.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={kit.nome} />
                       </div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2px' }}>
                         <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>{kit.nome}</p>
                         <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '15px', color: '#ff33cc', margin: 0, letterSpacing: '-0.3px', flexShrink: 0, marginLeft: '8px' }}>R$ {Number(kit.preco).toFixed(2).replace('.', ',')}</p>
                       </div>
@@ -443,32 +447,6 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
               })}
             </div>
 
-            {adicionais.length > 0 && (
-              <>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 10px' }}>Adicionais <span style={{ color: '#9ca3af', fontWeight: 400 }}>— opcional</span></p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                  {adicionais.map(a => {
-                    const sel = !!adicionaisSel.find(x => x.id === a.id)
-                    return (
-                      <button key={a.id} onClick={() => toggleAdicional(a)}
-                        style={{ background: sel ? '#fff0fb' : '#fff', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '12px', padding: '12px 14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color .12s' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          {a.foto_url && (
-                            <div style={{ width: 36, height: 36, borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
-              <img src={a.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={a.nome} />
-                            </div>
-                          )}
-                          <div style={{ width: 20, height: 20, borderRadius: '999px', background: sel ? '#ff33cc' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff' }}>{sel && <IconCheckSm />}</div>
-                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0 }}>{a.nome}</p>
-                        </div>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#ff33cc', margin: 0 }}>+ R$ {Number(a.preco).toFixed(2).replace('.', ',')}</p>
-                      </button>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-
             <div style={{ position: 'sticky', bottom: 16, zIndex: 10, display: 'flex', gap: '10px' }}>
               <button onClick={etapaAnterior} style={btnGhost}><IconChevLeft /></button>
               <button onClick={proximaEtapa} disabled={!kitSelecionado} style={{ ...btnPrimario(!kitSelecionado), flex: 1 }}>Próximo <IconChevRight /></button>
@@ -476,8 +454,84 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
           </div>
         )}
 
-        {/* ════ ETAPA 4 — DADOS ════ */}
-        {etapa === 4 && (
+        {/* ════ ETAPA 4 — ADICIONAIS ════ */}
+        {etapa === 4 && temAdicionais && (
+          <div>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '20px', color: '#111827', margin: '0 0 4px' }}>Adicionais</p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: '0 0 20px' }}>Itens opcionais para complementar seu pedido</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+              {/* Categorias com adicionais */}
+              {categoriasAdicionais.map(categoria => {
+                const itensCategoria = adicionais.filter(a => a.categoria === categoria)
+                return (
+                  <div key={categoria}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 10px' }}>{categoria}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {itensCategoria.map(a => {
+                        const sel = !!adicionaisSel.find(x => x.id === a.id)
+                        return (
+                          <button key={a.id} onClick={() => toggleAdicional(a)}
+                            style={{ background: sel ? '#fff0fb' : '#fff', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '12px', padding: '12px 14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color .12s' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              {a.foto_url && (
+                                <div style={{ width: 36, height: 36, borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+                                  <img src={a.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={a.nome} />
+                                </div>
+                              )}
+                              <div style={{ width: 20, height: 20, borderRadius: '999px', background: sel ? '#ff33cc' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff' }}>{sel && <IconCheckSm />}</div>
+                              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0 }}>{a.nome}</p>
+                            </div>
+                            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#ff33cc', margin: 0 }}>+ R$ {Number(a.preco).toFixed(2).replace('.', ',')}</p>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Adicionais sem categoria */}
+              {adicionaisSemCategoria.length > 0 && (
+                <div>
+                  {categoriasAdicionais.length > 0 && (
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 10px' }}>Outros</p>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {adicionaisSemCategoria.map(a => {
+                      const sel = !!adicionaisSel.find(x => x.id === a.id)
+                      return (
+                        <button key={a.id} onClick={() => toggleAdicional(a)}
+                          style={{ background: sel ? '#fff0fb' : '#fff', border: `1.5px solid ${sel ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '12px', padding: '12px 14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color .12s' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {a.foto_url && (
+                              <div style={{ width: 36, height: 36, borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+                                <img src={a.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={a.nome} />
+                              </div>
+                            )}
+                            <div style={{ width: 20, height: 20, borderRadius: '999px', background: sel ? '#ff33cc' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff' }}>{sel && <IconCheckSm />}</div>
+                            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#111827', margin: 0 }}>{a.nome}</p>
+                          </div>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#ff33cc', margin: 0 }}>+ R$ {Number(a.preco).toFixed(2).replace('.', ',')}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ position: 'sticky', bottom: 16, zIndex: 10, display: 'flex', gap: '10px' }}>
+              <button onClick={etapaAnterior} style={btnGhost}><IconChevLeft /></button>
+              <button onClick={proximaEtapa} style={{ ...btnPrimario(), flex: 1 }}>
+                {adicionaisSel.length > 0 ? `${adicionaisSel.length} adicional${adicionaisSel.length > 1 ? 'is' : ''} selecionado${adicionaisSel.length > 1 ? 's' : ''} →` : 'Pular'} <IconChevRight />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ════ ETAPA 5 — DADOS ════ */}
+        {etapa === 5 && (
           <div>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '20px', color: '#111827', margin: '0 0 4px' }}>Seus dados</p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: '0 0 20px' }}>Preencha para finalizar o pedido</p>
@@ -524,7 +578,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
             </div>
             <div style={{ position: 'sticky', bottom: 16, zIndex: 10, display: 'flex', gap: '10px', marginTop: '20px' }}>
               <button onClick={etapaAnterior} style={btnGhost}><IconChevLeft /></button>
-              <button onClick={() => setEtapa(5)} disabled={!form.nome_cliente || !form.data_evento || dataEsgotada}
+              <button onClick={proximaEtapa} disabled={!form.nome_cliente || !form.data_evento || dataEsgotada}
                 style={{ ...btnPrimario(!form.nome_cliente || !form.data_evento || dataEsgotada), flex: 1 }}>
                 Revisar pedido <IconChevRight />
               </button>
@@ -532,22 +586,22 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
           </div>
         )}
 
-        {/* ════ ETAPA 5 — CONFIRMAÇÃO ════ */}
-        {etapa === 5 && (
+        {/* ════ ETAPA 6 — CONFIRMAÇÃO ════ */}
+        {etapa === 6 && (
           <div>
             <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '20px', color: '#111827', margin: '0 0 4px' }}>Confirmar pedido</p>
             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', margin: '0 0 20px' }}>Verifique antes de enviar</p>
             <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '16px', padding: '18px', marginBottom: '14px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
-                  { label: 'Ocasião',    value: ocasiao,                                          show: !!ocasiao },
+                  { label: 'Ocasião',    value: ocasiao,                                              show: !!ocasiao },
                   { label: 'Tema',       value: mostrarTemaLivre ? temaLivre : temaSelecionado?.nome, show: !!(mostrarTemaLivre ? temaLivre : temaSelecionado) },
-                  { label: 'Kit',        value: kitSelecionado?.nome,                             show: !!kitSelecionado },
-                  { label: 'Nome',       value: form.nome_cliente,                                show: true },
+                  { label: 'Kit',        value: kitSelecionado?.nome,                                 show: !!kitSelecionado },
+                  { label: 'Adicionais', value: adicionaisSel.map(a => a.nome).join(', '),            show: adicionaisSel.length > 0 },
+                  { label: 'Nome',       value: form.nome_cliente,                                    show: true },
                   { label: 'Data',       value: new Date(form.data_evento + 'T00:00:00').toLocaleDateString('pt-BR'), show: true },
-                  { label: 'WhatsApp',   value: form.telefone_cliente,                            show: !!form.telefone_cliente },
-                  { label: 'Pagamento',  value: form.forma_pagamento,                             show: !!form.forma_pagamento },
-                  { label: 'Adicionais', value: adicionaisSel.map(a => a.nome).join(', '),        show: adicionaisSel.length > 0 },
+                  { label: 'WhatsApp',   value: form.telefone_cliente,                                show: !!form.telefone_cliente },
+                  { label: 'Pagamento',  value: form.forma_pagamento,                                 show: !!form.forma_pagamento },
                 ].filter(i => i.show).map((item, idx) => (
                   <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
                     <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', flexShrink: 0 }}>{item.label}</span>
@@ -568,7 +622,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
               </div>
             )}
             <div style={{ position: 'sticky', bottom: 16, zIndex: 10, display: 'flex', gap: '10px' }}>
-              <button onClick={() => setEtapa(4)} style={btnGhost}><IconChevLeft /></button>
+              <button onClick={etapaAnterior} style={btnGhost}><IconChevLeft /></button>
               <button onClick={enviarPedido} disabled={enviando}
                 style={{ ...btnPrimario(enviando), flex: 1, background: enviando ? '#f3f4f6' : '#25D366' }}>
                 {enviando ? 'Enviando...' : <><IconWA /> Enviar pedido</>}
@@ -583,7 +637,7 @@ export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLo
         valorTotal={valorTotal}
         kitSelecionado={kitSelecionado}
         adicionaisSel={adicionaisSel}
-        etapa={etapa}
+        etapaDisplay={etapaDisplay}
       />
     </div>
   )
