@@ -123,7 +123,7 @@ function ModalPedido({ onClose, pedidoEditando, dataInicial, usuarioId, temas, k
     setErro('')
     startTransition(async () => {
       try {
-        const payload = { usuario_id: usuarioId, nome_cliente: nomeFinal, telefone_cliente: form.telefone_cliente || null, data_evento: form.data_evento, valor_total: Number(form.valor_total.replace(',', '.')), status: form.status, tema_id: form.tema_id || null, catalogo_kit_id: form.kit_id || null, forma_pagamento: form.forma_pagamento || null, observacoes: form.observacoes || null, cliente_id: form.cliente_id || null }
+        const payload = { usuario_id: usuarioId, nome_cliente: nomeFinal, telefone_cliente: form.telefone_cliente || null, data_evento: form.data_evento, valor_total: Number(form.valor_total.replace(',', '.')), status: form.status, tema_id: form.tema_id || null, catalogo_kit_id: form.kit_id || null, forma_pagamento: form.forma_pagamento || null, observacoes: form.observacoes || null, cliente_id: form.cliente_id || null, origem: 'manual' }
         if (isEdicao) {
           const { data, error } = await supabase.from('pedidos').update({ ...payload, atualizado_em: new Date().toISOString() }).eq('id', pedidoEditando!.id).eq('usuario_id', usuarioId).select('*, catalogo_temas(nome), catalogo_kits(nome)').single()
           if (error) { setErro('Erro ao atualizar: ' + error.message); return }

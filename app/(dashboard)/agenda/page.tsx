@@ -26,6 +26,7 @@ export default async function PaginaAgenda() {
     .from('pedidos')
     .select('*', { count: 'exact', head: true })
     .eq('usuario_id', user.id)
+    .eq('origem', 'manual')
     .gte('criado_em', inicioMes.toISOString())
 
   const limiteEventos = limites.eventosPorMes
