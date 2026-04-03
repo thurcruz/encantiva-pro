@@ -97,12 +97,8 @@ function RodapeTotal({
   )
 }
 
-export default function FluxoPedido({ usuarioId, temas, kits: kitsProps, adicionais, nomeLoja, telefone, vagasPadrao }: Props) {
+export default function FluxoPedido({ usuarioId, temas, kits, adicionais, nomeLoja, telefone, vagasPadrao }: Props) {
   const supabase = createClient()
-  const kits = kitsProps.filter(k =>
-    k.origem !== 'calculadora' &&
-    k.descricao?.trim() !== 'Kit exportado da calculadora'
-  )
   const temKits      = kits.length > 0
   const temAdicionais = adicionais.length > 0
 
@@ -438,7 +434,9 @@ export default function FluxoPedido({ usuarioId, temas, kits: kitsProps, adicion
                         <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>{kit.nome}</p>
                         <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '15px', color: '#ff33cc', margin: 0, letterSpacing: '-0.3px', flexShrink: 0, marginLeft: '8px' }}>R$ {Number(kit.preco).toFixed(2).replace('.', ',')}</p>
                       </div>
-                      {kit.descricao && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 6px' }}>{kit.descricao}</p>}
+                      {kit.descricao && kit.descricao !== 'Kit exportado da calculadora' && (
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 6px' }}>{kit.descricao}</p>
+                      )}
                       {Array.isArray(kit.itens) && kit.itens.length > 0 && (
                         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                           {kit.itens.map((item: string) => <span key={item} style={{ background: '#f5f0ff', color: '#7700ff', borderRadius: '999px', padding: '2px 8px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600 }}>{item}</span>)}
