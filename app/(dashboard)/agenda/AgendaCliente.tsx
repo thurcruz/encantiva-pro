@@ -210,12 +210,30 @@ function ModalPedido({ onClose, pedidoEditando, dataInicial, usuarioId, temas, k
             <div><label style={labelStyle}>Valor total *</label><input style={inputStyle} placeholder="0,00" value={form.valor_total} onChange={e => setForm(f => ({ ...f, valor_total: e.target.value }))} /></div>
             <div><label style={labelStyle}>Pagamento</label><select style={inputStyle} value={form.forma_pagamento} onChange={e => setForm(f => ({ ...f, forma_pagamento: e.target.value }))}><option value="">Selecione</option><option value="Pix">Pix</option><option value="Dinheiro">Dinheiro</option><option value="Cartão de crédito">Cartão de crédito</option><option value="Cartão de débito">Cartão de débito</option><option value="Transferência">Transferência</option></select></div>
           </div>
-          {(temas.length > 0 || kits.length > 0) && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {temas.length > 0 && <div><label style={labelStyle}>Tema</label><select style={inputStyle} value={form.tema_id} onChange={e => setForm(f => ({ ...f, tema_id: e.target.value, kit_id: '' }))}><option value="">Todos os temas</option>{temas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}</select></div>}
-              {kits.length > 0 && <div><label style={labelStyle}>Kit ({kitsFiltrados.length})</label><select style={inputStyle} value={form.kit_id} onChange={e => setForm(f => ({ ...f, kit_id: e.target.value }))}><option value="">Selecione o kit</option>{kitsFiltrados.map(k => <option key={k.id} value={k.id}>{k.nome}</option>)}</select></div>}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div>
+              <label style={labelStyle}>Tema / Ocasião</label>
+              {temas.length > 0 ? (
+                <select style={inputStyle} value={form.tema_id} onChange={e => setForm(f => ({ ...f, tema_id: e.target.value, kit_id: '' }))}>
+                  <option value="">Selecione o tema</option>
+                  {temas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                </select>
+              ) : (
+                <input style={{ ...inputStyle, color: '#9ca3af' }} value="Nenhum tema cadastrado" disabled />
+              )}
             </div>
-          )}
+            <div>
+              <label style={labelStyle}>Kit ({kitsFiltrados.length})</label>
+              {kits.length > 0 ? (
+                <select style={inputStyle} value={form.kit_id} onChange={e => setForm(f => ({ ...f, kit_id: e.target.value }))}>
+                  <option value="">Selecione o kit</option>
+                  {kitsFiltrados.map(k => <option key={k.id} value={k.id}>{k.nome}</option>)}
+                </select>
+              ) : (
+                <input style={{ ...inputStyle, color: '#9ca3af' }} value="Nenhum kit cadastrado" disabled />
+              )}
+            </div>
+          </div>
           <div><label style={labelStyle}>Observações</label><textarea style={{ ...inputStyle, resize: 'vertical', minHeight: '68px' }} placeholder="Detalhes extras sobre o evento..." value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} /></div>
           {erro && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '8px 12px', margin: 0 }}>{erro}</p>}
           <button onClick={handleSalvar} disabled={isPending || salvo} style={{ ...btnPrimario, width: '100%', padding: '14px', borderRadius: '999px', fontSize: '14px', background: salvo ? '#059669' : '#ff33cc', opacity: isPending ? 0.75 : 1, cursor: isPending || salvo ? 'default' : 'pointer', transition: 'background .2s, opacity .2s' }}>
@@ -350,7 +368,14 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
         <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '16px', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f3f4f6' }}>
             <button onClick={mesAnterior} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}><IconChevLeft /></button>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>{MESES_FULL[mes]} {ano}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>{MESES_FULL[mes]} {ano}</p>
+              {filtro !== 'todos' && (
+                <span style={{ background: '#fff0fb', color: '#ff33cc', borderRadius: '999px', padding: '2px 10px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700 }}>
+                  Mostrando: {STATUS[filtro]?.label}
+                </span>
+              )}
+            </div>
             <button onClick={proximoMes} style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}><IconChevRight /></button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid #f3f4f6' }}>
