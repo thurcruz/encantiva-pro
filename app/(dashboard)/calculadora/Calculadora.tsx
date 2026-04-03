@@ -309,7 +309,7 @@ export default function Calculadora({ acervo }: Props) {
       if (!user) return
       await supabase.from('catalogo_kits').insert({
         usuario_id: user.id, nome: modalExportar.kit.nome,
-        descricao: 'Kit exportado da calculadora', preco: precoExportar,
+        descricao: 'Kit exportado da calculadora', origem: 'calculadora', preco: precoExportar,
         itens: [...(modalExportar.kit.itens ?? []), ...(modalExportar.kit.consumiveis ?? [])].map(i => i.nome).filter(Boolean),
         foto_url: null,
       })
