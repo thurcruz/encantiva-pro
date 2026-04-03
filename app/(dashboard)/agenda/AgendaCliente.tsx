@@ -28,7 +28,7 @@ interface Props {
   pedidos: Pedido[]
   usuarioId: string
   temas: { id: string; nome: string }[]
-  kits: { id: string; nome: string; tema_id: string }[]
+  kits: { id: string; nome: string; catalogo_tema_id: string | null }[]
   clientes: Cliente[]
   limiteAtingido?: boolean
 }
@@ -83,20 +83,20 @@ const btnSecundario: React.CSSProperties = {
 
 interface FormPedido {
   nome_cliente: string; telefone_cliente: string; data_evento: string
-  valor_total: string; status: string; tema_id: string; kit_id: string
+  valor_total: string; status: string; ocasiao: string; tema_id: string; kit_id: string
   forma_pagamento: string; observacoes: string; cliente_id: string
 }
 
 function formVazio(dataInicial: string): FormPedido {
-  return { nome_cliente: '', telefone_cliente: '', data_evento: dataInicial, valor_total: '', status: 'pendente', tema_id: '', kit_id: '', forma_pagamento: '', observacoes: '', cliente_id: '' }
+  return { nome_cliente: '', telefone_cliente: '', data_evento: dataInicial, valor_total: '', status: 'pendente', ocasiao: '', tema_id: '', kit_id: '', forma_pagamento: '', observacoes: '', cliente_id: '' }
 }
 function pedidoParaForm(p: Pedido): FormPedido {
-  return { nome_cliente: p.nome_cliente, telefone_cliente: p.telefone_cliente ?? '', data_evento: p.data_evento, valor_total: Number(p.valor_total).toFixed(2).replace('.', ','), status: p.status, tema_id: '', kit_id: '', forma_pagamento: p.forma_pagamento ?? '', observacoes: p.observacoes ?? '', cliente_id: p.cliente_id ?? '' }
+  return { nome_cliente: p.nome_cliente, telefone_cliente: p.telefone_cliente ?? '', data_evento: p.data_evento, valor_total: Number(p.valor_total).toFixed(2).replace('.', ','), status: p.status, ocasiao: '', tema_id: '', kit_id: '', forma_pagamento: p.forma_pagamento ?? '', observacoes: p.observacoes ?? '', cliente_id: p.cliente_id ?? '' }
 }
 
 function ModalPedido({ onClose, pedidoEditando, dataInicial, usuarioId, temas, kits, clientes, onSalvo, onDeletado }: {
   onClose: () => void; pedidoEditando: Pedido | null; dataInicial: string; usuarioId: string
-  temas: { id: string; nome: string }[]; kits: { id: string; nome: string; tema_id: string }[]
+  temas: { id: string; nome: string; categorias?: string[]; categoria?: string }[]; kits: { id: string; nome: string; catalogo_tema_id: string | null }[]
   clientes: Cliente[]; onSalvo: (pedido: Pedido, isEdicao: boolean) => void; onDeletado: (id: string) => void
 }) {
   const isEdicao = !!pedidoEditando
@@ -108,7 +108,9 @@ function ModalPedido({ onClose, pedidoEditando, dataInicial, usuarioId, temas, k
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false)
   const supabase = createClient()
   const clientesFiltrados = buscaCliente.length >= 1 ? clientes.filter(c => c.nome.toLowerCase().includes(buscaCliente.toLowerCase())).slice(0, 5) : []
-  const kitsFiltrados = form.tema_id ? kits.filter(k => k.tema_id === form.tema_id) : kits
+  const kitsFiltrados = form.tema_id
+    ? kits.filter(k => k.catalogo_tema_id === form.tema_id)
+    : kits
 
   function selecionarCliente(c: Cliente) {
     setBuscaCliente(c.nome); setForm(f => ({ ...f, nome_cliente: c.nome, telefone_cliente: c.telefone ?? f.telefone_cliente, cliente_id: c.id })); setMostrarSugestoes(false)
@@ -210,29 +212,52 @@ function ModalPedido({ onClose, pedidoEditando, dataInicial, usuarioId, temas, k
             <div><label style={labelStyle}>Valor total *</label><input style={inputStyle} placeholder="0,00" value={form.valor_total} onChange={e => setForm(f => ({ ...f, valor_total: e.target.value }))} /></div>
             <div><label style={labelStyle}>Pagamento</label><select style={inputStyle} value={form.forma_pagamento} onChange={e => setForm(f => ({ ...f, forma_pagamento: e.target.value }))}><option value="">Selecione</option><option value="Pix">Pix</option><option value="Dinheiro">Dinheiro</option><option value="Cartão de crédito">Cartão de crédito</option><option value="Cartão de débito">Cartão de débito</option><option value="Transferência">Transferência</option></select></div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          {/* Ocasião → Tema → Kit */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Ocasião */}
             <div>
-              <label style={labelStyle}>Tema / Ocasião</label>
-              {temas.length > 0 ? (
-                <select style={inputStyle} value={form.tema_id} onChange={e => setForm(f => ({ ...f, tema_id: e.target.value, kit_id: '' }))}>
-                  <option value="">Selecione o tema</option>
-                  {temas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
-                </select>
-              ) : (
-                <input style={{ ...inputStyle, color: '#9ca3af' }} value="Nenhum tema cadastrado" disabled />
+              <label style={labelStyle}>Ocasião</label>
+              {temas.length > 0 ? (() => {
+                const ocasioes = [...new Set(temas.flatMap(t => t.categorias ?? (t.categoria ? [t.categoria] : [])))]
+                return (
+                  <select style={inputStyle} value={form.ocasiao} onChange={e => setForm(f => ({ ...f, ocasiao: e.target.value, tema_id: '', kit_id: '' }))}>
+                    <option value="">Selecione a ocasião</option>
+                    {ocasioes.sort().map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                )
+              })() : (
+                <input style={{ ...inputStyle, color: '#9ca3af' }} value="Nenhuma ocasião cadastrada" disabled />
               )}
             </div>
-            <div>
-              <label style={labelStyle}>Kit ({kitsFiltrados.length})</label>
-              {kits.length > 0 ? (
+            {/* Tema filtrado pela ocasião */}
+            {(form.ocasiao || temas.length > 0) && (
+              <div>
+                <label style={labelStyle}>Tema</label>
+                {(() => {
+                  const temasFiltrados = form.ocasiao
+                    ? temas.filter(t => (t.categorias ?? (t.categoria ? [t.categoria] : [])).includes(form.ocasiao))
+                    : temas
+                  return temasFiltrados.length > 0 ? (
+                    <select style={inputStyle} value={form.tema_id} onChange={e => setForm(f => ({ ...f, tema_id: e.target.value, kit_id: '' }))}>
+                      <option value="">Selecione o tema</option>
+                      {temasFiltrados.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                    </select>
+                  ) : (
+                    <input style={{ ...inputStyle, color: '#9ca3af' }} value={form.ocasiao ? `Nenhum tema para "${form.ocasiao}"` : 'Selecione a ocasião primeiro'} disabled />
+                  )
+                })()}
+              </div>
+            )}
+            {/* Kit filtrado pelo tema */}
+            {kits.length > 0 && (
+              <div>
+                <label style={labelStyle}>Kit {kitsFiltrados.length > 0 ? `(${kitsFiltrados.length})` : ''}</label>
                 <select style={inputStyle} value={form.kit_id} onChange={e => setForm(f => ({ ...f, kit_id: e.target.value }))}>
-                  <option value="">Selecione o kit</option>
+                  <option value="">{form.tema_id ? 'Selecione o kit' : 'Selecione um tema primeiro'}</option>
                   {kitsFiltrados.map(k => <option key={k.id} value={k.id}>{k.nome}</option>)}
                 </select>
-              ) : (
-                <input style={{ ...inputStyle, color: '#9ca3af' }} value="Nenhum kit cadastrado" disabled />
-              )}
-            </div>
+              </div>
+            )}
           </div>
           <div><label style={labelStyle}>Observações</label><textarea style={{ ...inputStyle, resize: 'vertical', minHeight: '68px' }} placeholder="Detalhes extras sobre o evento..." value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} /></div>
           {erro && <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '8px 12px', margin: 0 }}>{erro}</p>}

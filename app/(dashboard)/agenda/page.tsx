@@ -36,8 +36,8 @@ export default async function PaginaAgenda() {
 
   const [{ data: pedidos }, { data: temas }, { data: kits }, { data: clientes }] = await Promise.all([
     supabase.from('pedidos').select('*, catalogo_temas(nome), catalogo_kits(nome)').eq('usuario_id', user.id).order('data_evento', { ascending: true }),
-    supabase.from('catalogo_temas').select('id, nome').eq('usuario_id', user.id).order('nome'),
-    supabase.from('catalogo_kits').select('id, nome, tema_id').eq('usuario_id', user.id).order('nome'),
+    supabase.from('catalogo_temas').select('id, nome, categorias, categoria').eq('usuario_id', user.id).order('nome'),
+    supabase.from('catalogo_kits').select('id, nome, catalogo_tema_id').eq('usuario_id', user.id).order('nome'),
     supabase.from('clientes').select('id, nome, telefone, email').eq('usuario_id', user.id).order('nome'),
   ])
 
