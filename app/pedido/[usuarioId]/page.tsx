@@ -11,7 +11,7 @@ export default async function PaginaPedido({ params }: { params: Promise<{ usuar
 
   const [{ data: temas }, { data: kits }, { data: adicionais }, { data: perfil }] = await Promise.all([
     supabase.from('catalogo_temas').select('*').eq('usuario_id', usuarioId).eq('ativo', true).order('nome'),
-    supabase.from('catalogo_kits').select('*').eq('usuario_id', usuarioId).neq('descricao', 'Kit exportado da calculadora').order('nome'),
+    supabase.from('catalogo_kits').select('*').eq('usuario_id', usuarioId).or('descricao.is.null,descricao.neq.Kit exportado da calculadora').order('nome'),
     supabase.from('adicionais').select('*').eq('usuario_id', usuarioId).order('nome'),
     supabase.from('perfis').select('nome_loja, telefone, vagas_padrao').eq('id', usuarioId).single(),
   ])
