@@ -24,7 +24,7 @@ export default async function PageHeader({ titulo, subtitulo, maxWidth = '1000px
   const assinaturaAtiva =
     isAdmin ||
     isTrial ||
-    (assinatura?.status === 'ativo' && (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
+    ((assinatura?.status === 'ativo' || assinatura?.status === 'active') && (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
 
   // ✅ Defensivo: nunca quebra mesmo sem perfil ou email
   const nomeOuEmail = perfil?.nome_loja ?? user?.email ?? ''
