@@ -43,11 +43,13 @@ export default async function PaginaFinanceiro() {
     { data: config },
     { data: custosFixos },
     { data: fluxoCaixa },
+    { data: pedidosOcultos },
   ] = await Promise.all([
     supabase.from('pedidos').select('id, nome_cliente, valor_total, status, criado_em, data_evento, forma_pagamento').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
     supabase.from('financeiro_config').select('*').eq('usuario_id', user.id).single(),
     supabase.from('custos_fixos').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
     supabase.from('fluxo_caixa').select('*').eq('usuario_id', user.id).order('data', { ascending: false }),
+    supabase.from('fluxo_caixa_pedidos_ocultos').select('id, pedido_id').eq('usuario_id', user.id),
   ])
 
   return (
@@ -59,6 +61,7 @@ export default async function PaginaFinanceiro() {
           config={config ?? null}
           custosFixos={custosFixos ?? []}
           fluxoCaixa={fluxoCaixa ?? []}
+          pedidosOcultos={pedidosOcultos ?? []}
           usuarioId={user.id}
         />
       </div>

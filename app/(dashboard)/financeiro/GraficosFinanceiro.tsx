@@ -18,9 +18,12 @@ interface Lancamento {
   id: string; tipo: 'entrada' | 'saida'; descricao: string
   valor: number; data: string; categoria: string | null
 }
+interface PedidoOculto { id: string; pedido_id: string }
+
 interface Props {
   pedidos: Pedido[]; config: Config | null
-  custosFixos: CustoFixo[]; fluxoCaixa: Lancamento[]; usuarioId: string
+  custosFixos: CustoFixo[]; fluxoCaixa: Lancamento[]
+  pedidosOcultos: PedidoOculto[]; usuarioId: string
 }
 
 // ── Ícones ───────────────────────────────────────────────
@@ -35,6 +38,9 @@ const IconPrint    = () => <svg width="14" height="14" viewBox="0 0 14 14" fill=
 const IconArrowUp  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6.5 10V3M3 6.5l3.5-3.5 3.5 3.5"/></svg>
 const IconArrowDn  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6.5 3v7M3 6.5l3.5 3.5 3.5-3.5"/></svg>
 const IconEdit     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M9 2l2 2-7 7H2v-2L9 2z"/></svg>
+const IconBarChart = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="7" width="3" height="6" rx="1"/><rect x="5.5" y="4" width="3" height="9" rx="1"/><rect x="10" y="1" width="3" height="12" rx="1"/></svg>
+const IconFlow     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M1 7h12M8 3l4 4-4 4"/><path d="M6 3L2 7l4 4" opacity="0.4"/></svg>
+const IconSettings = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.9 2.9l1.4 1.4M9.7 9.7l1.4 1.4M2.9 11.1l1.4-1.4M9.7 4.3l1.4-1.4"/></svg>
 const IconSave     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 2h7l2 2v7a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M4 2v3h5V2M4 7h5v4H4z"/></svg>
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
@@ -83,7 +89,7 @@ function GraficoLinha({ dados }: { dados: { label: string; total: number }[] }) 
 }
 
 // ── Componente principal ─────────────────────────────────
-export default function GraficosFinanceiro({ pedidos, config: configInicial, custosFixos: custosInicial, fluxoCaixa: fluxoInicial, usuarioId }: Props) {
+export default function GraficosFinanceiro({ pedidos, config: configInicial, custosFixos: custosInicial, fluxoCaixa: fluxoInicial, pedidosOcultos: pedidosOcultosInicial, usuarioId }: Props) {
   const supabase = createClient()
   const agora = new Date()
   const mesAtual = agora.getMonth()
@@ -109,6 +115,10 @@ export default function GraficosFinanceiro({ pedidos, config: configInicial, cus
   const [novoLanc, setNovoLanc] = useState({ tipo: 'entrada' as 'entrada' | 'saida', descricao: '', valor: '', data: agora.toISOString().split('T')[0], categoria: '' })
   const [salvandoLanc, setSalvandoLanc] = useState(false)
   const [filtroFluxoMes, setFiltroFluxoMes] = useState(`${anoAtual}-${String(mesAtual+1).padStart(2,'0')}`)
+  const [pedidosOcultos, setPedidosOcultos] = useState<PedidoOculto[]>(pedidosOcultosInicial)
+  const [editandoPedido, setEditandoPedido] = useState<string | null>(null)
+  const [editValor, setEditValor] = useState('')
+  const [editDescricao, setEditDescricao] = useState('')
 
   // ── Cálculos de período ──────────────────────────────
   function pedidosDoPeriodo(p: Pedido[]) {
@@ -163,8 +173,16 @@ export default function GraficosFinanceiro({ pedidos, config: configInicial, cus
 
   // Fluxo filtrado
   const [anoFluxo, mesFluxo] = filtroFluxoMes.split('-').map(Number)
+  // Pedidos concluídos do mês como entradas automáticas (exceto os ocultos)
+  const ocultoIds = new Set(pedidosOcultos.map(o => o.pedido_id))
+  const entradasAutomaticas = pedidos.filter(p => {
+    const d = new Date(p.data_evento+'T00:00:00')
+    return p.status === 'concluido' && d.getFullYear()===anoFluxo && d.getMonth()===mesFluxo-1 && !ocultoIds.has(p.id)
+  })
   const lancamentosMes = lancamentos.filter(l => { const d=new Date(l.data+'T12:00:00'); return d.getFullYear()===anoFluxo&&d.getMonth()===mesFluxo-1 })
-  const totalEntradasMes = lancamentosMes.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+Number(l.valor),0)
+  const totalEntradasAuto = entradasAutomaticas.reduce((s,p)=>s+Number(p.valor_total),0)
+  const totalEntradasManuais = lancamentosMes.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+Number(l.valor),0)
+  const totalEntradasMes = totalEntradasAuto + totalEntradasManuais
   const totalSaidasMes   = lancamentosMes.filter(l=>l.tipo==='saida').reduce((s,l)=>s+Number(l.valor),0)
   const saldoMes = totalEntradasMes - totalSaidasMes
 
@@ -198,6 +216,17 @@ export default function GraficosFinanceiro({ pedidos, config: configInicial, cus
     const { data, error } = await supabase.from('fluxo_caixa').insert({ usuario_id: usuarioId, tipo: novoLanc.tipo, descricao: novoLanc.descricao.trim(), valor: parseFloat(novoLanc.valor), data: novoLanc.data, categoria: novoLanc.categoria || null }).select().single()
     if (!error && data) { setLancamentos(p=>[data as Lancamento,...p]); setNovoLanc({tipo:'entrada',descricao:'',valor:'',data:agora.toISOString().split('T')[0],categoria:''}) }
     setSalvandoLanc(false)
+  }
+
+  async function ocultarPedido(pedidoId: string) {
+    const { data, error } = await supabase.from('fluxo_caixa_pedidos_ocultos').insert({ usuario_id: usuarioId, pedido_id: pedidoId }).select().single()
+    if (!error && data) setPedidosOcultos(p => [...p, data as PedidoOculto])
+  }
+
+  function iniciarEdicaoPedido(p: Pedido) {
+    setEditandoPedido(p.id)
+    setEditValor(Number(p.valor_total).toFixed(2).replace('.', ','))
+    setEditDescricao(p.nome_cliente)
   }
 
   async function deletarLancamento(id: string) {
@@ -291,9 +320,9 @@ export default function GraficosFinanceiro({ pedidos, config: configInicial, cus
 
   // ── ABAS ────────────────────────────────────────────
   const ABAS = [
-    { key: 'visao', label: '📊 Visão geral' },
-    { key: 'fluxo', label: '💸 Fluxo de caixa' },
-    { key: 'config', label: '⚙️ Configurações' },
+    { key: 'visao', label: 'Visão geral', icon: <IconBarChart /> },
+    { key: 'fluxo', label: 'Fluxo de caixa', icon: <IconFlow /> },
+    { key: 'config', label: 'Metas & Custos', icon: <IconSettings /> },
   ] as const
 
   return (
@@ -302,8 +331,8 @@ export default function GraficosFinanceiro({ pedidos, config: configInicial, cus
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px', flexWrap:'wrap', gap:'10px' }}>
         <div style={{ display:'flex', gap:'6px' }}>
           {ABAS.map(a => (
-            <button key={a.key} onClick={()=>setAba(a.key)} style={{ padding:'8px 16px', borderRadius:'999px', border:`1.5px solid ${aba===a.key?'transparent':'#e8e8ec'}`, background:aba===a.key?'#ff33cc':'#fff', color:aba===a.key?'#fff':'#6b7280', fontFamily:'Inter,sans-serif', fontWeight:700, fontSize:'12px', cursor:'pointer', transition:'all .15s' }}>
-              {a.label}
+            <button key={a.key} onClick={()=>setAba(a.key)} style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'8px 16px', borderRadius:'999px', border:`1.5px solid ${aba===a.key?'transparent':'#e8e8ec'}`, background:aba===a.key?'#ff33cc':'#fff', color:aba===a.key?'#fff':'#6b7280', fontFamily:'Inter,sans-serif', fontWeight:700, fontSize:'12px', cursor:'pointer', transition:'all .15s' }}>
+              {a.icon}{a.label}
             </button>
           ))}
         </div>
@@ -532,33 +561,81 @@ export default function GraficosFinanceiro({ pedidos, config: configInicial, cus
           </div>
 
           {/* Lista de lançamentos */}
-          {lancamentosMes.length === 0 ? (
+          {entradasAutomaticas.length === 0 && lancamentosMes.length === 0 ? (
             <div style={{ ...card, textAlign:'center', padding:'48px' }}>
               <p style={{ fontFamily:'Inter,sans-serif', fontWeight:700, fontSize:'14px', color:'#374151', margin:'0 0 4px' }}>Nenhum lançamento em {MESES_FULL[mesFluxo-1]}</p>
-              <p style={{ fontFamily:'Inter,sans-serif', fontSize:'12px', color:'#9ca3af', margin:0 }}>Registre entradas e saídas acima</p>
+              <p style={{ fontFamily:'Inter,sans-serif', fontSize:'12px', color:'#9ca3af', margin:0 }}>Pedidos concluídos e lançamentos manuais aparecem aqui</p>
             </div>
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-              {lancamentosMes.map(l => (
-                <div key={l.id} style={{ background:'#fff', border:`1px solid ${l.tipo==='entrada'?'#dcfce7':'#fecaca'}`, borderRadius:'12px', padding:'12px 16px', display:'flex', alignItems:'center', gap:'12px' }}>
-                  <div style={{ width:36, height:36, borderRadius:'50%', background:l.tipo==='entrada'?'#f0fdf9':'#fef2f2', color:l.tipo==='entrada'?'#059669':'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    {l.tipo==='entrada'?<IconArrowUp />:<IconArrowDn />}
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <p style={{ fontFamily:'Inter,sans-serif', fontWeight:700, fontSize:'13px', color:'#111827', margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.descricao}</p>
-                    <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
-                      <span style={{ fontFamily:'Inter,sans-serif', fontSize:'11px', color:'#9ca3af' }}>{new Date(l.data+'T12:00:00').toLocaleDateString('pt-BR')}</span>
-                      {l.categoria && <span style={{ background:'#f3f4f6', borderRadius:'999px', padding:'1px 8px', fontFamily:'Inter,sans-serif', fontSize:'10px', fontWeight:600, color:'#6b7280' }}>{l.categoria}</span>}
+              {/* Entradas automáticas dos pedidos */}
+              {entradasAutomaticas.length > 0 && (
+                <>
+                  <p style={{ fontFamily:'Inter,sans-serif', fontSize:'10px', fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.8px', margin:'4px 0 2px 4px' }}>Pedidos concluídos</p>
+                  {entradasAutomaticas.map(p => (
+                    <div key={p.id} style={{ background:'#f0fdf9', border:'1px solid #bbf7d0', borderRadius:'12px', padding:'12px 16px', display:'flex', alignItems:'center', gap:'12px' }}>
+                      <div style={{ width:36, height:36, borderRadius:'50%', background:'#dcfce7', color:'#059669', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <IconArrowUp />
+                      </div>
+                      {editandoPedido === p.id ? (
+                        <div style={{ flex:1, display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap' }}>
+                          <input style={{ ...input, flex:1, minWidth:'120px', padding:'7px 10px', fontSize:'12px' }} value={editDescricao} onChange={e=>setEditDescricao(e.target.value)} placeholder="Descrição"/>
+                          <input style={{ ...input, width:'100px', padding:'7px 10px', fontSize:'12px' }} value={editValor} onChange={e=>setEditValor(e.target.value)} placeholder="Valor"/>
+                          <button onClick={()=>setEditandoPedido(null)} style={{ ...btnPrimario, padding:'7px 12px', fontSize:'11px', background:'#059669' }}>
+                            <IconSave /> Salvar
+                          </button>
+                          <button onClick={()=>setEditandoPedido(null)} style={{ padding:'7px 12px', borderRadius:'999px', border:'1px solid #e8e8ec', background:'#fff', color:'#6b7280', fontFamily:'Inter,sans-serif', fontWeight:600, fontSize:'11px', cursor:'pointer' }}>Cancelar</button>
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'2px' }}>
+                              <p style={{ fontFamily:'Inter,sans-serif', fontWeight:700, fontSize:'13px', color:'#111827', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nome_cliente}</p>
+                              <span style={{ background:'#dcfce7', color:'#059669', borderRadius:'999px', padding:'1px 7px', fontFamily:'Inter,sans-serif', fontSize:'9px', fontWeight:700, flexShrink:0 }}>Automático</span>
+                            </div>
+                            <span style={{ fontFamily:'Inter,sans-serif', fontSize:'11px', color:'#6b7280' }}>{new Date(p.data_evento+'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                          </div>
+                          <span style={{ fontFamily:'Inter,sans-serif', fontWeight:800, fontSize:'14px', color:'#059669', flexShrink:0, letterSpacing:'-0.3px' }}>
+                            + {fmt(p.valor_total)}
+                          </span>
+                          <button onClick={()=>iniciarEdicaoPedido(p)} style={{ width:30, height:30, borderRadius:'999px', border:'1px solid #bbf7d0', background:'#fff', color:'#059669', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                            <IconEdit />
+                          </button>
+                          <button onClick={()=>ocultarPedido(p.id)} style={{ width:30, height:30, borderRadius:'999px', border:'1px solid #fecaca', background:'#fff5f5', color:'#ef4444', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                            <IconTrash />
+                          </button>
+                        </>
+                      )}
                     </div>
-                  </div>
-                  <span style={{ fontFamily:'Inter,sans-serif', fontWeight:800, fontSize:'14px', color:l.tipo==='entrada'?'#059669':'#dc2626', flexShrink:0, letterSpacing:'-0.3px' }}>
-                    {l.tipo==='entrada'?'+':'-'} {fmt(l.valor)}
-                  </span>
-                  <button onClick={()=>deletarLancamento(l.id)} style={{ width:30, height:30, borderRadius:'999px', border:'1px solid #fecaca', background:'#fff5f5', color:'#ef4444', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <IconTrash />
-                  </button>
-                </div>
-              ))}
+                  ))}
+                </>
+              )}
+              {/* Lançamentos manuais */}
+              {lancamentosMes.length > 0 && (
+                <>
+                  <p style={{ fontFamily:'Inter,sans-serif', fontSize:'10px', fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.8px', margin:'8px 0 2px 4px' }}>Lançamentos manuais</p>
+                  {lancamentosMes.map(l => (
+                    <div key={l.id} style={{ background:'#fff', border:`1px solid ${l.tipo==='entrada'?'#dcfce7':'#fecaca'}`, borderRadius:'12px', padding:'12px 16px', display:'flex', alignItems:'center', gap:'12px' }}>
+                      <div style={{ width:36, height:36, borderRadius:'50%', background:l.tipo==='entrada'?'#f0fdf9':'#fef2f2', color:l.tipo==='entrada'?'#059669':'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        {l.tipo==='entrada'?<IconArrowUp />:<IconArrowDn />}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ fontFamily:'Inter,sans-serif', fontWeight:700, fontSize:'13px', color:'#111827', margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.descricao}</p>
+                        <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+                          <span style={{ fontFamily:'Inter,sans-serif', fontSize:'11px', color:'#9ca3af' }}>{new Date(l.data+'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                          {l.categoria && <span style={{ background:'#f3f4f6', borderRadius:'999px', padding:'1px 8px', fontFamily:'Inter,sans-serif', fontSize:'10px', fontWeight:600, color:'#6b7280' }}>{l.categoria}</span>}
+                        </div>
+                      </div>
+                      <span style={{ fontFamily:'Inter,sans-serif', fontWeight:800, fontSize:'14px', color:l.tipo==='entrada'?'#059669':'#dc2626', flexShrink:0, letterSpacing:'-0.3px' }}>
+                        {l.tipo==='entrada'?'+':'-'} {fmt(l.valor)}
+                      </span>
+                      <button onClick={()=>deletarLancamento(l.id)} style={{ width:30, height:30, borderRadius:'999px', border:'1px solid #fecaca', background:'#fff5f5', color:'#ef4444', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <IconTrash />
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>
