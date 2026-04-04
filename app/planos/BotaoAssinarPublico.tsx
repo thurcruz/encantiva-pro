@@ -11,7 +11,6 @@ interface Props {
 
 type Etapa = 'auth' | 'cpf' | 'aguardando'
 
-// ── Formatação CPF/CNPJ ──────────────────────────────────
 function formatarCpfCnpj(valor: string) {
   const n = valor.replace(/\D/g, '')
   if (n.length <= 11) {
@@ -34,18 +33,14 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
   const [etapa, setEtapa]                 = useState<Etapa>('auth')
   const [modoAuth, setModoAuth]           = useState<'cadastro' | 'login'>('cadastro')
 
-  // Auth fields
   const [nome, setNome]     = useState('')
   const [email, setEmail]   = useState('')
   const [senha, setSenha]   = useState('')
-
-  // CPF field
   const [cpfCnpj, setCpfCnpj] = useState('')
 
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro]             = useState<string | null>(null)
 
-  // Ao abrir o modal, checa se já tem sessão → pula direto para CPF
   async function abrirModal() {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
@@ -62,7 +57,6 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
     setErro(null)
   }
 
-  // ── Etapa 1: Autenticação ────────────────────────────────
   async function handleAuth() {
     setErro(null)
     if (!email.trim() || !senha.trim()) { setErro('Preencha e-mail e senha.'); return }
@@ -93,7 +87,6 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
         return
       }
 
-      // Salva o perfil — sem trial (vai assinar plano pago)
       if (data.user && nome) {
         await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nome })
       }
@@ -103,7 +96,6 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
     setEtapa('cpf')
   }
 
-  // ── Etapa 2: CPF e checkout ──────────────────────────────
   function handleCpfChange(e: React.ChangeEvent<HTMLInputElement>) {
     const fmt = formatarCpfCnpj(e.target.value)
     if (fmt.replace(/\D/g, '').length <= 14) setCpfCnpj(fmt)
@@ -135,7 +127,6 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
     }
   }
 
-  // ── Estilos compartilhados ───────────────────────────────
   const inputStyle: React.CSSProperties = {
     width: '100%', boxSizing: 'border-box',
     border: `1.5px solid ${erro ? '#cc0000' : '#e5e5e5'}`,
@@ -166,7 +157,6 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
 
   return (
     <>
-      {/* ── Botão do card ── */}
       <button
         onClick={abrirModal}
         style={{
@@ -181,7 +171,6 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
         Assinar agora
       </button>
 
-      {/* ── Modal ── */}
       {modalAberto && (
         <div
           onClick={(e) => { if (e.target === e.currentTarget) fecharModal() }}
@@ -201,26 +190,24 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
             {/* ─── ETAPA AUTH ─────────────────────────────── */}
             {etapa === 'auth' && (
               <>
-                {/* Header */}
-                <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                  <div style={{
-                    width: 52, height: 52, borderRadius: 16,
-                    background: 'linear-gradient(135deg, #ff33cc, #9900ff)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 24, margin: '0 auto 14px',
-                    boxShadow: '0 8px 24px rgba(255,51,204,0.3)',
-                  }}>
-                    🎀
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #ff33cc, #9900ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(255,51,204,0.3)', flexShrink: 0 }}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 2a4 4 0 100 8 4 4 0 000-8zM4 14c0-2.2 2.7-4 6-4s6 1.8 6 4v1H4v-1z" fill="#fff" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: 18, color: '#140033', margin: '0 0 3px 0' }}>
+                        {modoAuth === 'cadastro' ? 'Crie sua conta' : 'Bem-vinda de volta!'}
+                      </h2>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#00000055', margin: 0 }}>
+                        Plano <strong style={{ color: '#9900ff' }}>{nomePlano}</strong> selecionado
+                      </p>
+                    </div>
                   </div>
-                  <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: 20, color: '#140033', margin: '0 0 6px 0' }}>
-                    {modoAuth === 'cadastro' ? 'Crie sua conta' : 'Bem-vinda de volta!'}
-                  </h2>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#00000055', margin: 0 }}>
-                    Plano <strong style={{ color: '#9900ff' }}>{nomePlano}</strong> selecionado
-                  </p>
                 </div>
 
-                {/* Toggle cadastro / login */}
                 <div style={{
                   display: 'flex', background: '#f5f5f5', borderRadius: 12,
                   padding: 4, marginBottom: 20, gap: 4,
@@ -245,7 +232,6 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
                   ))}
                 </div>
 
-                {/* Campos */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 16 }}>
                   {modoAuth === 'cadastro' && (
                     <div>
@@ -304,21 +290,22 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
             {/* ─── ETAPA CPF ──────────────────────────────── */}
             {etapa === 'cpf' && (
               <>
-                <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                  <div style={{
-                    width: 52, height: 52, borderRadius: 16,
-                    background: '#f0fff8', border: '2px solid #00cc6622',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 24, margin: '0 auto 14px',
-                  }}>
-                    🎉
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 14, background: '#f0fff8', border: '1.5px solid #00cc6622', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 10l4.5 4.5L16 6" stroke="#00aa55" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: 18, color: '#140033', margin: '0 0 3px 0' }}>
+                        Quase lá!
+                      </h2>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#00000055', margin: 0 }}>
+                        Precisamos do seu CPF ou CNPJ para emitir a cobrança.
+                      </p>
+                    </div>
                   </div>
-                  <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: 20, color: '#140033', margin: '0 0 6px 0' }}>
-                    Quase lá!
-                  </h2>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#00000055', margin: 0 }}>
-                    Precisamos do seu CPF ou CNPJ para emitir a cobrança.
-                  </p>
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
@@ -349,13 +336,14 @@ export default function BotaoAssinarPublico({ planoId, destaque, nomePlano }: Pr
             {/* ─── ETAPA AGUARDANDO ───────────────────────── */}
             {etapa === 'aguardando' && (
               <div style={{ textAlign: 'center', padding: '12px 0' }}>
-                <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', border: '2.5px solid #e5e5e5', borderTopColor: '#9900ff', animation: 'spin 0.8s linear infinite', margin: '0 auto 20px' }} />
                 <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: 18, color: '#140033', margin: '0 0 8px 0' }}>
                   Redirecionando para o pagamento...
                 </h2>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#00000055', margin: 0 }}>
                   Você será redirecionada em instantes.
                 </p>
+                <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
               </div>
             )}
 

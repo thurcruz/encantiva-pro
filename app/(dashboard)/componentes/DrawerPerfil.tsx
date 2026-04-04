@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   X, Save, Crown, CheckCircle, Clock, AlertTriangle, XCircle,
-  LogOut, User, Phone, MapPin, FileText, ChevronRight
+  LogOut, FileText, ChevronRight
 } from 'lucide-react'
 
 interface Perfil {
@@ -34,7 +34,7 @@ interface Props {
 
 export default function DrawerPerfil({
   aberto, onFechar, usuarioId, email, inicial, perfil,
-  status, expiraEm, trialExpiraEm, assinaturaAtiva, temSubscriptionId, isAdmin, nomePlano,
+  status, expiraEm, trialExpiraEm, assinaturaAtiva, temSubscriptionId, isAdmin,
 }: Props) {
   const supabase = createClient()
   const router = useRouter()

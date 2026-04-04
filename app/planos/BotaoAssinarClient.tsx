@@ -51,7 +51,6 @@ export default function BotaoAssinarClient({ planoId, destaque }: Props) {
     if (fmt.replace(/\D/g, '').length <= 14) setCpfCnpj(fmt)
   }
 
-  // Ao abrir o modal, verifica se já tem assinatura ativa
   async function abrirModal() {
     setErro(null)
     setCheckingPlano(true)
@@ -82,7 +81,6 @@ export default function BotaoAssinarClient({ planoId, destaque }: Props) {
     }
   }
 
-  // ── Upgrade/downgrade (já tem assinatura ativa) ─────────
   async function handleUpgrade() {
     setCarregando(true)
     setErro(null)
@@ -96,10 +94,8 @@ export default function BotaoAssinarClient({ planoId, destaque }: Props) {
       if (json.erro) throw new Error(json.erro)
 
       if (json.checkoutUrl) {
-        // Upgrade: redireciona para pagar a diferença proporcional
         window.location.href = json.checkoutUrl
       } else {
-        // Downgrade: sem cobrança, só recarrega a página
         window.location.href = '/planos'
       }
     } catch (e) {
@@ -108,7 +104,6 @@ export default function BotaoAssinarClient({ planoId, destaque }: Props) {
     }
   }
 
-  // ── Nova assinatura (sem assinatura ativa) ───────────────
   async function handleAssinar() {
     const numeros = cpfCnpj.replace(/\D/g, '')
     if (numeros.length !== 11 && numeros.length !== 14) {
@@ -152,7 +147,6 @@ export default function BotaoAssinarClient({ planoId, destaque }: Props) {
 
   return (
     <>
-      {/* ── Botão do card ── */}
       <button
         onClick={abrirModal}
         style={{
@@ -167,7 +161,6 @@ export default function BotaoAssinarClient({ planoId, destaque }: Props) {
         Assinar agora
       </button>
 
-      {/* ── Modal ── */}
       {modalAberto && (
         <div
           onClick={(e) => { if (e.target === e.currentTarget) { setModalAberto(false); setErro(null) } }}
@@ -179,7 +172,6 @@ export default function BotaoAssinarClient({ planoId, destaque }: Props) {
         >
           <div style={{ background: '#fff', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 32px 80px rgba(153,0,255,0.2)' }}>
 
-            {/* ── Verificando ── */}
             {checkingPlano && (
               <div style={{ textAlign: 'center', padding: '24px 0' }}>
                 <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid #e5e5e5', borderTopColor: '#9900ff', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
@@ -190,42 +182,52 @@ export default function BotaoAssinarClient({ planoId, destaque }: Props) {
               </div>
             )}
 
-            {/* ── Upgrade / Downgrade ── */}
             {!checkingPlano && modoUpgrade && (
               <>
-                <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                  <div style={{ fontSize: 36, marginBottom: 12 }}>{isUpgrade ? '⬆️' : '⬇️'}</div>
-                  <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: 20, color: '#140033', margin: '0 0 6px 0' }}>
-                    {isUpgrade ? 'Fazer upgrade' : 'Mudar de plano'}
-                  </h2>
-                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#00000055', margin: 0 }}>
-                    {NOMES_PLANO[planoAtual ?? ''] ?? planoAtual}
-                    {' → '}
-                    <strong style={{ color: '#9900ff' }}>{NOMES_PLANO[planoId]}</strong>
-                  </p>
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 14, background: isUpgrade ? 'linear-gradient(135deg, rgba(153,0,255,0.08), rgba(255,51,204,0.08))' : '#fff8ec', border: `1.5px solid ${isUpgrade ? 'rgba(153,0,255,0.15)' : '#ffdd9933'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        {isUpgrade
+                          ? <path d="M9 14V4M5 8l4-4 4 4" stroke="#9900ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          : <path d="M9 4v10M5 10l4 4 4-4" stroke="#cc7700" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        }
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: 18, color: '#140033', margin: '0 0 3px 0' }}>
+                        {isUpgrade ? 'Fazer upgrade' : 'Mudar de plano'}
+                      </h2>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#00000055', margin: 0 }}>
+                        {NOMES_PLANO[planoAtual ?? ''] ?? planoAtual}
+                        {' → '}
+                        <strong style={{ color: '#9900ff' }}>{NOMES_PLANO[planoId]}</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  {isUpgrade && (
+                    <div style={{ background: 'linear-gradient(135deg, rgba(255,51,204,0.06), rgba(153,0,255,0.06))', border: '1px solid rgba(153,0,255,0.15)', borderRadius: 14, padding: '14px 16px' }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: '#9900ff', margin: '0 0 4px 0' }}>
+                        Cobrança proporcional
+                      </p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#00000066', margin: 0, lineHeight: 1.5 }}>
+                        Você pagará apenas a <strong>diferença dos dias restantes</strong> do mês atual. A partir do próximo ciclo, o valor será R$ {valorNovo.toFixed(2).replace('.', ',')}/mês.
+                      </p>
+                    </div>
+                  )}
+
+                  {isDowngrade && (
+                    <div style={{ background: '#fff8ec', border: '1px solid #ffdd9933', borderRadius: 14, padding: '14px 16px' }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: '#cc7700', margin: '0 0 4px 0' }}>
+                        Atenção: downgrade de plano
+                      </p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#00000066', margin: 0, lineHeight: 1.5 }}>
+                        Você perderá acesso a alguns recursos. A mudança valerá a partir do próximo ciclo de cobrança.
+                      </p>
+                    </div>
+                  )}
                 </div>
-
-                {isUpgrade && (
-                  <div style={{ background: 'linear-gradient(135deg, rgba(255,51,204,0.06), rgba(153,0,255,0.06))', border: '1px solid rgba(153,0,255,0.15)', borderRadius: 14, padding: '14px 16px', marginBottom: 20 }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: '#9900ff', margin: '0 0 4px 0' }}>
-                      💳 Cobrança proporcional
-                    </p>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#00000066', margin: 0, lineHeight: 1.5 }}>
-                      Você pagará apenas a <strong>diferença dos dias restantes</strong> do mês atual. A partir do próximo ciclo, o valor será R$ {valorNovo.toFixed(2).replace('.', ',')}/mês.
-                    </p>
-                  </div>
-                )}
-
-                {isDowngrade && (
-                  <div style={{ background: '#fff8ec', border: '1px solid #ffdd9933', borderRadius: 14, padding: '14px 16px', marginBottom: 20 }}>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: '#cc7700', margin: '0 0 4px 0' }}>
-                      ⚠️ Downgrade de plano
-                    </p>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#00000066', margin: 0, lineHeight: 1.5 }}>
-                      Você perderá acesso a alguns recursos. A mudança valerá a partir do próximo ciclo de cobrança.
-                    </p>
-                  </div>
-                )}
 
                 {erro && (
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#cc0000', margin: '0 0 12px 0' }}>{erro}</p>
@@ -240,12 +242,11 @@ export default function BotaoAssinarClient({ planoId, destaque }: Props) {
               </>
             )}
 
-            {/* ── Nova assinatura ── */}
             {!checkingPlano && !modoUpgrade && (
               <>
                 <div style={{ marginBottom: 24 }}>
                   <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: 20, color: '#140033', margin: '0 0 6px 0' }}>
-                    Quase lá! 🎉
+                    Quase lá!
                   </h2>
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#00000066', margin: 0 }}>
                     Precisamos do seu CPF ou CNPJ para emitir a cobrança.
