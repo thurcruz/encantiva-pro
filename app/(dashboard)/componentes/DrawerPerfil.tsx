@@ -122,11 +122,13 @@ export default function DrawerPerfil({
   // Normalizar nome do plano para chave do mapa
   const planoKey = (() => {
     const n = (nomePlano ?? '').toLowerCase().trim()
+    console.log('[DrawerPerfil] nomePlano recebido:', nomePlano, '| normalizado:', n)
     if (n.includes('elite')) return 'elite'
     if (n.includes('avan') || n === 'avancado' || n === 'avançado') return 'avancado'
     if (n.includes('inici')) return 'iniciante'
     if (n === 'free' || n === 'gratis' || n === 'grátis' || n === '') return 'free'
-    return n
+    console.log('[DrawerPerfil] planoKey não reconhecido, usando free. n =', JSON.stringify(n))
+    return 'free'
   })()
   const planoInfo = PLANOS_INFO[planoKey] ?? PLANOS_INFO.free
 
