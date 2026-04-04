@@ -90,7 +90,7 @@ function submenuPos(indice: number, total: number) {
   return { left: `${pct}%`, right: 'auto', transform: 'translateX(-50%)' }
 }
 
-export default function BottomNav({ isAdmin, isBeta, temAcervo }: { isAdmin: boolean; isBeta: boolean; temAcervo: boolean }) {
+export default function BottomNav({ temAcervo }: { isAdmin: boolean; isBeta: boolean; temAcervo: boolean }) {
   const pathname = usePathname()
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
 

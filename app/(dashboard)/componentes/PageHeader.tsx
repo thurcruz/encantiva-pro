@@ -15,22 +15,22 @@ export default async function PageHeader({ titulo, subtitulo, maxWidth = '1000px
 
   const [{ data: perfil }, { data: assinatura }] = await Promise.all([
     supabase.from('perfis').select('nome_loja, cpf_cnpj, telefone, endereco').eq('id', user!.id).single(),
-    supabase.from('assinaturas').select('status, expira_em, trial_expira_em, abacatepay_subscription_id').eq('usuario_id', user!.id).single(),
+    supabase.from('assinaturas').select('status, plano, expira_em, trial_expira_em, abacatepay_subscription_id').eq('usuario_id', user!.id).single(),
   ])
 
   const isAdmin = user!.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
   const agora = new Date()
   const isTrial = !!(assinatura?.trial_expira_em && new Date(assinatura.trial_expira_em) > agora)
-  const diasRestantes = isTrial
-    ? Math.ceil((new Date(assinatura!.trial_expira_em!).getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
-    : 0
   const assinaturaAtiva =
     isAdmin ||
     isTrial ||
     (assinatura?.status === 'ativo' && (!assinatura.expira_em || new Date(assinatura.expira_em) > agora))
 
-  const inicial = (perfil?.nome_loja ?? user!.email ?? 'U')[0].toUpperCase()
-  const nomePlano = isAdmin ? 'Admin' : isTrial ? `Teste · ${diasRestantes}d` : assinatura?.status === 'ativo' ? 'Assinante' : 'Inativo'
+  // ✅ Defensivo: nunca quebra mesmo sem perfil ou email
+  const nomeOuEmail = perfil?.nome_loja ?? user?.email ?? ''
+  const inicial = nomeOuEmail.length > 0 ? nomeOuEmail[0].toUpperCase() : 'U'
+
+  const nomePlano = isAdmin ? 'Admin' : (assinatura?.plano ?? 'free')
 
   return (
     <div style={{
