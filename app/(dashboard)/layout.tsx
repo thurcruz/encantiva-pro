@@ -166,6 +166,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
           <div className="sidebar-divider" />
 
+          {/* Materiais */}
+          <SecaoLabel label="Materiais" />
+          <NavItem href="/materiais" icon={<Package size={16} />}        label="Biblioteca" />
+          <NavItem href="/paineis"   icon={<LayoutTemplate size={16} />} label="Criador de Painéis" />
+
+          <div className="sidebar-divider" />
+
           {/* Financeiro */}
           <SecaoLabel label="Financeiro" />
           <NavItem href="/financeiro"  icon={<TrendingUp size={16} />}  label="Dashboard" />
@@ -174,12 +181,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <NavItem href="/acervo" icon={<Archive size={16} />} label="Acervo" />
           )}
 
-          <div className="sidebar-divider" />
-
-          {/* Materiais */}
-          <SecaoLabel label="Materiais" />
-          <NavItem href="/materiais" icon={<Package size={16} />}        label="Biblioteca" />
-          <NavItem href="/paineis"   icon={<LayoutTemplate size={16} />} label="Criador de Painéis" />
+          
 
           <div className="sidebar-divider" />
 
