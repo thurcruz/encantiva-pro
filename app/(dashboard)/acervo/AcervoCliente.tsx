@@ -185,7 +185,9 @@ function ItemCard({ item, variacoes, usuarioId, onDelete, onUpdate, onAddVariaca
       quantidade: parseInt(novaVar.quantidade) || 1,
       foto_url: novaVar.foto_url || null,
     }).select().single()
-    if (!error && data) {
+    if (error) {
+      alert('Erro ao salvar variação: ' + error.message + ' | Código: ' + error.code)
+    } else if (data) {
       onAddVariacao(data as Variacao)
       setNovaVar({ descricao: '', cor: '', tamanho: '', quantidade: '1', foto_url: null })
     }
