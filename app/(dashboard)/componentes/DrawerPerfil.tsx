@@ -119,8 +119,15 @@ export default function DrawerPerfil({
     ? Math.max(0, Math.ceil((dataExpiracao.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24)))
     : null
 
-  // Normalizar nome do plano para chave
-  const planoKey = nomePlano?.toLowerCase().replace('ç', 'c').replace('ã', 'a').replace('avançado', 'avancado') ?? 'free'
+  // Normalizar nome do plano para chave do mapa
+  const planoKey = (() => {
+    const n = (nomePlano ?? '').toLowerCase().trim()
+    if (n.includes('elite')) return 'elite'
+    if (n.includes('avan') || n === 'avancado' || n === 'avançado') return 'avancado'
+    if (n.includes('inici')) return 'iniciante'
+    if (n === 'free' || n === 'gratis' || n === 'grátis' || n === '') return 'free'
+    return n
+  })()
   const planoInfo = PLANOS_INFO[planoKey] ?? PLANOS_INFO.free
 
   const badge = (() => {
@@ -292,7 +299,7 @@ export default function DrawerPerfil({
                 </div>
               )}
 
-              <button onClick={salvarPerfil} disabled={salvando} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', background: salvando ? '#f0f0f0' : 'linear-gradient(135deg, #ff33cc, #9900ff)', border: 'none', borderRadius: '12px', padding: '13px', color: salvando ? '#00000033' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: salvando ? 'not-allowed' : 'pointer', boxShadow: salvando ? 'none' : '0 4px 16px rgba(255,51,204,0.25)' }}>
+              <button onClick={salvarPerfil} disabled={salvando} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', background: salvando ? '#f0f0f0' : '#ff33cc', border: 'none', borderRadius: '999px', padding: '13px', color: salvando ? '#00000033' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: salvando ? 'not-allowed' : 'pointer' }}>
                 <Save size={14} />
                 {salvando ? 'Salvando...' : 'Salvar dados'}
               </button>
@@ -399,7 +406,7 @@ export default function DrawerPerfil({
                     <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#111827', margin: 0 }}>Desbloqueie mais recursos</p>
                   </div>
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280', margin: '0 0 12px' }}>Contratos ilimitados, financeiro, acervo e muito mais.</p>
-                  <Link href="/planos" onClick={onFechar} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', textDecoration: 'none', boxShadow: '0 4px 14px rgba(255,51,204,0.3)' }}>
+                  <Link href="/planos" onClick={onFechar} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', borderRadius: '999px', padding: '10px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', textDecoration: 'none' }}>
                     <Crown size={13} /> Ver planos
                   </Link>
                 </div>
@@ -429,7 +436,7 @@ export default function DrawerPerfil({
                   <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#374151', margin: '0 0 4px' }}>Cancelar assinatura</p>
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: '0 0 12px' }}>Acesso continua até o fim do período pago.</p>
                   {!confirmarCancel ? (
-                    <button onClick={() => setConfirmarCancel(true)} style={{ background: 'none', border: '1px solid #fca5a5', borderRadius: '10px', padding: '9px 16px', color: '#dc2626', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
+                    <button onClick={() => setConfirmarCancel(true)} style={{ background: 'none', border: '1px solid #fca5a5', borderRadius: '999px', padding: '9px 16px', color: '#dc2626', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
                       Cancelar assinatura
                     </button>
                   ) : (
@@ -438,10 +445,10 @@ export default function DrawerPerfil({
                         <AlertTriangle size={13} /> Tem certeza? Esta ação não pode ser desfeita.
                       </p>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={cancelarAssinatura} disabled={cancelando} style={{ flex: 1, background: '#dc2626', border: 'none', borderRadius: '10px', padding: '10px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', opacity: cancelando ? 0.7 : 1 }}>
+                        <button onClick={cancelarAssinatura} disabled={cancelando} style={{ flex: 1, background: '#dc2626', border: 'none', borderRadius: '999px', padding: '10px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', opacity: cancelando ? 0.7 : 1 }}>
                           {cancelando ? 'Cancelando...' : 'Confirmar'}
                         </button>
-                        <button onClick={() => setConfirmarCancel(false)} style={{ flex: 1, background: '#fff', border: '1px solid #e8e8ec', borderRadius: '10px', padding: '10px', color: '#374151', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
+                        <button onClick={() => setConfirmarCancel(false)} style={{ flex: 1, background: '#fff', border: '1px solid #e8e8ec', borderRadius: '999px', padding: '10px', color: '#374151', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
                           Voltar
                         </button>
                       </div>
