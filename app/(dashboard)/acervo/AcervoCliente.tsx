@@ -179,6 +179,7 @@ function ItemCard({ item, variacoes, usuarioId, onDelete, onUpdate, onAddVariaca
     setSalvandoVar(true)
     const { data, error } = await supabase.from('acervo_variacoes').insert({
       acervo_id: item.id,
+      atributo: novaVar.descricao.trim(),
       descricao: novaVar.descricao.trim(),
       cor: novaVar.cor || null,
       tamanho: novaVar.tamanho || null,
@@ -196,6 +197,7 @@ function ItemCard({ item, variacoes, usuarioId, onDelete, onUpdate, onAddVariaca
 
   async function salvarVariacao(id: string) {
     const { error } = await supabase.from('acervo_variacoes').update({
+      atributo: editVarForm.descricao ?? '',
       descricao: editVarForm.descricao,
       cor: editVarForm.cor || null,
       tamanho: editVarForm.tamanho || null,
