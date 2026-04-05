@@ -316,7 +316,7 @@ export default function GraficosFinanceiro({ pedidos, config: configInicial, cus
   const input: React.CSSProperties = { width:'100%', boxSizing:'border-box', fontFamily:'Inter,sans-serif', fontSize:'13px', color:'#111827', background:'#fafafa', border:'1px solid #e8e8ec', borderRadius:'10px', padding:'10px 12px', outline:'none' }
   const lbl: React.CSSProperties = { display:'block', fontFamily:'Inter,sans-serif', fontSize:'11px', fontWeight:600, color:'#9ca3af', letterSpacing:'0.6px', textTransform:'uppercase', marginBottom:'5px' }
   const card: React.CSSProperties = { background:'#fff', border:'1px solid #e8e8ec', borderRadius:'14px', padding:'20px', marginBottom:'12px' }
-  const btnPrimario: React.CSSProperties = { display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', background:'#ff33cc', color:'#fff', border:'none', fontFamily:'Inter,sans-serif', fontWeight:700, fontSize:'13px', borderRadius:'999px', cursor:'pointer', padding:'9px 18px' }
+  const btnPrimario: React.CSSProperties = { display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', background:'#ff33cc', color:'#fff', border:'none', fontFamily:'Inter,sans-serif', fontWeight:700, fontSize:'14px', borderRadius:'999px', cursor:'pointer', padding:'12px 20px' }
 
   // ── ABAS ────────────────────────────────────────────
   const ABAS = [
@@ -336,7 +336,7 @@ export default function GraficosFinanceiro({ pedidos, config: configInicial, cus
             </button>
           ))}
         </div>
-        <button onClick={exportarPDF} style={{ ...btnPrimario, background:'#1a0040', fontSize:'12px', padding:'8px 16px' }}>
+        <button onClick={exportarPDF} style={{ ...btnPrimario, background:'#1a0040', fontSize:'13px', padding:'10px 18px' }}>
           <IconPrint /> Exportar PDF
         </button>
       </div>
@@ -425,7 +425,7 @@ export default function GraficosFinanceiro({ pedidos, config: configInicial, cus
                       <span style={{ fontFamily:'Inter,sans-serif', fontSize:'12px', color:'#9ca3af' }}>Custos fixos</span>
                       <span style={{ fontFamily:'Inter,sans-serif', fontSize:'12px', fontWeight:700, color:'#dc2626' }}>- {fmt(totalCustosFixos)}</span>
                     </div>
-                    <div style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid #f3f4f6', paddingTop:'8px' }}>
+                    <div style={{ display:'flex', flexDirection:'column', gap:'4px', borderTop:'1px solid #f3f4f6', paddingTop:'8px' }}>
                       <span style={{ fontFamily:'Inter,sans-serif', fontSize:'13px', fontWeight:700, color:'#111827' }}>Lucro líquido</span>
                       <span style={{ fontFamily:'Inter,sans-serif', fontSize:'15px', fontWeight:900, color:lucroLiquido>=0?'#059669':'#dc2626', letterSpacing:'-0.3px' }}>{fmt(lucroLiquido)}</span>
                     </div>

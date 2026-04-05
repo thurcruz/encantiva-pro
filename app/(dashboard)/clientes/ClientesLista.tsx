@@ -152,7 +152,7 @@ export default function ClientesLista({ clientes: clientesIniciais, usuarioId, b
           )}
         </div>
         {!somenteLeitura && (
-          <button onClick={() => setModalAberto(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '10px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer', flexShrink: 0 }}>
+          <button onClick={() => setModalAberto(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '12px 20px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'pointer', flexShrink: 0 }}>
             <IconPlus /> Novo cliente
           </button>
         )}
@@ -216,7 +216,7 @@ export default function ClientesLista({ clientes: clientesIniciais, usuarioId, b
             {busca ? 'Tente buscar por outro nome' : somenteLeitura ? 'Os clientes dos seus contratos aparecerão aqui' : 'Cadastre seu primeiro cliente'}
           </p>
           {!busca && !somenteLeitura && (
-            <button onClick={() => setModalAberto(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '10px 20px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+            <button onClick={() => setModalAberto(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '12px 20px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>
               <IconPlus /> Cadastrar cliente
             </button>
           )}

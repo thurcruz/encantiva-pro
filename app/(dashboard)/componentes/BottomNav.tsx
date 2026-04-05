@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   Home, Package, CalendarDays, Users, TrendingUp,
@@ -35,8 +35,6 @@ const GRUPOS: Grupo[] = [
     rotas: ['/inicio'],
     itens: [
       { href: '/inicio', icon: BarChart2, label: 'Dashboard' },
-      { href: '/agenda', icon: CalendarDays, label: 'Próximos eventos', atalho: true },
-      { href: '/financeiro', icon: TrendingUp, label: 'Financeiro', atalho: true },
     ],
   },
   {
@@ -92,9 +90,16 @@ function submenuPos(indice: number, total: number) {
 
 export default function BottomNav({ temAcervo }: { isAdmin: boolean; isBeta: boolean; temAcervo: boolean }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
 
   function toggleGrupo(id: string) {
+    const grupo = GRUPOS.find(g => g.id === id)
+    if (grupo && grupo.itens.length === 1) {
+      setGrupoAberto(null)
+      router.push(grupo.itens[0].href)
+      return
+    }
     setGrupoAberto(prev => (prev === id ? null : id))
   }
 

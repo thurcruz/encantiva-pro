@@ -286,41 +286,43 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       {abaAtiva === 'meus' && (
         <>
           {/* Orientação */}
-          <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>
-                Orientação das folhas
-              </p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
-                {orientacao === 'paisagem' ? '2 colunas × 3 linhas — folha deitada' : '3 colunas × 2 linhas — folha em pé'}
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              {/* Mini-preview da grade */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-                gridTemplateRows: `repeat(${ROWS}, 1fr)`,
-                gap: '3px',
-                width: orientacao === 'paisagem' ? '60px' : '45px',
-                height: orientacao === 'paisagem' ? '45px' : '60px',
-                flexShrink: 0,
-              }}>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} style={{ background: '#fff0fb', border: '1.5px solid #ffd6f5', borderRadius: '3px' }} />
-                ))}
+          <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>
+                  Orientação das folhas
+                </p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                  {orientacao === 'paisagem' ? '2 colunas × 3 linhas — folha deitada' : '3 colunas × 2 linhas — folha em pé'}
+                </p>
               </div>
-              <OrientacaoToggle value={orientacao} onChange={setOrientacao} />
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {/* Mini-preview da grade */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+                  gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+                  gap: '3px',
+                  width: orientacao === 'paisagem' ? '60px' : '45px',
+                  height: orientacao === 'paisagem' ? '45px' : '60px',
+                  flexShrink: 0,
+                }}>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} style={{ background: '#fff0fb', border: '1.5px solid #ffd6f5', borderRadius: '3px' }} />
+                  ))}
+                </div>
+                <OrientacaoToggle value={orientacao} onChange={setOrientacao} />
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => setComMargem(!comMargem)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: comMargem ? '#fff0fb' : '#ffffff05', border: `1.5px solid ${comMargem ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '999px', padding: '7px 12px', color: comMargem ? '#ff33cc' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', transition: 'all .15s', flexShrink: 0 }}
+              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '6px', background: comMargem ? '#fff0fb' : '#ffffff05', border: `1.5px solid ${comMargem ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '999px', padding: '7px 12px', color: comMargem ? '#ff33cc' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', transition: 'all .15s' }}
               title="Adiciona 1cm de margem em volta de cada folha para facilitar a colagem"
             >
               <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: comMargem ? '#ff33cc' : '#d1d5db', flexShrink: 0 }} />
               Margem 1cm
             </button>
-            </div>
           </div>
 
           {/* Info margem */}

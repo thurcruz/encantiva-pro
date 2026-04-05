@@ -92,8 +92,8 @@ const lbl: React.CSSProperties = {
 const btnPrimario: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
   background: '#ff33cc', color: '#fff', border: 'none',
-  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
-  borderRadius: '999px', cursor: 'pointer', padding: '10px 20px',
+  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px',
+  borderRadius: '999px', cursor: 'pointer', padding: '12px 20px',
 }
 
 // ── Upload de foto ────────────────────────────────────────

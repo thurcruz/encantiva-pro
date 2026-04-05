@@ -71,8 +71,8 @@ const labelStyle: React.CSSProperties = {
 const btnPrimario: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
   background: '#ff33cc', color: '#fff', border: 'none',
-  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
-  borderRadius: '999px', cursor: 'pointer', padding: '9px 18px', whiteSpace: 'nowrap',
+  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px',
+  borderRadius: '999px', cursor: 'pointer', padding: '12px 20px', whiteSpace: 'nowrap',
 }
 const btnSecundario: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
@@ -379,7 +379,7 @@ export default function AgendaCliente({ pedidos: pedidosIniciais, usuarioId, tem
             <button style={toggleBtnStyle(vis === 'lista')} onClick={() => setVis('lista')}><IconList /> Lista</button>
           </div>
           {limiteAtingido ? (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: '#f3f4f6', borderRadius: '999px', padding: '9px 18px', color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'not-allowed' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: '#f3f4f6', borderRadius: '999px', padding: '12px 20px', color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'not-allowed' }}>
               🔒 Limite atingido
             </div>
           ) : (

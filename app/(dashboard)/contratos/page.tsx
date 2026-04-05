@@ -67,11 +67,11 @@ export default async function PaginaContratos() {
         subtitulo={`${total} contratos gerados`}
         action={
           limiteAtingido ? (
-            <a href="/planos" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: '#f3f4f6', borderRadius: '999px', padding: '10px 18px', color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', textDecoration: 'none', cursor: 'not-allowed' }}>
+            <a href="/planos" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: '#f3f4f6', borderRadius: '999px', padding: '12px 20px', color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none', cursor: 'not-allowed' }}>
               Limite atingido
             </a>
           ) : (
-            <Link href="/contratos/novo" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: '#ff33cc', borderRadius: '999px', padding: '10px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}>
+            <Link href="/contratos/novo" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: '#ff33cc', borderRadius: '999px', padding: '12px 20px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
               <IconPlus /> Novo contrato
             </Link>
           )
