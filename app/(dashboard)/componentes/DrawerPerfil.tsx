@@ -111,6 +111,16 @@ export default function DrawerPerfil({
   const [confirmarCancel, setConfirmarCancel] = useState(false)
   const [cancelando, setCancelando] = useState(false)
   const [mensagemCancel, setMensagemCancel] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null)
+  const [planoReal, setPlanoReal] = useState<string>(nomePlano ?? 'free')
+
+  // Buscar plano diretamente do banco ao abrir o drawer
+  useState(() => {
+    if (!usuarioId) return
+    supabase.from('assinaturas').select('plano, status').eq('usuario_id', usuarioId).single()
+      .then(({ data }) => {
+        if (data?.plano) setPlanoReal(data.plano)
+      })
+  })
 
   const agora = new Date()
   const trialAtivo = trialExpiraEm ? new Date(trialExpiraEm) > agora : false
@@ -121,13 +131,10 @@ export default function DrawerPerfil({
 
   // Normalizar nome do plano para chave do mapa
   const planoKey = (() => {
-    const n = (nomePlano ?? '').toLowerCase().trim()
-    console.log('[DrawerPerfil] nomePlano recebido:', nomePlano, '| normalizado:', n)
+    const n = (planoReal ?? '').toLowerCase().trim()
     if (n.includes('elite')) return 'elite'
     if (n.includes('avan') || n === 'avancado' || n === 'avançado') return 'avancado'
     if (n.includes('inici')) return 'iniciante'
-    if (n === 'free' || n === 'gratis' || n === 'grátis' || n === '') return 'free'
-    console.log('[DrawerPerfil] planoKey não reconhecido, usando free. n =', JSON.stringify(n))
     return 'free'
   })()
   const planoInfo = PLANOS_INFO[planoKey] ?? PLANOS_INFO.free

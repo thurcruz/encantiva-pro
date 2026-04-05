@@ -31,7 +31,6 @@ export default async function PageHeader({ titulo, subtitulo, maxWidth = '1000px
   const inicial = nomeOuEmail.length > 0 ? nomeOuEmail[0].toUpperCase() : 'U'
 
   const nomePlano = isAdmin ? 'Admin' : (assinatura?.plano ?? 'free')
-  console.log('[PageHeader] usuario:', user!.email, '| status:', assinatura?.status, '| plano:', assinatura?.plano, '| nomePlano:', nomePlano)
 
   return (
     <div style={{
