@@ -94,35 +94,29 @@ body {
   }
 }
 
-/* ── Botões — adicione ao seu globals.css ─────────────────────────────────── */
+/* ── Botões ─────────────────────────────────────────────── */
 
-/* Hover geral */
 [data-botao]:not(:disabled):hover {
   opacity: 0.88;
   transform: translateY(-1px);
 }
 
-/* Sombra no primário */
 [data-botao][data-variante="primario"]:not(:disabled):hover {
   box-shadow: 0 6px 20px rgba(255, 51, 204, 0.35);
 }
 
-/* Fundo suave no secundário */
 [data-botao][data-variante="secundario"]:not(:disabled):hover {
   background: #fff0fb !important;
 }
 
-/* Ghost hover */
 [data-botao][data-variante="ghost"]:not(:disabled):hover {
   background: #ffe0f7 !important;
 }
 
-/* Perigo hover */
 [data-botao][data-variante="perigo"]:not(:disabled):hover {
   background: #fef2f2 !important;
 }
 
-/* Foco acessível */
 [data-botao]:focus-visible {
   outline: 2px solid #ff33cc;
   outline-offset: 2px;

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s | Encantiva Pro",
   },
   description:
-    "Encantiva Pro é a plataforma completa para decoradoras e buffeteiras. Gerencie contratos, catálogo, agenda, financeiro e muito mais em um só lugar.",
+    "Encantiva Pro é a plataforma completa para Festa na Mesa e Pegue e Monte.. Gerencie contratos, catálogo, agenda, financeiro e muito mais em um só lugar.",
   keywords: [
     "Encantiva Pro",
     "plataforma para decoradoras",
