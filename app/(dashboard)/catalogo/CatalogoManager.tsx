@@ -16,6 +16,8 @@ const IconTag     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="
 const IconPalette = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="6.5" cy="6.5" r="5.5"/><circle cx="4" cy="5" r="1"/><circle cx="6.5" cy="3.5" r="1"/><circle cx="9" cy="5" r="1"/></svg>
 const IconOrders  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="1" width="11" height="11" rx="2"/><path d="M4 5h5M4 7h3M4 9h4"/></svg>
 const IconPencil  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 2l2 2-6.5 6.5L2 11l.5-2.5L9 2z"/></svg>
+const IconPause   = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor"><rect x="2.5" y="2" width="3" height="9" rx="1"/><rect x="7.5" y="2" width="3" height="9" rx="1"/></svg>
+const IconPlay    = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor"><path d="M3 2.5l8 4-8 4V2.5z"/></svg>
 
 const CATEGORIAS_DISPONIVEIS = [
   'Mesversário','Aniversário','Batizado','1ª Eucaristia',
@@ -26,8 +28,8 @@ const ITENS_KIT_SUGESTOES = ['Decoração','Painel','Lembrançinhas','Balões','
 const CATEGORIAS_ADICIONAL = ['Itens avulsos','Consumíveis','Doce','Bebida','Locação','Serviço']
 
 interface Tema        { id: string; nome: string; categoria: string; categorias: string[]; foto_url: string | null; ativo: boolean }
-interface Kit         { id: string; usuario_id: string; nome: string; descricao: string | null; preco: number; itens: string[]; foto_url: string | null }
-interface Adicional   { id: string; usuario_id: string; nome: string; preco: number; categoria: string | null; foto_url: string | null }
+interface Kit         { id: string; usuario_id: string; nome: string; descricao: string | null; preco: number; itens: string[]; foto_url: string | null; ativo: boolean }
+interface Adicional   { id: string; usuario_id: string; nome: string; preco: number; categoria: string | null; foto_url: string | null; ativo: boolean }
 interface Pedido      { id: string; tema_id: string; catalogo_kit_id: string; nome_cliente: string; telefone_cliente: string | null; data_evento: string; forma_pagamento: string | null; adicionais: string[]; valor_total: number; status: string; observacoes: string | null; criado_em: string }
 interface EditKitForm { nome: string; descricao: string; preco: string; itens: string[]; foto_url: string | null }
 interface EditAdicionalForm { nome: string; preco: string; categoria: string | null; foto_url: string | null }
@@ -337,6 +339,22 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
     else alert('Erro ao deletar tema: ' + error.message)
   }
 
+  async function toggleAtivoKit(id: string, ativo: boolean) {
+    const { error } = await supabase.from('catalogo_kits').update({ ativo: !ativo }).eq('id', id)
+    if (!error) setKits(p => p.map(k => k.id === id ? { ...k, ativo: !ativo } : k))
+    else alert('Erro ao atualizar kit: ' + error.message)
+  }
+  async function toggleAtivoAdicional(id: string, ativo: boolean) {
+    const { error } = await supabase.from('adicionais').update({ ativo: !ativo }).eq('id', id)
+    if (!error) setAdicionais(p => p.map(a => a.id === id ? { ...a, ativo: !ativo } : a))
+    else alert('Erro ao atualizar adicional: ' + error.message)
+  }
+  async function toggleAtivoTema(id: string, ativo: boolean) {
+    const { error } = await supabase.from('catalogo_temas').update({ ativo: !ativo }).eq('id', id)
+    if (!error) setTemas(p => p.map(t => t.id === id ? { ...t, ativo: !ativo } : t))
+    else alert('Erro ao atualizar tema: ' + error.message)
+  }
+
   async function atualizarStatusPedido(id: string, status: string) {
     await supabase.from('pedidos').update({ status }).eq('id', id)
     setPedidos(p => p.map(x => x.id === id ? { ...x, status } : x))
@@ -448,11 +466,16 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                     </div>
                   ) : (
                     /* ── Card normal ── */
-                    <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', display: 'flex' }}>
+                    <div style={{ background: '#fff', border: `1px solid ${kit.ativo === false ? '#e8e8ec' : '#e8e8ec'}`, borderRadius: '14px', overflow: 'hidden', display: 'flex', opacity: kit.ativo === false ? 0.55 : 1 }}>
                       <div style={{ width: 80, flexShrink: 0, background: '#f5f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                         {kit.foto_url
                           ? <img src={kit.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={kit.nome} />
                           : <span style={{ color: '#d8b4fe' }}><IconImage /></span>}
+                        {kit.ativo === false && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ background: '#f3f4f6', borderRadius: '999px', padding: '2px 7px', fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 700, color: '#9ca3af' }}>PAUSADO</span>
+                          </div>
+                        )}
                       </div>
                       <div style={{ flex: 1, minWidth: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
                         <div style={{ minWidth: 0 }}>
@@ -462,6 +485,11 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                           <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '14px', color: '#ff33cc', margin: 0 }}>R$ {Number(kit.preco).toFixed(2).replace('.', ',')}</p>
                         </div>
                         <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                          <button onClick={() => toggleAtivoKit(kit.id, kit.ativo !== false)}
+                            title={kit.ativo === false ? 'Reativar kit' : 'Pausar kit'}
+                            style={{ width: 32, height: 32, borderRadius: '999px', border: `1px solid ${kit.ativo === false ? '#d1fae5' : '#fde68a'}`, background: kit.ativo === false ? '#f0fdf4' : '#fffbeb', color: kit.ativo === false ? '#059669' : '#d97706', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {kit.ativo === false ? <IconPlay /> : <IconPause />}
+                          </button>
                           <button onClick={() => { setEditandoKit(kit.id); setEditKit({ nome: kit.nome, descricao: kit.descricao ?? '', preco: String(kit.preco), itens: kit.itens ?? [], foto_url: kit.foto_url }) }}
                             style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconPencil /></button>
                           <button onClick={() => deletarKit(kit.id)}
@@ -569,11 +597,16 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                       </div>
                     </div>
                   ) : (
-                    <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', display: 'flex' }}>
+                    <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', display: 'flex', opacity: a.ativo === false ? 0.55 : 1 }}>
                       <div style={{ width: 64, flexShrink: 0, background: '#fff0fb', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                         {a.foto_url
                           ? <img src={a.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={a.nome} />
                           : <span style={{ color: '#f9a8d4' }}><IconImage /></span>}
+                        {a.ativo === false && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ background: '#f3f4f6', borderRadius: '999px', padding: '2px 5px', fontFamily: 'Inter, sans-serif', fontSize: '8px', fontWeight: 700, color: '#9ca3af' }}>PAUSADO</span>
+                          </div>
+                        )}
                       </div>
                       <div style={{ flex: 1, minWidth: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                         <div>
@@ -582,6 +615,11 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                           <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '13px', color: '#ff33cc', margin: 0 }}>R$ {Number(a.preco).toFixed(2).replace('.', ',')}</p>
                         </div>
                         <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                          <button onClick={() => toggleAtivoAdicional(a.id, a.ativo !== false)}
+                            title={a.ativo === false ? 'Reativar adicional' : 'Pausar adicional'}
+                            style={{ width: 32, height: 32, borderRadius: '999px', border: `1px solid ${a.ativo === false ? '#d1fae5' : '#fde68a'}`, background: a.ativo === false ? '#f0fdf4' : '#fffbeb', color: a.ativo === false ? '#059669' : '#d97706', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {a.ativo === false ? <IconPlay /> : <IconPause />}
+                          </button>
                           <button onClick={() => { setEditandoAdicional(a.id); setEditAdicional({ nome: a.nome, preco: String(a.preco), categoria: a.categoria, foto_url: a.foto_url }) }}
                             style={{ width: 32, height: 32, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconPencil /></button>
                           <button onClick={() => deletarAdicional(a.id)}
@@ -693,11 +731,16 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                   )
                 }
                 return (
-                  <div key={tema.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden' }}>
+                  <div key={tema.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden', opacity: tema.ativo === false ? 0.55 : 1 }}>
                     <div style={{ height: 90, background: '#f5f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                       {tema.foto_url
                         ? <img src={tema.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} alt={tema.nome} />
                         : <span style={{ fontSize: '28px' }}>🎨</span>}
+                      {tema.ativo === false && (
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ background: '#f3f4f6', borderRadius: '999px', padding: '3px 8px', fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 700, color: '#9ca3af' }}>PAUSADO</span>
+                        </div>
+                      )}
                     </div>
                     <div style={{ padding: '10px 12px' }}>
                       <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#111827', margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tema.nome}</p>
@@ -708,6 +751,11 @@ export default function CatalogoManager({ usuarioId, temasIniciais, kitsIniciais
                         {cats.length > 2 && <span style={{ background: '#f3f4f6', color: '#9ca3af', borderRadius: '999px', padding: '1px 7px', fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 700 }}>+{cats.length - 2}</span>}
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={() => toggleAtivoTema(tema.id, tema.ativo !== false)}
+                          title={tema.ativo === false ? 'Reativar tema' : 'Pausar tema'}
+                          style={{ flex: 1, height: 28, borderRadius: '999px', border: `1px solid ${tema.ativo === false ? '#d1fae5' : '#fde68a'}`, background: tema.ativo === false ? '#f0fdf4' : '#fffbeb', color: tema.ativo === false ? '#059669' : '#d97706', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {tema.ativo === false ? <IconPlay /> : <IconPause />}
+                        </button>
                         <button onClick={() => { setEditandoTema(tema.id); setEditTema({ nome: tema.nome, categorias: cats, foto_url: tema.foto_url }) }}
                           style={{ flex: 1, height: 28, borderRadius: '999px', border: '1px solid #e8e8ec', background: '#fafafa', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconPencil /></button>
                         <button onClick={() => deletarTema(tema.id)}
