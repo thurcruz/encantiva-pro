@@ -170,7 +170,9 @@ export default function FidelidadeManager({ usuarioId, cartoesIniciais, particip
       foto_url: novoCartao.foto_url,
       ativo: true,
     }).select().single()
-    if (!error && data) {
+    if (error) {
+      alert('Erro ao criar cartao: ' + error.message + ' | Codigo: ' + error.code)
+    } else if (data) {
       setCartoes(p => [data as Cartao, ...p])
       setNovoCartao({ nome: '', descricao: '', total_selos: '10', premio: '', cor: '#ff33cc', foto_url: null })
     }
