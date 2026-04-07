@@ -12,12 +12,11 @@ export default async function PaginaUsuarios() {
   const admin = createAdminClient()
 
   const { data: authUsers } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  console.log('[AdminUsuarios] total auth.users:', authUsers?.users?.length ?? 0)
 
   const [{ data: assinaturas }, { data: perfis }, { data: profiles }] = await Promise.all([
-    supabase.from('assinaturas').select('*').order('criado_em', { ascending: false }),
-    supabase.from('perfis').select('id, nome_loja, telefone'),
-    supabase.from('profiles').select('id, nome_loja, telefone'),
+    admin.from('assinaturas').select('*').order('criado_em', { ascending: false }),
+    admin.from('perfis').select('id, nome_loja, telefone'),
+    admin.from('profiles').select('id, nome_loja, telefone'),
   ])
 
   // Mesclar as duas tabelas de perfis
