@@ -8,6 +8,7 @@ import Link from 'next/link'
 export default function PaginaCadastro() {
   const [nomeLoja, setNomeLoja] = useState('')
   const [email, setEmail]       = useState('')
+  const [telefone, setTelefone] = useState('')
   const [senha, setSenha]       = useState('')
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro]         = useState('')
@@ -26,8 +27,8 @@ export default function PaginaCadastro() {
     if (error) { setErro(error.message); setCarregando(false); return }
 
     // Salva o perfil — trial é criado quando entrar no dashboard pela primeira vez
-    if (data.user && nomeLoja) {
-      await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nomeLoja })
+    if (data.user) {
+      await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nomeLoja, telefone })
     }
 
     setSucesso(true)
@@ -98,6 +99,11 @@ export default function PaginaCadastro() {
             </div>
 
             <div>
+              <label style={labelStyle}>Celular / Telefone *</label>
+              <input type="tel" value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(11) 99999-9999" required style={inputStyle} />
+            </div>
+
+            <div>
               <label style={labelStyle}>E-mail *</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required style={inputStyle} />
             </div>
@@ -138,14 +144,14 @@ export default function PaginaCadastro() {
 
             <button
               type="submit"
-              disabled={carregando || !email || !senha}
+              disabled={carregando || !email || !senha || !telefone}
               style={{
                 width: '100%', padding: '14px',
-                background: carregando || !email || !senha ? '#e5e7eb' : '#ff33cc',
-                color: carregando || !email || !senha ? '#9ca3af' : '#fff',
+                background: carregando || !email || !senha || !telefone ? '#e5e7eb' : '#ff33cc',
+                color: carregando || !email || !senha || !telefone ? '#9ca3af' : '#fff',
                 border: 'none', borderRadius: '999px',
                 fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-                cursor: carregando || !email || !senha ? 'not-allowed' : 'pointer',
+                cursor: carregando || !email || !senha || !telefone ? 'not-allowed' : 'pointer',
                 marginTop: '4px',
               }}
             >
