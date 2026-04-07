@@ -12,9 +12,9 @@ interface Props {
 type Filtro = 'todos' | 'active' | 'trial' | 'trial_expirado' | 'pendente' | 'free' | 'beta'
 
 const MENSAGENS_WHATSAPP: Record<string, string> = {
-  pendente: `Olá! 👋 Vi que você iniciou a assinatura da Encantiva Pro mas não finalizou o pagamento. Quer que eu te ajude a concluir? Temos planos a partir de R$ 19,90/mês e você ainda tem 7 dias grátis pra testar! 🎀`,
-  trial_expirado: `Olá! 👋 Seu período de teste na Encantiva Pro expirou. Não perca o acesso às suas ferramentas de festas! Assine agora a partir de R$ 19,90/mês 🎉`,
-  free: `Olá! 👋 Você está no plano gratuito da Encantiva Pro. Sabia que com o plano pago você tem contratos ilimitados, calculadora, catálogo e muito mais? A partir de R$ 19,90/mês! 🚀`,
+  pendente: `Ola! Vi que voce iniciou a assinatura da Encantiva Pro mas nao finalizou o pagamento. Quer que eu te ajude a concluir? Temos planos a partir de R$ 19,90/mes e voce ainda tem 7 dias gratis pra testar!`,
+  trial_expirado: `Ola! Seu periodo de teste na Encantiva Pro expirou. Nao perca o acesso as suas ferramentas de festas! Assine agora a partir de R$ 19,90/mes!`,
+  free: `Ola! Voce esta no plano gratuito da Encantiva Pro. Sabia que com o plano pago voce tem contratos ilimitados, calculadora, catalogo e muito mais? A partir de R$ 19,90/mes!`,
 }
 
 function getMensagem(status: string | undefined | null): string {
@@ -77,14 +77,14 @@ function getPlanoInfo(assinatura: Assinatura | undefined): {
 }
 
 function formatarData(iso: string | null) {
-  if (!iso) return '—'
+  if (!iso) return '--'
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
 function diasRestantes(iso: string | null): string {
   if (!iso) return ''
   const diff = Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000)
-  if (diff < 0) return `${Math.abs(diff)}d atrás`
+  if (diff < 0) return `${Math.abs(diff)}d atras`
   if (diff === 0) return 'hoje'
   return `${diff}d`
 }
@@ -98,16 +98,16 @@ function BotaoWhatsApp({ telefone, nome, status }: { telefone: string | null; no
     if (tel) {
       window.open(`https://wa.me/${tel}?text=${texto}`, '_blank')
     } else {
-      // Sem telefone — abrir WhatsApp Web sem número para copiar a mensagem
+      // Sem telefone - abrir WhatsApp Web sem numero para copiar a mensagem
       navigator.clipboard.writeText(getMensagem(status))
-      alert(`Telefone não cadastrado para ${nome ?? 'este usuário'}.\nMensagem copiada para a área de transferência!`)
+      alert(`Telefone nao cadastrado para ${nome ?? 'este usuario'}.\nMensagem copiada para a area de transferencia!`)
     }
   }
 
   return (
     <button
       onClick={abrirWhatsApp}
-      title={tel ? `WhatsApp: ${telefone}` : 'Sem telefone — copiar mensagem'}
+      title={tel ? `WhatsApp: ${telefone}` : 'Sem telefone - copiar mensagem'}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 32, height: 32,
@@ -174,7 +174,7 @@ export default function TabelaUsuarios({ usuarios }: Props) {
     { key: 'active',         label: 'Assinantes'     },
     { key: 'trial',          label: 'Trial'          },
     { key: 'trial_expirado', label: 'Trial expirado' },
-    { key: 'pendente',       label: '🔥 Pendentes', cor: '#ff6644' },
+    { key: 'pendente',       label: 'Pendentes', cor: '#ff6644' },
     { key: 'free',           label: 'Free'           },
     { key: 'beta',           label: 'Beta'           },
   ]
@@ -216,7 +216,7 @@ export default function TabelaUsuarios({ usuarios }: Props) {
         <div style={{ padding: '12px 20px', background: '#ff664411', borderBottom: '1px solid #ff664422', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <MessageCircle size={14} color="#ff6644" />
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ff9977', margin: 0 }}>
-            <strong>{usuariosFiltrados.length} pessoas</strong> iniciaram o pagamento mas não concluíram. Clique no ícone do WhatsApp para enviar uma mensagem direta.
+            <strong>{usuariosFiltrados.length} pessoas</strong> iniciaram o pagamento mas nao concluiram. Clique no icone do WhatsApp para enviar uma mensagem direta.
           </p>
         </div>
       )}
@@ -224,13 +224,13 @@ export default function TabelaUsuarios({ usuarios }: Props) {
       {/* Tabela */}
       {usuariosFiltrados.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif', color: '#ffffff33', fontSize: '14px' }}>
-          Nenhum usuário encontrado
+          Nenhum usuario encontrado
         </div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #ffffff12' }}>
-              {['Usuário', 'Plano', 'Status', 'Trial / Expira', 'Cadastro', 'Ações'].map(col => (
+              {['Usuario', 'Plano', 'Status', 'Trial / Expira', 'Cadastro', 'Acoes'].map(col => (
                 <th key={col} style={{ textAlign: 'left', padding: '12px 16px', fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#ffffff33', letterSpacing: '1px', textTransform: 'uppercase', background: '#ffffff05', whiteSpace: 'nowrap' }}>
                   {col}
                 </th>
@@ -265,7 +265,7 @@ export default function TabelaUsuarios({ usuarios }: Props) {
                       </p>
                     )}
                     {assinatura?.is_beta && (
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#cc66ff', fontWeight: 600 }}>★ Beta</span>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#cc66ff', fontWeight: 600 }}>* Beta</span>
                     )}
                   </td>
 
@@ -293,7 +293,7 @@ export default function TabelaUsuarios({ usuarios }: Props) {
                         </p>
                       </div>
                     ) : (
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff22' }}>—</span>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff22' }}>--</span>
                     )}
                   </td>
 
