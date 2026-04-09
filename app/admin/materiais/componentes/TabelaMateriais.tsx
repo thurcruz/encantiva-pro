@@ -7,8 +7,12 @@ import { createClient } from '@/lib/supabase/client'
 import BotaoDeletar from './BotaoDeletar'
 import type { Material } from '@/types/database'
 
+interface ColecaoRef { id: string; nome: string }
+
 interface Props {
   materiais: Material[]
+  colecoesPorMaterial?: Record<string, ColecaoRef[]>
+  todasColecoes?: ColecaoRef[]
 }
 
 const IconChevUp   = () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M2 8l4-4 4 4"/></svg>
@@ -30,10 +34,11 @@ function OrdemBtn({ col, label, ordem, dir, onToggle }: {
   )
 }
 
-export default function TabelaMateriais({ materiais: materiaisIniciais }: Props) {
+export default function TabelaMateriais({ materiais: materiaisIniciais, colecoesPorMaterial = {}, todasColecoes = [] }: Props) {
   const supabase = createClient()
   const [busca, setBusca] = useState('')
   const [filtroColecao, setFiltroColecao] = useState('')
+  const [filtroColecaoNova, setFiltroColecaoNova] = useState('')
   const [filtroTag, setFiltroTag] = useState('')
   const [ordem, setOrdem] = useState<OrdemCol>('criado_em')
   const [dir, setDir] = useState<OrdemDir>('desc')
@@ -55,6 +60,7 @@ export default function TabelaMateriais({ materiais: materiaisIniciais }: Props)
           !mat.codigo?.toLowerCase().includes(busca.toLowerCase()) &&
           !mat.colecao?.toLowerCase().includes(busca.toLowerCase())) return false
       if (filtroColecao && mat.colecao !== filtroColecao) return false
+      if (filtroColecaoNova && !(colecoesPorMaterial[m.id] ?? []).some(c => c.id === filtroColecaoNova)) return false
       if (filtroTag && !(mat.tags ?? []).includes(filtroTag)) return false
       return true
     })
@@ -106,6 +112,13 @@ export default function TabelaMateriais({ materiais: materiaisIniciais }: Props)
           <option value="">Todas as coleções</option>
           {colecoes.map(c => <option key={c} value={c} style={{ background: '#1a0044' }}>{c}</option>)}
         </select>
+        {todasColecoes.length > 0 && (
+          <select value={filtroColecaoNova} onChange={e => setFiltroColecaoNova(e.target.value)}
+            style={{ background: '#ffffff0d', border: '1px solid #ffffff18', borderRadius: '10px', padding: '10px 14px', color: filtroColecaoNova ? '#fff' : '#ffffff44', fontFamily: 'Inter, sans-serif', fontSize: '13px', outline: 'none', cursor: 'pointer' }}>
+            <option value="">Todas as coleções</option>
+            {todasColecoes.map(c => <option key={c.id} value={c.id} style={{ background: '#1a0044' }}>{c.nome}</option>)}
+          </select>
+        )}
         <select value={filtroTag} onChange={e => setFiltroTag(e.target.value)}
           style={{ background: '#ffffff0d', border: '1px solid #ffffff18', borderRadius: '10px', padding: '10px 14px', color: filtroTag ? '#fff' : '#ffffff44', fontFamily: 'Inter, sans-serif', fontSize: '13px', outline: 'none', cursor: 'pointer' }}>
           <option value="">Todas as tags</option>
@@ -163,6 +176,7 @@ export default function TabelaMateriais({ materiais: materiaisIniciais }: Props)
                 material={material}
                 selecionado={selecionados.has(material.id)}
                 onToggle={() => toggleSelecionado(material.id)}
+                colecoes={colecoesPorMaterial[material.id] ?? []}
               />
             ))}
           </tbody>
@@ -172,10 +186,11 @@ export default function TabelaMateriais({ materiais: materiaisIniciais }: Props)
   )
 }
 
-function TabelaLinha({ material, selecionado, onToggle }: {
+function TabelaLinha({ material, selecionado, onToggle, colecoes }: {
   material: Material
   selecionado: boolean
   onToggle: () => void
+  colecoes: { id: string; nome: string }[]
 }) {
   const mat = material as unknown as { codigo?: string; colecao?: string; tags?: string[]; exclusivo?: boolean }
 
@@ -201,6 +216,20 @@ function TabelaLinha({ material, selecionado, onToggle }: {
         <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffffcc', fontWeight: 600 }}>
           {mat.colecao ?? '—'}
         </span>
+        {colecoes.length > 0 && (
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
+            {colecoes.slice(0, 2).map(c => (
+              <span key={c.id} style={{ background: '#9900ff20', border: '1px solid #9900ff33', color: '#cc66ff', fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '999px', letterSpacing: '0.3px' }}>
+                {c.nome}
+              </span>
+            ))}
+            {colecoes.length > 2 && (
+              <span style={{ background: '#ffffff0d', color: '#ffffff33', fontFamily: 'Inter, sans-serif', fontSize: '9px', fontWeight: 600, padding: '2px 6px', borderRadius: '999px' }}>
+                +{colecoes.length - 2}
+              </span>
+            )}
+          </div>
+        )}
       </td>
 
       {/* Título + preview */}
