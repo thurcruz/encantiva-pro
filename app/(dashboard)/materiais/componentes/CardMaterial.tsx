@@ -172,24 +172,19 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
 
             {podeDownload ? (
               <div style={{ position: 'relative' }}>
-                <div style={{ display: 'flex', borderRadius: '999px', overflow: 'hidden' }}>
-                  <button className="btn-dl" onClick={baixarOriginal} disabled={baixando}
-                    style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#ff33cc', border: 'none', padding: '7px 12px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: baixando ? 'not-allowed' : 'pointer' }}>
-                    <IconDownload />
-                    {baixando ? '...' : 'Baixar'}
-                  </button>
-                  <button onClick={() => setMenuAberto(!menuAberto)}
-                    style={{ display: 'flex', alignItems: 'center', background: '#e02ab8', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.25)', padding: '7px 8px', color: '#fff', cursor: 'pointer' }}>
-                    <IconChevDown />
-                  </button>
-                </div>
+                <button className="btn-dl" onClick={() => setMenuAberto(!menuAberto)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '7px 14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
+                  <IconDownload />
+                  {baixando ? 'Baixando...' : 'Baixar'}
+                  <IconChevDown />
+                </button>
 
                 {menuAberto && (
                   <div style={{ position: 'absolute', bottom: '42px', right: 0, background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', zIndex: 20, minWidth: '200px' }}
                     onMouseLeave={() => setMenuAberto(false)}
                   >
-                    <button onClick={baixarOriginal}
-                      style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', textAlign: 'left' }}
+                    <button onClick={baixarOriginal} disabled={baixando}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px 14px', background: 'none', border: 'none', cursor: baixando ? 'not-allowed' : 'pointer', borderBottom: '1px solid #f3f4f6', textAlign: 'left', opacity: baixando ? 0.6 : 1 }}
                       onMouseEnter={e => (e.currentTarget.style.background = '#fafafa')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                     >
@@ -197,7 +192,7 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
                         <IconDownload />
                       </div>
                       <div>
-                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#111827', margin: 0 }}>Baixar original</p>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#111827', margin: 0 }}>{baixando ? 'Baixando...' : 'Baixar original'}</p>
                         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#9ca3af', margin: 0 }}>Arquivo completo para gráfica</p>
                       </div>
                     </button>
