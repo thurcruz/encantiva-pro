@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { X, Mail, Lock, User, Loader2 } from 'lucide-react'
+import { X, Mail, Lock, User, Phone, Loader2 } from 'lucide-react'
 
 interface Props {
   onFechar: () => void
@@ -23,6 +23,7 @@ export default function ModalLogin({ onFechar, onSucesso }: Props) {
   const [email, setEmail]           = useState('')
   const [senha, setSenha]           = useState('')
   const [nome, setNome]             = useState('')
+  const [telefone, setTelefone]     = useState('')
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro]             = useState('')
 
@@ -30,6 +31,7 @@ export default function ModalLogin({ onFechar, onSucesso }: Props) {
     setErro('')
     if (!email.trim() || !senha.trim()) { setErro('Preencha e-mail e senha.'); return }
     if (modo === 'cadastro' && !nome.trim()) { setErro('Digite seu nome.'); return }
+    if (modo === 'cadastro' && !telefone.trim()) { setErro('Digite seu telefone/celular.'); return }
     if (senha.length < 6) { setErro('A senha deve ter no mínimo 6 caracteres.'); return }
     setCarregando(true)
 
@@ -63,7 +65,7 @@ export default function ModalLogin({ onFechar, onSucesso }: Props) {
 
     // Salva o nome — trial é criado quando entrar no dashboard
     if (data.user && nome) {
-      await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nome })
+      await supabase.from('perfis').upsert({ id: data.user.id, nome_loja: nome, telefone: telefone.trim() })
     }
 
     onSucesso()
@@ -143,17 +145,29 @@ export default function ModalLogin({ onFechar, onSucesso }: Props) {
         <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
           {modo === 'cadastro' && (
-            <div style={{ position: 'relative' }}>
-              <User size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
-              <input
-                type="text"
-                placeholder="Seu nome"
-                value={nome}
-                onChange={e => setNome(e.target.value)}
-                autoFocus
-                style={inputStyle}
-              />
-            </div>
+            <>
+              <div style={{ position: 'relative' }}>
+                <User size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  placeholder="Seu nome"
+                  value={nome}
+                  onChange={e => setNome(e.target.value)}
+                  autoFocus
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ position: 'relative' }}>
+                <Phone size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
+                <input
+                  type="tel"
+                  placeholder="Celular / WhatsApp (obrigatório)"
+                  value={telefone}
+                  onChange={e => setTelefone(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+            </>
           )}
 
           <div style={{ position: 'relative' }}>
