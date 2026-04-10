@@ -40,6 +40,10 @@ export default async function PaginaMateriais({
 
   const temModuloBiblioteca = !!moduloBiblioteca
 
+  // Quem pode acessar materiais exclusivos
+  const podeAcessarExclusivos = isAdmin || isBeta || temModuloBiblioteca ||
+    ['trial', 'iniciante', 'avancado', 'elite'].includes(planoId)
+
   // Contar downloads do mês atual
   const inicioMes = new Date()
   inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0)
@@ -170,6 +174,7 @@ export default async function PaginaMateriais({
                 key={material.id}
                 material={material as Material}
                 podeDownload={!limiteAtingido}
+                podeAcessarExclusivos={podeAcessarExclusivos}
                 isExclusivo={(material as unknown as { exclusivo?: boolean }).exclusivo ?? false}
                 limiteDownloads={limiteDownloads}
                 downloadsMes={downloadsMes}

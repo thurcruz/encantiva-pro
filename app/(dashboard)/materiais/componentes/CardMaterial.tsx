@@ -9,6 +9,7 @@ import ModalCortador from './ModalCortador'
 interface Props {
   material: Material
   podeDownload: boolean
+  podeAcessarExclusivos?: boolean
   isExclusivo?: boolean
   limiteDownloads?: number | 'ilimitado'
   downloadsMes?: number
@@ -19,13 +20,17 @@ const IconDownload  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill
 const IconScissors  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="3" cy="3" r="1.5"/><circle cx="3" cy="10" r="1.5"/><path d="M4.5 4.5L10.5 10.5M4.5 8.5l6-6"/></svg>
 const IconChevDown  = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 4l3 3 3-3"/></svg>
 
-export default function CardMaterial({ material, podeDownload, isExclusivo, limiteDownloads, downloadsMes = 0 }: Props) {
+export default function CardMaterial({ material, podeDownload, podeAcessarExclusivos = true, isExclusivo, limiteDownloads, downloadsMes = 0 }: Props) {
   const [baixando, setBaixando] = useState(false)
   const [popupLimite, setPopupLimite] = useState(false)
+  const [popupExclusivo, setPopupExclusivo] = useState(false)
   const [menuAberto, setMenuAberto] = useState(false)
   const [modalCortador, setModalCortador] = useState(false)
   const [imagemOriginalUrl, setImagemOriginalUrl] = useState<string | null>(null)
   const supabase = createClient()
+
+  // Material bloqueado se for exclusivo e usuario nao tem acesso
+  const bloqueadoPorExclusivo = isExclusivo && !podeAcessarExclusivos
 
   // Extrai o path relativo do arquivo — aceita tanto path relativo quanto URL completa
   function extrairPath(urlOuPath: string): string {
@@ -41,6 +46,7 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
   }
 
   async function baixarOriginal() {
+    if (bloqueadoPorExclusivo) { setPopupExclusivo(true); return }
     if (!podeDownload) { setPopupLimite(true); return }
     setBaixando(true)
     setMenuAberto(false)
@@ -74,6 +80,7 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
   }
 
   async function abrirCortador() {
+    if (bloqueadoPorExclusivo) { setPopupExclusivo(true); return }
     if (!podeDownload) { setPopupLimite(true); return }
     setMenuAberto(false)
     try {
@@ -95,6 +102,7 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
   }
 
   async function imprimir() {
+    if (bloqueadoPorExclusivo) { setPopupExclusivo(true); return }
     if (!podeDownload) { setPopupLimite(true); return }
     try {
       const path = extrairPath(material.url_arquivo)
@@ -176,7 +184,12 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
               {material.total_downloads} downloads
             </span>
 
-            {podeDownload ? (
+            {bloqueadoPorExclusivo ? (
+              <button onClick={() => setPopupExclusivo(true)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#f3f4f6', borderRadius: '999px', padding: '6px 12px', color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', border: 'none', cursor: 'pointer' }}>
+                <Lock size={11} /> Exclusivo
+              </button>
+            ) : podeDownload ? (
               <div style={{ position: 'relative' }}>
                 <button className="btn-dl" onClick={() => setMenuAberto(!menuAberto)}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '7px 14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
@@ -226,6 +239,44 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
           </div>
         </div>
       </div>
+
+      {/* Popup material exclusivo */}
+      {popupExclusivo && (
+        <div onClick={() => setPopupExclusivo(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(6,0,15,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: '#110022', border: '1px solid rgba(255,51,204,0.25)', borderRadius: '24px', padding: '36px', maxWidth: '420px', width: '100%', position: 'relative', textAlign: 'center' }}>
+            <button onClick={() => setPopupExclusivo(false)}
+              style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ffffff66' }}>
+              <Lock size={14} />
+            </button>
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>🔒</div>
+            <h3 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '20px', color: '#fff', margin: '0 0 10px' }}>
+              Material exclusivo
+            </h3>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff66', margin: '0 0 8px', lineHeight: 1.6 }}>
+              Este material esta disponivel apenas para assinantes ou quem tem a Biblioteca Vitalicia.
+            </p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffff44', margin: '0 0 24px', lineHeight: 1.6 }}>
+              Faca upgrade para acessar todos os materiais exclusivos.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <a href="/planos"
+                style={{ display: 'block', background: 'linear-gradient(135deg, #ff33cc, #9900ff)', borderRadius: '12px', padding: '14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', textDecoration: 'none' }}>
+                Ver planos →
+              </a>
+              <a href="/modulos"
+                style={{ display: 'block', background: 'rgba(255,255,255,0.06)', borderRadius: '12px', padding: '12px', color: '#ffffff88', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', textDecoration: 'none' }}>
+                Biblioteca Vitalicia por R$ 19,90
+              </a>
+            </div>
+            <button onClick={() => setPopupExclusivo(false)}
+              style={{ background: 'transparent', border: 'none', color: '#ffffff33', fontFamily: 'Inter, sans-serif', fontSize: '13px', cursor: 'pointer', padding: '8px', marginTop: '8px' }}>
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Popup limite de downloads */}
       {popupLimite && (
