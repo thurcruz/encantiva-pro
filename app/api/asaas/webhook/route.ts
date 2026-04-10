@@ -5,11 +5,13 @@ import crypto from 'crypto'
 const STATUS_MAP: Record<string, string> = {
   PAYMENT_CONFIRMED:    'active',
   PAYMENT_RECEIVED:     'active',
-  PAYMENT_OVERDUE:      'overdue',
   PAYMENT_DELETED:      'canceled',
   PAYMENT_REFUNDED:     'canceled',
   SUBSCRIPTION_DELETED: 'canceled',
 }
+
+// Eventos que NAO devem sobrescrever um status 'active' existente
+const NAO_REBAIXAR_ACTIVE = new Set(['PAYMENT_OVERDUE'])
 
 function verificarToken(token: string): boolean {
   const secret = process.env.ASAAS_WEBHOOK_TOKEN
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
     const token = req.headers.get('asaas-access-token') ?? ''
 
     if (!verificarToken(token)) {
-      return NextResponse.json({ erro: 'Token inválido' }, { status: 401 })
+      return NextResponse.json({ erro: 'Token invalido' }, { status: 401 })
     }
 
     const payload = JSON.parse(body)
@@ -41,6 +43,27 @@ export async function POST(req: NextRequest) {
       const payment = payload.payment
       const subscriptionId: string | null = payment?.subscription ?? null
       if (!subscriptionId) return NextResponse.json({ ok: true })
+
+      // PAYMENT_OVERDUE: so rebaixa se a assinatura NAO estiver active
+      if (NAO_REBAIXAR_ACTIVE.has(evento)) {
+        const { data: atual } = await supabase
+          .from('assinaturas')
+          .select('status')
+          .eq('asaas_subscription_id', subscriptionId)
+          .maybeSingle()
+
+        if (atual?.status === 'active') {
+          console.log('[asaas-webhook] ignorando', evento, '— assinatura ja esta active')
+          return NextResponse.json({ ok: true })
+        }
+
+        await supabase
+          .from('assinaturas')
+          .update({ status: 'overdue', atualizado_em: new Date().toISOString() })
+          .eq('asaas_subscription_id', subscriptionId)
+
+        return NextResponse.json({ ok: true })
+      }
 
       const novoStatus = STATUS_MAP[evento]
       if (!novoStatus) return NextResponse.json({ ok: true })
@@ -56,7 +79,6 @@ export async function POST(req: NextRequest) {
           atualizado_em: new Date().toISOString(),
         }
 
-        // Limpa o trial quando ativa
         if (novoStatus === 'active') {
           patch.trial_expira_em = null
           if (plano) patch.plano = plano
@@ -70,7 +92,6 @@ export async function POST(req: NextRequest) {
 
         console.log('[asaas-webhook] update resultado:', JSON.stringify({ data, error }))
 
-        // Se não atualizou (linha não existe), faz upsert
         if (error || !data?.length) {
           console.log('[asaas-webhook] nenhuma linha atualizada, tentando upsert...')
           const { data: data2, error: error2 } = await supabase
