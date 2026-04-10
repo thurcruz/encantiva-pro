@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { LayoutDashboard, Upload, Package, Users, LogOut } from 'lucide-react'
+import { LayoutDashboard, Upload, Package, Users, LogOut, HandCoins } from 'lucide-react'
 
 function NavItem({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
@@ -74,6 +74,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <NavItem href="/admin/materiais" icon={<Package size={16} />} label="Ver Materiais" />
           <NavItem href="/admin/materiais/novo" icon={<Upload size={16} />} label="Novo Material" />
           <NavItem href="/admin/materiais/lote" icon={<Upload size={16} />} label="Upload em Lote" />
+
+          <div className="admin-divider" />
+
+          <SecaoLabel label="Programa" />
+          <NavItem href="/admin/afiliados" icon={<HandCoins size={16} />} label="Afiliados" />
         </nav>
 
         {/* Rodapé */}

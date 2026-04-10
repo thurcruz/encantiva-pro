@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { registrarConversaoAfiliado } from '../../afiliados/helper'
 import crypto from 'crypto'
 
 const STATUS_MAP: Record<string, string> = {
@@ -82,6 +83,10 @@ export async function POST(req: NextRequest) {
         if (novoStatus === 'active') {
           patch.trial_expira_em = null
           if (plano) patch.plano = plano
+
+          if (userId && payment?.id) {
+            await registrarConversaoAfiliado(userId, plano ?? '', payment.value ?? 0, payment.id)
+          }
         }
 
         const { data, error } = await supabase

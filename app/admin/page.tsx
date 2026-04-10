@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Upload, Package, Users } from 'lucide-react'
+import { Upload, Package, Users, HandCoins } from 'lucide-react'
 
 export default async function PaginaAdmin() {
   const supabase = await createClient()
@@ -251,6 +251,10 @@ export default async function PaginaAdmin() {
           <Link href="/admin/materiais" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff0d', border: '1px solid #ffffff18', borderRadius: '12px', padding: '12px 20px', color: '#ffffffcc', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
             <Package size={16} />
             Ver Materiais
+          </Link>
+          <Link href="/admin/afiliados" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff0d', border: '1px solid #ffffff18', borderRadius: '12px', padding: '12px 20px', color: '#ffffffcc', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+            <HandCoins size={16} />
+            Afiliados
           </Link>
         </div>
       </div>

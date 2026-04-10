@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { criarConversaoAfiliado } from '../../afiliados/helper'
 
 function getAsaasConfig() {
   const key = process.env.ASAAS_API_KEY
@@ -54,6 +56,8 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ erro: 'Não autenticado' }, { status: 401 })
 
+    const codigoRef = req.cookies.get('ref')?.value ?? null
+
     const { plano, cpfCnpj } = await req.json()
     const config = PLANOS[plano]
     if (!config) return NextResponse.json({ erro: 'Plano inválido' }, { status: 400 })
@@ -88,27 +92,48 @@ export async function POST(req: NextRequest) {
 
     const { key, url } = getAsaasConfig()
 
+    // Busca split de afiliado se houver cookie ref
+    let afiliadoSplit: { walletId: string; percentual: number } | null = null
+    if (codigoRef) {
+      const adminSb = createAdminClient()
+      const { data: afiliado } = await adminSb
+        .from('afiliados')
+        .select('asaas_wallet_id, comissao_pct')
+        .ilike('codigo', codigoRef)
+        .eq('ativo', true)
+        .single()
+      if (afiliado?.asaas_wallet_id) {
+        afiliadoSplit = { walletId: afiliado.asaas_wallet_id, percentual: afiliado.comissao_pct }
+      }
+    }
+
     const proximoVencimento = new Date()
     proximoVencimento.setDate(proximoVencimento.getDate() + 1)
     const nextDueDate = proximoVencimento.toISOString().split('T')[0]
 
     // Cria a assinatura com callback de sucesso
+    const subBody: Record<string, unknown> = {
+      customer:          customerId,
+      billingType:       'UNDEFINED',
+      nextDueDate,
+      value:             config.valor,
+      cycle:             'MONTHLY',
+      description:       config.descricao,
+      externalReference: `${user.id}::${plano}`,
+      callback: {
+        successUrl:   URL_SUCESSO,
+        autoRedirect: true,
+      },
+    }
+
+    if (afiliadoSplit) {
+      subBody.split = [{ walletId: afiliadoSplit.walletId, percentualValue: afiliadoSplit.percentual }]
+    }
+
     const subRes = await fetch(`${url}/subscriptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', accept: 'application/json', access_token: key },
-      body: JSON.stringify({
-        customer:          customerId,
-        billingType:       'UNDEFINED',
-        nextDueDate,
-        value:             config.valor,
-        cycle:             'MONTHLY',
-        description:       config.descricao,
-        externalReference: `${user.id}::${plano}`,
-        callback: {
-          successUrl:   URL_SUCESSO,
-          autoRedirect: true,
-        },
-      }),
+      body: JSON.stringify(subBody),
     })
 
     const sub = await subRes.json()
@@ -130,6 +155,11 @@ export async function POST(req: NextRequest) {
     const cobrancas = await cobrancasRes.json()
     const primeiraCobranca = cobrancas?.data?.[0]
     const checkoutUrl = primeiraCobranca?.invoiceUrl ?? sub.paymentLink ?? null
+
+    // Registra conversão de afiliado se houver ref
+    if (codigoRef && primeiraCobranca?.id) {
+      await criarConversaoAfiliado(user.id, codigoRef, plano, config.valor, primeiraCobranca.id)
+    }
 
     return NextResponse.json({ checkoutUrl, subscriptionId: sub.id })
 

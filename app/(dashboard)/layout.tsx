@@ -8,7 +8,7 @@ import Image from 'next/image'
 import {
   Package, LayoutDashboard, Upload, Calculator, ShoppingBag,
   FileText, Settings, Users, LayoutTemplate, Home, TrendingUp,
-  CalendarDays, Crown, Archive,
+  CalendarDays, Crown, Archive, HandCoins,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 
@@ -182,6 +182,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
           )}
 
           
+
+          <div className="sidebar-divider" />
+
+          {/* Afiliados */}
+          <SecaoLabel label="Afiliados" />
+          <NavItem href="/afiliados" icon={<HandCoins size={16} />} label="Programa de Afiliados" />
 
           <div className="sidebar-divider" />
 
