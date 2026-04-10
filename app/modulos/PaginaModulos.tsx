@@ -61,20 +61,43 @@ export default function PaginaModulos() {
   const [aguardandoPix, setAguardandoPix] = useState(false)
   const [ehAssinante, setEhAssinante] = useState(false)
   const [verificandoPlano, setVerificandoPlano] = useState(true)
+  const [usuarioLogado, setUsuarioLogado] = useState(false)
 
-  // Verificar se usuario logado e assinante
+  // Verificar se usuario logado e qual e o plano
   useEffect(() => {
     async function verificar() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setVerificandoPlano(false); return }
+
+      // Usuario ja tem conta — pre-preencher email e marcar como logado
+      setUsuarioLogado(true)
+      setForm(p => ({ ...p, email: user.email ?? '', senha: '________' })) // senha placeholder — nao sera usada
+
       const { data: ass } = await supabase
         .from('assinaturas')
         .select('status, plano')
         .eq('usuario_id', user.id)
         .single()
+
       const ativo = ass?.status === 'active' || ass?.status === 'ativo'
       const planosPagos = ['iniciante', 'avancado', 'elite']
       setEhAssinante(ativo && planosPagos.includes(ass?.plano ?? ''))
+
+      // Buscar CPF do perfil se tiver
+      const { data: perfil } = await supabase
+        .from('perfis')
+        .select('nome_loja, cpf_cnpj')
+        .eq('id', user.id)
+        .single()
+
+      if (perfil) {
+        setForm(p => ({
+          ...p,
+          nome: perfil.nome_loja ?? p.nome,
+          cpf: perfil.cpf_cnpj ?? p.cpf,
+        }))
+      }
+
       setVerificandoPlano(false)
     }
     verificar()
@@ -85,14 +108,19 @@ export default function PaginaModulos() {
   function selecionarModulo(m: Modulo) {
     if (ehAssinante) return
     setModuloSelecionado(m)
-    setEtapa('cadastro')
     setErro('')
+    // Se ja esta logado, pula o cadastro e vai direto para pagamento
+    if (usuarioLogado) {
+      setEtapa('pagamento')
+    } else {
+      setEtapa('cadastro')
+    }
   }
 
   function validarCadastro() {
     if (!form.nome.trim()) return 'Informe seu nome'
     if (!form.email.trim() || !form.email.includes('@')) return 'Email invalido'
-    if (form.senha.length < 6) return 'Senha deve ter pelo menos 6 caracteres'
+    if (!usuarioLogado && form.senha.length < 6) return 'Senha deve ter pelo menos 6 caracteres'
     if (!form.cpf.replace(/\D/g, '')) return 'Informe seu CPF'
     return null
   }
@@ -336,7 +364,7 @@ export default function PaginaModulos() {
         {/* ETAPA PAGAMENTO */}
         {etapa === 'pagamento' && info && (
           <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-            <button onClick={() => setEtapa('cadastro')} style={{ background: 'none', border: 'none', color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontSize: '13px', cursor: 'pointer', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button onClick={() => usuarioLogado ? setEtapa('escolha') : setEtapa('cadastro')} style={{ background: 'none', border: 'none', color: '#9ca3af', fontFamily: 'Inter, sans-serif', fontSize: '13px', cursor: 'pointer', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               ← Voltar
             </button>
 
@@ -351,6 +379,14 @@ export default function PaginaModulos() {
 
             <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '20px', padding: '28px' }}>
               <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#140033', margin: '0 0 20px' }}>Pagamento</h2>
+
+              {/* Campo CPF para usuario logado sem CPF cadastrado */}
+              {usuarioLogado && !form.cpf.replace(/\D/g, '') && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={lbl}>CPF (necessario para o pagamento)</label>
+                  <input style={inputStyle} placeholder="000.000.000-00" value={form.cpf} onChange={e => setForm(p => ({ ...p, cpf: formatarCPF(e.target.value) }))} />
+                </div>
+              )}
 
               {/* Tabs metodo */}
               <div style={{ display: 'flex', background: '#f3f4f6', borderRadius: '12px', padding: '3px', marginBottom: '20px' }}>
