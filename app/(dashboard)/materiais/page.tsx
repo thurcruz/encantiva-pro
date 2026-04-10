@@ -1,10 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getPlanoId, getLimites, temAcesso } from '@/lib/planos'
+import { getPlanoId, getLimites } from '@/lib/planos'
 import type { Material } from '@/types/database'
 import FiltrosMateriais from './componentes/FiltrosMateriais'
 import CardMaterial from './componentes/CardMaterial'
-import ModuloBloqueado from '../../components/ModuloBloqueado'
 import PageHeader from '../componentes/PageHeader'
 
 export default async function PaginaMateriais({
@@ -30,6 +29,17 @@ export default async function PaginaMateriais({
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
+  // Verificar módulo avulso de biblioteca
+  const { data: moduloBiblioteca } = await supabase
+    .from('modulos_avulsos')
+    .select('id, status')
+    .eq('usuario_id', user.id)
+    .eq('modulo', 'biblioteca')
+    .eq('status', 'active')
+    .maybeSingle()
+
+  const temModuloBiblioteca = !!moduloBiblioteca
+
   // Contar downloads do mês atual
   const inicioMes = new Date()
   inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0)
@@ -41,19 +51,11 @@ export default async function PaginaMateriais({
     .gte('baixado_em', inicioMes.toISOString())
 
   const downloadsMes = downloadsNoMes ?? 0
-  const limiteDownloads = limites.downloadMateriais
-  const limiteNumerico = typeof limiteDownloads === 'number' ? limiteDownloads : null
-  const limiteAtingido = limiteNumerico !== null && downloadsMes >= limiteNumerico && !isAdmin && !isBeta
+  const limiteDownloads = temModuloBiblioteca ? 'ilimitado' : limites.downloadMateriais
+  const limiteNumerico = temModuloBiblioteca ? null : (typeof limiteDownloads === 'number' ? limiteDownloads : null)
+  const limiteAtingido = !temModuloBiblioteca && limiteNumerico !== null && downloadsMes >= limiteNumerico && !isAdmin && !isBeta
 
-  if (!temAcesso('downloadMateriais', limites, isBeta, isAdmin)) {
-    return <ModuloBloqueado
-      titulo="Materiais para Download"
-      descricao="Painéis, totens e muito mais prontos para imprimir e usar nas suas festas."
-      planoMinimo="iniciante"
-      icone="🎨"
-      planoAtual={planoId}
-    />
-  }
+  // downloadMateriais é numérico — todos têm acesso, limite controlado pela barra e pelo CardMaterial
 
   const [{ data: categorias }, { data: tipos }, { data: formatos }] = await Promise.all([
     supabase.from('categorias').select('*').eq('ativo', true).order('nome'),
@@ -80,8 +82,20 @@ export default async function PaginaMateriais({
       <PageHeader titulo="Materiais para Download" subtitulo="Painéis, totens e muito mais prontos para imprimir" maxWidth="1200px" />
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 24px 80px' }}>
 
+        {/* ── Card modulo avulso ativo ── */}
+        {temModuloBiblioteca && (
+          <div style={{ background: 'linear-gradient(135deg, #fff0fb, #f5f0ff)', border: '1.5px solid #ff33cc44', borderRadius: '14px', padding: '16px 20px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '20px' }}>🎨</div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '13px', color: '#ff33cc', margin: '0 0 2px' }}>Biblioteca Vitalicia Ativa</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280', margin: 0 }}>Voce tem acesso ilimitado a todos os materiais gratuitos e exclusivos.</p>
+            </div>
+            <span style={{ background: '#ff33cc', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', padding: '4px 12px', borderRadius: '999px', flexShrink: 0 }}>Vitalicio</span>
+          </div>
+        )}
+
         {/* ── Uso mensal de downloads ── */}
-        {limiteNumerico !== null && !isAdmin && !isBeta && (
+        {limiteNumerico !== null && !isAdmin && !isBeta && !temModuloBiblioteca && (
           <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '16px 20px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
               <div style={{ flexShrink: 0 }}>
