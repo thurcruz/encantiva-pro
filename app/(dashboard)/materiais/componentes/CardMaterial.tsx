@@ -80,6 +80,12 @@ export default function CardMaterial({ material, podeDownload, isExclusivo, limi
       const path = extrairPath(material.url_arquivo)
       const { data, error } = await supabase.storage.from('materials').createSignedUrl(path, 3600)
       if (error || !data?.signedUrl) throw new Error(error?.message ?? 'Erro ao carregar imagem.')
+      // Registrar download igual ao original
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from('historico_downloads').insert({ material_id: material.id, usuario_id: user.id })
+        await supabase.rpc('incrementar_downloads', { material_id: material.id })
+      }
       setImagemOriginalUrl(data.signedUrl)
       setModalCortador(true)
     } catch (e) {
