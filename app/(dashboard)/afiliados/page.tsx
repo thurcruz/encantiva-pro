@@ -35,7 +35,7 @@ export default async function PaginaAfiliados() {
               Entre em contato pelo WhatsApp para fazer parte do nosso programa de afiliados e comecar a ganhar comissoes indicando a Encantiva Pro.
             </p>
             <a
-              href="https://wa.me/5511999999999?text=Quero%20me%20tornar%20afiliada%20da%20Encantiva%20Pro"
+              href="https://wa.me/5521979758341?text=Quero%20me%20tornar%20afiliada%20da%20Encantiva%20Pro"
               target="_blank"
               rel="noopener noreferrer"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#25d366', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', padding: '14px 28px', borderRadius: '12px', textDecoration: 'none' }}
