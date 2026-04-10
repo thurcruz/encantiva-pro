@@ -63,15 +63,16 @@ export default function PaginaModulos() {
   const [verificandoPlano, setVerificandoPlano] = useState(true)
   const [usuarioLogado, setUsuarioLogado] = useState(false)
 
+  const [precisaCpf, setPrecisaCpf] = useState(false)
+
   // Verificar se usuario logado e qual e o plano
   useEffect(() => {
     async function verificar() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setVerificandoPlano(false); return }
 
-      // Usuario ja tem conta — pre-preencher email e marcar como logado
       setUsuarioLogado(true)
-      setForm(p => ({ ...p, email: user.email ?? '', senha: '________' })) // senha placeholder — nao sera usada
+      setForm(p => ({ ...p, email: user.email ?? '', senha: '________' }))
 
       const { data: ass } = await supabase
         .from('assinaturas')
@@ -83,7 +84,6 @@ export default function PaginaModulos() {
       const planosPagos = ['iniciante', 'avancado', 'elite']
       setEhAssinante(ativo && planosPagos.includes(ass?.plano ?? ''))
 
-      // Buscar CPF do perfil se tiver
       const { data: perfil } = await supabase
         .from('perfis')
         .select('nome_loja, cpf_cnpj')
@@ -96,6 +96,10 @@ export default function PaginaModulos() {
           nome: perfil.nome_loja ?? p.nome,
           cpf: perfil.cpf_cnpj ?? p.cpf,
         }))
+        // So mostra campo CPF se nao tiver no perfil
+        setPrecisaCpf(!perfil.cpf_cnpj)
+      } else {
+        setPrecisaCpf(true)
       }
 
       setVerificandoPlano(false)
@@ -356,6 +360,13 @@ export default function PaginaModulos() {
                 <button onClick={irParaPagamento} style={{ background: info.cor, border: 'none', borderRadius: '14px', padding: '14px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'pointer', marginTop: '4px' }}>
                   Continuar para pagamento →
                 </button>
+
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af', textAlign: 'center', margin: '4px 0 0' }}>
+                  Ja tem conta?{' '}
+                  <a href="/login" style={{ color: info.cor, fontWeight: 700, textDecoration: 'none' }}>
+                    Entrar
+                  </a>
+                </p>
               </div>
             </div>
           </div>
@@ -381,7 +392,7 @@ export default function PaginaModulos() {
               <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '20px', color: '#140033', margin: '0 0 20px' }}>Pagamento</h2>
 
               {/* Campo CPF para usuario logado sem CPF cadastrado */}
-              {usuarioLogado && !form.cpf.replace(/\D/g, '') && (
+              {usuarioLogado && precisaCpf && (
                 <div style={{ marginBottom: '16px' }}>
                   <label style={lbl}>CPF (necessario para o pagamento)</label>
                   <input style={inputStyle} placeholder="000.000.000-00" value={form.cpf} onChange={e => setForm(p => ({ ...p, cpf: formatarCPF(e.target.value) }))} />
