@@ -20,17 +20,17 @@ export default async function PaginaContratos() {
 
   const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
-  const { data: assinatura } = await supabase
-    .from('assinaturas')
-    .select('status, plano, trial_expira_em, is_beta')
-    .eq('usuario_id', user.id)
-    .single()
+  const [{ data: assinatura }, { data: moduloContratos }] = await Promise.all([
+    supabase.from('assinaturas').select('status, plano, trial_expira_em, is_beta').eq('usuario_id', user.id).single(),
+    supabase.from('modulos_avulsos').select('id, status').eq('usuario_id', user.id).eq('modulo', 'contratos').eq('status', 'active').maybeSingle(),
+  ])
 
   const isBeta = assinatura?.is_beta === true
+  const temModuloContratos = !!moduloContratos
   const planoId = getPlanoId(assinatura?.status ?? null, assinatura?.plano ?? null, assinatura?.trial_expira_em ?? null, isAdmin)
   const limites = getLimites(planoId)
 
-  // Contar contratos criados este mês
+  // Contar contratos criados este mes
   const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0)
   const { count: contratosMes } = await supabase
     .from('contratos')
@@ -38,10 +38,10 @@ export default async function PaginaContratos() {
     .eq('usuario_id', user.id)
     .gte('criado_em', inicioMes.toISOString())
 
-  const limiteContratos = limites.contratosPoMes
-  const limiteNumerico = typeof limiteContratos === 'number' ? limiteContratos : null
+  const limiteContratos = temModuloContratos ? 'ilimitado' : limites.contratosPoMes
+  const limiteNumerico = temModuloContratos ? null : (typeof limiteContratos === 'number' ? limiteContratos : null)
   const contratosMesCount = contratosMes ?? 0
-  const limiteAtingido = limiteNumerico !== null && contratosMesCount >= limiteNumerico && !isAdmin && !isBeta
+  const limiteAtingido = !temModuloContratos && limiteNumerico !== null && contratosMesCount >= limiteNumerico && !isAdmin && !isBeta
 
   const [{ data: contratos }, { data: perfil }] = await Promise.all([
     supabase.from('contratos').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
@@ -80,20 +80,34 @@ export default async function PaginaContratos() {
 
       <div className="page-content" style={{ maxWidth: '900px', margin: '0 auto', padding: '24px 24px 60px' }}>
 
-      {/* Aviso termo de responsabilidade */}
-      <div style={{ background: '#f9f9ff', border: '1px solid #e8e8ec', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-        <span style={{ fontSize: '14px', flexShrink: 0, marginTop: '1px' }}>ℹ️</span>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280', margin: 0, lineHeight: 1.6 }}>
-          Os <strong style={{ color: '#111827' }}>Contratos</strong> da Encantiva Pro são na prática <strong style={{ color: '#111827' }}>Termos de Responsabilidade</strong> digitais — úteis para registrar o combinado e ter a assinatura da cliente. Para contratos com validade jurídica plena, consulte um advogado.
-        </p>
-      </div>
+        {/* Aviso termo de responsabilidade */}
+        <div style={{ background: '#f9f9ff', border: '1px solid #e8e8ec', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+          <span style={{ fontSize: '14px', flexShrink: 0, marginTop: '1px' }}>i</span>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280', margin: 0, lineHeight: 1.6 }}>
+            Os <strong style={{ color: '#111827' }}>Contratos</strong> da Encantiva Pro sao na pratica <strong style={{ color: '#111827' }}>Termos de Responsabilidade</strong> digitais. Para contratos com validade juridica plena, consulte um advogado.
+          </p>
+        </div>
 
-      {/* Barra de uso mensal */}
-        {limiteNumerico !== null && !isAdmin && !isBeta && (
+        {/* Card modulo avulso ativo */}
+        {temModuloContratos && (
+          <div style={{ background: 'linear-gradient(135deg, #f5f0ff, #faf7ff)', border: '1.5px solid #9900ff44', borderRadius: '14px', padding: '16px 20px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#9900ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '20px' }}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="3" width="12" height="15" rx="2"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '13px', color: '#9900ff', margin: '0 0 2px' }}>Contratos Ilimitados Vitalicio Ativo</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280', margin: 0 }}>Voce tem acesso ilimitado para criar contratos.</p>
+            </div>
+            <span style={{ background: '#9900ff', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', padding: '4px 12px', borderRadius: '999px', flexShrink: 0 }}>Vitalicio</span>
+          </div>
+        )}
+
+        {/* Barra de uso mensal */}
+        {limiteNumerico !== null && !isAdmin && !isBeta && !temModuloContratos && (
           <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
               <div>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 3px' }}>Contratos este mês</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 3px' }}>Contratos este mes</p>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: limiteAtingido ? '#dc2626' : '#111827', fontWeight: 700, margin: 0 }}>
                   {contratosMesCount} de {limiteNumerico} usados
                 </p>
@@ -118,7 +132,7 @@ export default async function PaginaContratos() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ color: '#d97706', flexShrink: 0 }}><IconWarning /></span>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#92400e', margin: 0 }}>
-                <strong>Dados da loja incompletos.</strong> Preencha para que apareçam nos contratos.
+                <strong>Dados da loja incompletos.</strong> Preencha para que aparecam nos contratos.
               </p>
             </div>
             <Link href="/configuracoes" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', color: '#d97706', border: '1px solid #fcd34d', borderRadius: '999px', padding: '5px 12px', textDecoration: 'none', background: '#fff', whiteSpace: 'nowrap' }}>
@@ -127,7 +141,7 @@ export default async function PaginaContratos() {
           </div>
         )}
 
-        {/* Mini métricas */}
+        {/* Mini metricas */}
         {total > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
             {[
