@@ -4,6 +4,32 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
+const LS_KEY = 'modulos_oferta_expira'
+const SS_KEY = 'modulos_barra_fechada'
+
+function getOrCreateExpiry(): number {
+  if (typeof window === 'undefined') return Date.now() + 48 * 3600 * 1000
+  const stored = localStorage.getItem(LS_KEY)
+  if (stored) {
+    const ts = Number(stored)
+    if (!isNaN(ts) && ts > Date.now()) return ts
+  }
+  const ts = Date.now() + 48 * 3600 * 1000
+  localStorage.setItem(LS_KEY, String(ts))
+  return ts
+}
+
+function calcRestante(expiry: number): { h: number; m: number; s: number } | null {
+  const diff = expiry - Date.now()
+  if (diff <= 0) return null
+  const h = Math.floor(diff / 3600000)
+  const m = Math.floor((diff % 3600000) / 60000)
+  const s = Math.floor((diff % 60000) / 1000)
+  return { h, m, s }
+}
+
+function pad(n: number) { return String(n).padStart(2, '0') }
+
 type Modulo = 'biblioteca' | 'contratos' | null
 
 const MODULOS = {
@@ -64,6 +90,37 @@ export default function PaginaModulos() {
   const [usuarioLogado, setUsuarioLogado] = useState(false)
 
   const [precisaCpf, setPrecisaCpf] = useState(false)
+
+  // ── Barra de contagem regressiva ─────────────────────────
+  const [restante, setRestante] = useState<{ h: number; m: number; s: number } | null>(null)
+  const [barraFechada, setBarraFechada] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (sessionStorage.getItem(SS_KEY) === '1') { setBarraFechada(true); return }
+
+    const expiry = getOrCreateExpiry()
+    setRestante(calcRestante(expiry))
+
+    const id = setInterval(() => {
+      const r = calcRestante(expiry)
+      setRestante(r)
+      if (!r) clearInterval(id)
+    }, 1000)
+
+    return () => clearInterval(id)
+  }, [])
+
+  function fecharBarra() {
+    if (typeof window !== 'undefined') sessionStorage.setItem(SS_KEY, '1')
+    setBarraFechada(true)
+  }
+
+  function scrollParaCards() {
+    document.getElementById('modulos-cards')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const mostrarBarra = !barraFechada && !!restante && etapa !== 'sucesso'
 
   // Verificar se usuario logado e qual e o plano
   useEffect(() => {
@@ -218,6 +275,31 @@ export default function PaginaModulos() {
   return (
     <div style={{ minHeight: '100vh', background: '#fafafa' }}>
 
+      {/* ── Barra de oferta ── */}
+      {mostrarBarra && restante && (
+        <div style={{ background: 'linear-gradient(90deg, #ff33cc, #9900ff)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', position: 'relative' }}>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            Oferta por tempo limitado — termina em{' '}
+            <strong style={{ fontFamily: 'monospace', fontSize: '15px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', padding: '2px 8px', letterSpacing: '1px' }}>
+              {pad(restante.h)}:{pad(restante.m)}:{pad(restante.s)}
+            </strong>
+          </span>
+          <button
+            onClick={scrollParaCards}
+            style={{ background: '#fff', border: 'none', borderRadius: '999px', padding: '6px 16px', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#9900ff', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            Aproveitar agora →
+          </button>
+          <button
+            onClick={fecharBarra}
+            aria-label="Fechar"
+            style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: '14px', lineHeight: 1 }}
+          >
+            x
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ background: '#140033', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Image src="/enc_logotipo.svg" width={140} height={24} alt="Encantiva Pro" />
@@ -252,7 +334,7 @@ export default function PaginaModulos() {
             )}
 
             {/* Grid de cards */}
-            <div className="modulos-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '48px' }}>
+            <div id="modulos-cards" className="modulos-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '48px' }}>
               {(Object.entries(MODULOS) as [Modulo, typeof MODULOS['biblioteca']][]).map(([key, mod]) => {
                 const bloqueado = ehAssinante || verificandoPlano
                 return (
@@ -297,6 +379,61 @@ export default function PaginaModulos() {
                   </div>
                 )
               })}
+            </div>
+
+            {/* ── Secao "Ou assine e tenha tudo" ── */}
+            <div style={{ background: 'linear-gradient(135deg, #140033, #2d0060)', border: '1px solid rgba(255,51,204,0.2)', borderRadius: '20px', padding: '32px', marginBottom: '24px' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', fontWeight: 700, color: '#ffffff55', letterSpacing: '1.5px', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                Plano completo
+              </p>
+              <h3 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '22px', color: '#fff', letterSpacing: '-0.5px', margin: '0 0 8px' }}>
+                Ou assine e tenha tudo
+              </h3>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#ffffff88', margin: '0 0 24px', lineHeight: 1.6 }}>
+                Com um plano completo voce tem acesso a TUDO da plataforma
+              </p>
+
+              <div className="beneficios-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '24px' }}>
+                {[
+                  'Agenda ilimitada de eventos',
+                  'Catalogo de kits e pedidos',
+                  'Calculadora de precificacao',
+                  'Financeiro e fluxo de caixa',
+                  'Acervo de materiais proprios',
+                  'Clientes ilimitados',
+                  'Contratos ilimitados',
+                  'Biblioteca de materiais exclusivos',
+                  'Cortador de paineis ilimitado',
+                  'Suporte prioritario',
+                ].map(item => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(0,255,136,0.15)', border: '1px solid rgba(0,255,136,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#00ff88" strokeWidth="2.5" strokeLinecap="round"><path d="M2 5l2.5 2.5L8 2.5"/></svg>
+                    </div>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffffcc' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Comparativo */}
+              <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px 18px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff55', minWidth: '130px' }}>Modulo avulso:</span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#ffffffcc' }}>R$19,90 — acesso a 1 recurso para sempre</span>
+                </div>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#ff33cc', minWidth: '130px' }}>Plano Avancado:</span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 700, color: '#fff' }}>R$34,90/mes — acesso COMPLETO a tudo</span>
+                </div>
+              </div>
+
+              <a href="/planos" style={{ display: 'inline-block', background: '#ff33cc', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', padding: '12px 28px', borderRadius: '999px', textDecoration: 'none', marginBottom: '10px' }}>
+                Ver todos os planos →
+              </a>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#ffffff44', margin: 0 }}>
+                Cancele quando quiser · Sem fidelidade
+              </p>
             </div>
 
             {/* FAQ */}
@@ -512,6 +649,7 @@ export default function PaginaModulos() {
         @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
         @media (max-width: 640px) {
           .modulos-grid { grid-template-columns: 1fr !important; }
+          .beneficios-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>
