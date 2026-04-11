@@ -8,11 +8,18 @@ export default async function PaginaPaineis() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: paineis } = await supabase
-    .from('paineis')
-    .select('*')
-    .eq('usuario_id', user.id)
-    .order('criado_em', { ascending: false })
+  const [
+    { data: paineis },
+    { data: likesPaineis },
+    { data: likesMateriais },
+  ] = await Promise.all([
+    supabase.from('paineis').select('*').eq('usuario_id', user.id).order('criado_em', { ascending: false }),
+    supabase.from('paineis_comunidade_likes').select('painel_id').eq('usuario_id', user.id),
+    supabase.from('materiais_comunidade_likes').select('material_id').eq('usuario_id', user.id),
+  ])
+
+  const likesIniciais        = (likesPaineis ?? []).map((l: { painel_id: string }) => l.painel_id)
+  const likesMaterialsIniciais = (likesMateriais ?? []).map((l: { material_id: string }) => l.material_id)
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
@@ -26,6 +33,8 @@ export default async function PaginaPaineis() {
           usuarioId={user.id}
           paineis={paineis ?? []}
           isAssinante={true}
+          likesIniciais={likesIniciais}
+          likesMaterialsIniciais={likesMaterialsIniciais}
         />
       </div>
     </div>

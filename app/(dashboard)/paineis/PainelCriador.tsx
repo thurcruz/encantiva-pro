@@ -25,6 +25,18 @@ interface PainelComunidade {
   imagem_url: string
   pdf_url: string
   downloads: number
+  likes: number
+  criado_em: string
+}
+
+interface MaterialComunidade {
+  id: string
+  usuario_id: string
+  nome: string
+  descricao: string | null
+  imagem_url: string
+  likes: number
+  downloads: number
   criado_em: string
 }
 
@@ -32,6 +44,8 @@ interface Props {
   usuarioId: string
   paineis: Painel[]
   isAssinante: boolean
+  likesIniciais: string[]
+  likesMaterialsIniciais: string[]
 }
 
 type Orientacao = 'paisagem' | 'retrato'
@@ -43,9 +57,10 @@ const IconUpload = () => (
   </svg>
 )
 
-export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAssinante }: Props) {
+export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAssinante, likesIniciais, likesMaterialsIniciais }: Props) {
   const supabase = createClient()
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef    = useRef<HTMLInputElement>(null)
+  const matInputRef = useRef<HTMLInputElement>(null)
 
   const [imagem, setImagem]           = useState<HTMLImageElement | null>(null)
   const [imagemFile, setImagemFile]   = useState<File | null>(null)
@@ -55,14 +70,29 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
   const [paineis, setPaineis]         = useState<Painel[]>(paineisSalvos)
   const [previewAtivo, setPreviewAtivo] = useState<number | null>(null)
   const [fatias, setFatias]           = useState<string[]>([])
-  const [abaAtiva, setAbaAtiva]       = useState<'meus' | 'comunidade'>('meus')
+  const [abaAtiva, setAbaAtiva]       = useState<'meus' | 'comunidade' | 'materiais'>('meus')
   const [paineisComunidade, setPaineisComunidade] = useState<PainelComunidade[]>([])
   const [carregandoComunidade, setCarregandoComunidade] = useState(false)
   const [modalUpgrade, setModalUpgrade] = useState(false)
   const [publicando, setPublicando]   = useState<string | null>(null)
   const [orientacao, setOrientacao]   = useState<Orientacao>('paisagem')
   const [dragOver, setDragOver]       = useState(false)
-  const [comMargem, setComMargem] = useState(true)
+  const [comMargem, setComMargem]     = useState(true)
+
+  // Likes de paineis
+  const [likesDados, setLikesDados]   = useState<Set<string>>(new Set(likesIniciais))
+  const [likeAnimando, setLikeAnimando] = useState<string | null>(null)
+
+  // Aba Materiais
+  const [materiais, setMateriais]     = useState<MaterialComunidade[]>([])
+  const [carregandoMateriais, setCarregandoMateriais] = useState(false)
+  const [likesMat, setLikesMat]       = useState<Set<string>>(new Set(likesMaterialsIniciais))
+  const [likeAnimandoMat, setLikeAnimandoMat] = useState<string | null>(null)
+  const [matFile, setMatFile]         = useState<File | null>(null)
+  const [matNome, setMatNome]         = useState('')
+  const [matDescricao, setMatDescricao] = useState('')
+  const [uploadandoMat, setUploadandoMat] = useState(false)
+  const [dragOverMat, setDragOverMat] = useState(false)
 
   const COLS = orientacao === 'paisagem' ? 2 : 3
   const ROWS = orientacao === 'paisagem' ? 3 : 2
@@ -104,6 +134,20 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
   useEffect(() => {
     if (abaAtiva === 'comunidade') void carregarComunidade()
   }, [abaAtiva, carregarComunidade])
+
+  const carregarMateriais = useCallback(async () => {
+    setCarregandoMateriais(true)
+    const { data } = await supabase
+      .from('materiais_comunidade')
+      .select('*')
+      .order('likes', { ascending: false })
+    if (data) setMateriais(data)
+    setCarregandoMateriais(false)
+  }, [supabase])
+
+  useEffect(() => {
+    if (abaAtiva === 'materiais') void carregarMateriais()
+  }, [abaAtiva, carregarMateriais])
 
   function processarArquivo(file: File) {
     setImagemFile(file)
@@ -230,6 +274,96 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
     setPaineis(prev => prev.filter(p => p.id !== id))
   }
 
+  // ── Like em painel da comunidade ──────────────────────────
+  async function toggleLike(painelId: string) {
+    const jaCurtiu = likesDados.has(painelId)
+    setLikeAnimando(painelId)
+    setTimeout(() => setLikeAnimando(null), 300)
+
+    // Atualiza otimisticamente
+    if (jaCurtiu) {
+      setPaineisComunidade(prev => prev.map(p => p.id === painelId ? { ...p, likes: Math.max(0, (p.likes ?? 0) - 1) } : p))
+      setLikesDados(prev => { const s = new Set(prev); s.delete(painelId); return s })
+      await supabase.from('paineis_comunidade_likes').delete().eq('painel_id', painelId).eq('usuario_id', usuarioId)
+    } else {
+      setPaineisComunidade(prev => prev.map(p => p.id === painelId ? { ...p, likes: (p.likes ?? 0) + 1 } : p))
+      setLikesDados(prev => new Set([...prev, painelId]))
+      await supabase.from('paineis_comunidade_likes').insert({ painel_id: painelId, usuario_id: usuarioId })
+    }
+    // Sincroniza contador real na tabela
+    const { count } = await supabase.from('paineis_comunidade_likes').select('id', { count: 'exact', head: true }).eq('painel_id', painelId)
+    await supabase.from('paineis_comunidade').update({ likes: count ?? 0 }).eq('id', painelId)
+  }
+
+  // ── Like em material da comunidade ───────────────────────
+  async function toggleLikeMaterial(materialId: string) {
+    const jaCurtiu = likesMat.has(materialId)
+    setLikeAnimandoMat(materialId)
+    setTimeout(() => setLikeAnimandoMat(null), 300)
+
+    if (jaCurtiu) {
+      await supabase.from('materiais_comunidade_likes').delete().eq('material_id', materialId).eq('usuario_id', usuarioId)
+      setMateriais(prev => prev.map(m => m.id === materialId ? { ...m, likes: Math.max(0, m.likes - 1) } : m))
+      setLikesMat(prev => { const s = new Set(prev); s.delete(materialId); return s })
+    } else {
+      await supabase.from('materiais_comunidade_likes').insert({ material_id: materialId, usuario_id: usuarioId })
+      setMateriais(prev => prev.map(m => m.id === materialId ? { ...m, likes: m.likes + 1 } : m))
+      setLikesMat(prev => new Set([...prev, materialId]))
+    }
+    const { count } = await supabase.from('materiais_comunidade_likes').select('id', { count: 'exact', head: true }).eq('material_id', materialId)
+    await supabase.from('materiais_comunidade').update({ likes: count ?? 0 }).eq('id', materialId)
+  }
+
+  // ── Upload de material na comunidade ─────────────────────
+  async function uploadMaterial() {
+    if (!matFile || !matNome.trim()) return
+    setUploadandoMat(true)
+    try {
+      const ext  = matFile.name.split('.').pop() ?? 'jpg'
+      const path = `${usuarioId}/materiais/${Date.now()}_${matNome.replace(/\s+/g, '_')}.${ext}`
+      const { data: uploaded } = await supabase.storage.from('paineis').upload(path, matFile, { upsert: true })
+      if (!uploaded) throw new Error('Erro no upload')
+      const { data: urlData } = supabase.storage.from('paineis').getPublicUrl(uploaded.path)
+      const { data: novo } = await supabase.from('materiais_comunidade').insert({
+        usuario_id:  usuarioId,
+        nome:        matNome.trim(),
+        descricao:   matDescricao.trim() || null,
+        imagem_url:  urlData.publicUrl,
+      }).select().single()
+      if (novo) setMateriais(prev => [novo, ...prev])
+      setMatFile(null); setMatNome(''); setMatDescricao('')
+      if (matInputRef.current) matInputRef.current.value = ''
+    } catch (e) {
+      alert(`Erro ao publicar: ${e}`)
+    }
+    setUploadandoMat(false)
+  }
+
+  // ── Download de material ──────────────────────────────────
+  async function baixarMaterial(mat: MaterialComunidade) {
+    if (!isAssinante) { setModalUpgrade(true); return }
+    await supabase.from('materiais_comunidade').update({ downloads: mat.downloads + 1 }).eq('id', mat.id)
+    setMateriais(prev => prev.map(m => m.id === mat.id ? { ...m, downloads: m.downloads + 1 } : m))
+    const a = document.createElement('a')
+    a.href = mat.imagem_url
+    a.download = `${mat.nome}.jpg`
+    a.target = '_blank'
+    a.click()
+  }
+
+  // ── Deletar material ──────────────────────────────────────
+  async function deletarMaterial(id: string) {
+    await supabase.from('materiais_comunidade').delete().eq('id', id)
+    setMateriais(prev => prev.filter(m => m.id !== id))
+  }
+
+  // ── Processar arquivo de material ─────────────────────────
+  function processarArquivoMat(file: File) {
+    if (!file.type.startsWith('image/')) return
+    setMatFile(file)
+    if (!matNome) setMatNome(file.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' '))
+  }
+
   const inputStyle: React.CSSProperties = {
     width: '100%', background: '#fafafa', border: '1px solid #e8e8ec',
     borderRadius: '10px', padding: '10px 12px', color: '#111827',
@@ -258,12 +392,13 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
       {/* ── Abas ── */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
         {[
-          { key: 'meus',      label: 'Minha Biblioteca' },
+          { key: 'meus',       label: 'Minha Biblioteca' },
           { key: 'comunidade', label: 'Comunidade' },
+          { key: 'materiais',  label: 'Materiais' },
         ].map(aba => (
           <button
             key={aba.key}
-            onClick={() => setAbaAtiva(aba.key as 'meus' | 'comunidade')}
+            onClick={() => setAbaAtiva(aba.key as 'meus' | 'comunidade' | 'materiais')}
             style={{
               flex: 1, padding: '10px 16px',
               background: abaAtiva === aba.key ? '#ff33cc' : '#fff',
@@ -275,9 +410,6 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
             }}
           >
             {aba.label}
-            {aba.key === 'comunidade' && !isAssinante && (
-              <span style={{ marginLeft: '6px', fontSize: '10px', opacity: 0.8 }}>🔒</span>
-            )}
           </button>
         ))}
       </div>
@@ -568,14 +700,178 @@ export default function PainelCriador({ usuarioId, paineis: paineisSalvos, isAss
                     {painel.descricao && (
                       <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 10px' }}>{painel.descricao}</p>
                     )}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af' }}>{painel.downloads} downloads</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af' }}>{painel.downloads} downloads</span>
+                        {/* Botão like */}
+                        <button
+                          onClick={() => toggleLike(painel.id)}
+                          title="Salvar painel"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px',
+                            transform: likeAnimando === painel.id ? 'scale(1.3)' : 'scale(1)',
+                            transition: 'transform .15s',
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill={likesDados.has(painel.id) ? '#ff33cc' : 'none'} stroke={likesDados.has(painel.id) ? '#ff33cc' : '#9ca3af'} strokeWidth="1.5">
+                            <path d="M7 12s-5-3.5-5-7a3 3 0 0 1 5-2.2A3 3 0 0 1 12 5c0 3.5-5 7-5 7z"/>
+                          </svg>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: likesDados.has(painel.id) ? '#ff33cc' : '#9ca3af' }}>
+                            {painel.likes ?? 0}
+                          </span>
+                        </button>
+                      </div>
                       <button
                         onClick={() => baixarDaComunidade(painel)}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: isAssinante ? '#ff33cc' : '#f3f4f6', border: 'none', borderRadius: '999px', padding: '6px 12px', color: isAssinante ? '#fff' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}
                       >
                         {isAssinante ? <Download size={11} /> : <Lock size={11} />}
                         {isAssinante ? 'Baixar PDF' : 'Upgrade'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── ABA MATERIAIS ── */}
+      {abaAtiva === 'materiais' && (
+        <div>
+          {/* Formulário de upload */}
+          {isAssinante ? (
+            <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', padding: '18px', marginBottom: '16px' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 14px' }}>
+                Publicar material na comunidade
+              </p>
+
+              {/* Zona de upload */}
+              <div
+                onDragOver={e => { e.preventDefault(); setDragOverMat(true) }}
+                onDragLeave={() => setDragOverMat(false)}
+                onDrop={e => { e.preventDefault(); setDragOverMat(false); const f = e.dataTransfer.files?.[0]; if (f) processarArquivoMat(f) }}
+                onClick={() => matInputRef.current?.click()}
+                style={{ background: dragOverMat ? '#fff0fb' : matFile ? '#fff0fb' : '#fafafa', border: `2px dashed ${dragOverMat || matFile ? '#ff33cc' : '#e8e8ec'}`, borderRadius: '12px', padding: '20px', cursor: 'pointer', textAlign: 'center', marginBottom: '12px', transition: 'all .2s' }}
+              >
+                {matFile ? (
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700, color: '#ff33cc', margin: 0 }}>
+                    ✓ {matFile.name} — clique para trocar
+                  </p>
+                ) : (
+                  <>
+                    <span style={{ color: '#d1d5db' }}><IconUpload /></span>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6b7280', margin: '6px 0 0', fontWeight: 600 }}>Clique ou arraste a imagem (PNG/JPG)</p>
+                  </>
+                )}
+              </div>
+              <input ref={matInputRef} type="file" accept="image/png,image/jpeg" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) processarArquivoMat(f) }} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
+                <div>
+                  <label style={labelStyle}>Nome do material *</label>
+                  <input style={inputStyle} placeholder="Ex: Fundo floral rosa" value={matNome} onChange={e => setMatNome(e.target.value)} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Descricao (opcional)</label>
+                  <input style={inputStyle} placeholder="Ex: Ideal para mesversario" value={matDescricao} onChange={e => setMatDescricao(e.target.value)} />
+                </div>
+              </div>
+
+              <button
+                onClick={uploadMaterial}
+                disabled={uploadandoMat || !matFile || !matNome.trim()}
+                style={{ background: uploadandoMat || !matFile || !matNome.trim() ? '#f3f4f6' : '#ff33cc', border: 'none', borderRadius: '999px', padding: '10px 20px', color: uploadandoMat || !matFile || !matNome.trim() ? '#9ca3af' : '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', cursor: uploadandoMat || !matFile || !matNome.trim() ? 'not-allowed' : 'pointer' }}
+              >
+                {uploadandoMat ? 'Publicando...' : 'Publicar na comunidade'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ background: '#fff0fb', border: '1px solid #ffd6f5', borderRadius: '14px', padding: '16px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: 40, height: 40, borderRadius: '999px', background: '#ff33cc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Lock size={18} style={{ color: '#fff' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 2px' }}>Faca upgrade para publicar seus materiais</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Visualize os materiais da comunidade gratuitamente. Baixe e publique com um plano ativo.</p>
+              </div>
+              <button onClick={() => setModalUpgrade(true)} style={{ background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '8px 16px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', flexShrink: 0 }}>
+                Ver planos
+              </button>
+            </div>
+          )}
+
+          {/* Grid de materiais */}
+          {carregandoMateriais ? (
+            <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#9ca3af' }}>
+              Carregando materiais...
+            </div>
+          ) : materiais.length === 0 ? (
+            <div style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', textAlign: 'center', padding: '60px 24px' }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#374151', margin: '0 0 4px' }}>Nenhum material publicado ainda</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9ca3af', margin: 0 }}>Seja a primeira a compartilhar!</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+              {materiais.map(mat => (
+                <div key={mat.id} style={{ background: '#fff', border: '1px solid #e8e8ec', borderRadius: '14px', overflow: 'hidden' }}>
+                  {/* Imagem com overlay de bloqueio */}
+                  <div style={{ position: 'relative', aspectRatio: '1', background: '#f9fafb' }}>
+                    <NextImage src={mat.imagem_url} fill style={{ objectFit: 'cover' }} alt={mat.nome} unoptimized />
+                    <div style={{ position: 'absolute', top: '8px', left: '8px', background: mat.usuario_id === 'encantiva' ? '#ff33cc' : 'rgba(0,0,0,0.55)', borderRadius: '999px', padding: '3px 9px', fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 700, color: '#fff' }}>
+                      {mat.usuario_id === 'encantiva' ? 'Encantiva' : 'Comunidade'}
+                    </div>
+                    {mat.usuario_id === usuarioId && (
+                      <button
+                        onClick={() => deletarMaterial(mat.id)}
+                        style={{ position: 'absolute', top: '8px', right: '8px', width: 28, height: 28, background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '999px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                    {!isAssinante && (
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <button onClick={() => setModalUpgrade(true)} style={{ background: '#ff33cc', border: 'none', borderRadius: '999px', padding: '8px 18px', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
+                          Fazer upgrade
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ padding: '12px 14px' }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111827', margin: '0 0 3px' }}>{mat.nome}</p>
+                    {mat.descricao && (
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af', margin: '0 0 10px' }}>{mat.descricao}</p>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#9ca3af' }}>{mat.downloads} downloads</span>
+                        <button
+                          onClick={() => toggleLikeMaterial(mat.id)}
+                          title="Salvar material"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px',
+                            transform: likeAnimandoMat === mat.id ? 'scale(1.3)' : 'scale(1)',
+                            transition: 'transform .15s',
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill={likesMat.has(mat.id) ? '#ff33cc' : 'none'} stroke={likesMat.has(mat.id) ? '#ff33cc' : '#9ca3af'} strokeWidth="1.5">
+                            <path d="M7 12s-5-3.5-5-7a3 3 0 0 1 5-2.2A3 3 0 0 1 12 5c0 3.5-5 7-5 7z"/>
+                          </svg>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: likesMat.has(mat.id) ? '#ff33cc' : '#9ca3af' }}>
+                            {mat.likes}
+                          </span>
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => baixarMaterial(mat)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: isAssinante ? '#ff33cc' : '#f3f4f6', border: 'none', borderRadius: '999px', padding: '6px 12px', color: isAssinante ? '#fff' : '#9ca3af', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}
+                      >
+                        {isAssinante ? <Download size={11} /> : <Lock size={11} />}
+                        {isAssinante ? 'Baixar' : 'Upgrade'}
                       </button>
                     </div>
                   </div>
